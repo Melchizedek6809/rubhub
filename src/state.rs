@@ -1,8 +1,8 @@
 use std::net::SocketAddr;
 use std::path::PathBuf;
 
-use tokio::fs;
 use sea_orm::{Database, DatabaseConnection};
+use tokio::fs;
 
 #[derive(Debug, Clone)]
 pub struct AppConfig {
@@ -31,7 +31,6 @@ impl GlobalState {
         fs::create_dir_all(asset_root.join("public")).await?;
         fs::create_dir_all(asset_root.join("private")).await?;
 
-
         let state = Self {
             db,
             config: AppConfig {
@@ -39,7 +38,6 @@ impl GlobalState {
                 bind_addr,
             },
         };
-
 
         Ok(state)
     }
