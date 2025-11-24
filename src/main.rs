@@ -11,11 +11,9 @@ mod state;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    println!("Starting jam2nite");
     #[cfg(debug_assertions)]
     dotenvy::dotenv()?;
 
-    println!("Creating new state");
     let state = state::GlobalState::new().await?;
 
     let public_assets_dir = state.config.asset_root.join("public");
@@ -52,7 +50,6 @@ async fn main() -> anyhow::Result<()> {
         socket.set_reuseport(true)?;
         assert!(socket.reuseport().unwrap());
     }
-
     socket.bind(bind_addr)?;
 
     let listener = socket.listen(1024)?;
