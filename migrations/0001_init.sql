@@ -8,7 +8,7 @@ CREATE TABLE users (
     user_type user_type NOT NULL,
     email varchar(255),
     name varchar(128),
-    description TEXT NOT NULL DEFAULT "",
+    description TEXT NOT NULL DEFAULT '',
     meta jsonb NOT NULL DEFAULT '{}'::jsonb
 );
 CREATE INDEX users_email_idx ON users USING btree (email);
@@ -22,7 +22,7 @@ CREATE TABLE sessions (
     id uuid PRIMARY KEY,
     expires_at timestamptz DEFAULT now() + interval '1 month',
     owner uuid NOT NULL,
-    CONSTRAINT session_user FOREIGN KEY (owner) REFERENCES public.users(id) ON DELETE cascade ON UPDATE no action
+    CONSTRAINT sessions_user FOREIGN KEY (owner) REFERENCES public.users(id) ON DELETE cascade ON UPDATE no action
 );
 CREATE INDEX sessions_owner_idx ON sessions USING btree (owner);
 CREATE INDEX sessions_expires_at_idx ON sessions USING btree (expires_at);
@@ -36,7 +36,7 @@ CREATE TABLE projects (
 
     slug varchar(128) NOT NULL UNIQUE CHECK (slug ~ '^[a-z0-9-]+$'),
     name varchar(128) NOT NULL,
-    description TEXT NOT NULL DEFAULT "",
+    description TEXT NOT NULL DEFAULT '',
     meta jsonb NOT NULL DEFAULT '{}'::jsonb,
 
     CONSTRAINT projects_owner FOREIGN KEY (owner) REFERENCES public.users(id) ON DELETE cascade ON UPDATE no action
@@ -80,7 +80,7 @@ CREATE TABLE project_messages (
     project uuid NOT NULL,
 
     owner uuid NOT NULL,
-    to_path varchar(255) NOT NULL DEFAULT "/",
+    to_path varchar(255) NOT NULL DEFAULT '/',
     body TEXT NOT NULL,
 
     CONSTRAINT project_messages_owner FOREIGN KEY (owner) REFERENCES public.users(id) ON DELETE cascade ON UPDATE no action,

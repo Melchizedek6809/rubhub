@@ -1,10 +1,12 @@
 use axum::{Router, response::Html, routing::get};
+use reqwest::StatusCode;
 use tower::ServiceBuilder;
 use tower_cookies::CookieManagerLayer;
 use tower_http::services::ServeDir;
 
 mod api;
 mod app;
+mod entities;
 mod state;
 
 #[tokio::main]
@@ -35,6 +37,7 @@ async fn main() -> anyhow::Result<()> {
             "/assets",
             ServiceBuilder::new().service(ServeDir::new(public_assets_dir)),
         )
+        .fallback(|| async { (StatusCode::NOT_FOUND, Html(app::not_found().await)) })
         .layer(CookieManagerLayer::new())
         .with_state(state);
 
