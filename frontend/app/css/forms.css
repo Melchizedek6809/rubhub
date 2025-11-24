@@ -1,0 +1,11 @@
+.btn,
+button {
+    padding: var(--space-s) var(--space-m);
+    background: var(--primary-color);
+    color: var(--white);
+    border: solid 1px var(--primary-color-bright);
+    border-bottom-color: var(--primary-color-dark);
+    border-right-color: var(--primary-color-dark);
+    border-radius: var(--space-s);
+    cursor: pointer;
+}

@@ -1,0 +1,61 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Header sticks to the top naturally */
+header {
+    display: flex;
+    justify-content: space-between;
+    /* left on one side, right on the other */
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #ddd;
+}
+
+/* The growy middle */
+main {
+    flex: 1;
+    padding: 1rem;
+}
+
+main>section {
+    margin: 0 auto 2rem;
+    width: 100%;
+    max-width: var(--max-content-width);
+}
+
+/* Footer stays at bottom because body is a column flexbox */
+footer {
+    padding: 0.75rem;
+    border-top: 1px solid #ddd;
+}
+
+/* Centered footer nav */
+.footer-nav {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.header-left,
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.logo {
+    font-size: 1.5rem;
+    text-decoration: none;
+    line-height: 1em;
+    color: var(--secondary-color);
+}
