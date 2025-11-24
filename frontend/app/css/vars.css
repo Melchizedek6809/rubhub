@@ -6,9 +6,10 @@
     --space-l: 1rem;
     --space-xl: 2rem;
 
-
+    --background-color-bright: #FFF;
     --background-color: #EAF6FF;
     --text-color: #232528;
+
     --white: #EAF6FF;
     --black: #232528;
 
@@ -37,5 +38,6 @@
     :root {
         --text-color: #EAF6FF;
         --background-color: #232528;
+        --background-color-bright: #121416;
     }
 }

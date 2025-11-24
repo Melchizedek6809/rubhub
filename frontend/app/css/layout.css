@@ -17,40 +17,40 @@ header {
     justify-content: space-between;
     /* left on one side, right on the other */
     align-items: center;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid #ddd;
+    padding: var(--space-m) var(--space-xl);
+    background: var(--background-color-bright);
 }
 
 /* The growy middle */
 main {
     flex: 1;
-    padding: 1rem;
+    padding: var(--space-l);
 }
 
 main>section {
-    margin: 0 auto 2rem;
+    margin: 0 auto var(--space-xl);
     width: 100%;
     max-width: var(--max-content-width);
 }
 
 /* Footer stays at bottom because body is a column flexbox */
 footer {
-    padding: 0.75rem;
-    border-top: 1px solid #ddd;
+    padding: var(--space-m);
+    background: var(--background-color-bright);
 }
 
 /* Centered footer nav */
 .footer-nav {
     display: flex;
     justify-content: center;
-    gap: 1rem;
+    gap: var(--space-l);
 }
 
 .header-left,
 .header-right {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: var(--space-l);
 }
 
 .logo {
