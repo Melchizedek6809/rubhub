@@ -6,16 +6,16 @@ import { SQL } from "bun";
 
 const MIGRATIONS_DIR = "./migrations";
 
-// Hardcode connection string or read from env
-const pg = new SQL("postgresql://postgres:postgres@localhost:5432/rubhub");
+const dbUrl = process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/rubhub";
+const pg = new SQL(dbUrl);
 
 async function ensureMigrationsTable() {
 	await pg`
-    CREATE TABLE IF NOT EXISTS migrations (
-      name TEXT PRIMARY KEY,
-      applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
-    );
-  `;
+	CREATE TABLE IF NOT EXISTS migrations (
+		name TEXT PRIMARY KEY,
+		applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+	);
+	`;
 }
 
 async function getAppliedMigrations(): Promise<Set<string>> {
@@ -29,17 +29,16 @@ async function getAppliedMigrations(): Promise<Set<string>> {
 
 async function applyMigration(name: string, sqlFilePath: string) {
 	console.log(`→ Applying ${name} ...`);
-	pg.begin(async (tx) => {
-		await tx.file(sqlFilePath);
-		await tx`INSERT INTO migrations (name) VALUES (${name})`;
-	})
-		.catch((err) => {
-			console.error(`✗ Failed ${name}`, err);
-			process.exit(1);
-		})
-		.then(() => {
-			console.log(`✓ Done ${name}`);
+	try {
+		await pg.begin(async (tx) => {
+			await tx.file(sqlFilePath);
+			await tx`INSERT INTO migrations (name) VALUES (${name})`;
 		});
+		console.log(`✓ Done ${name}`);
+	} catch (err) {
+		console.error(`✗ Failed ${name}`, err);
+		process.exit(1);
+	}
 }
 
 async function main() {
