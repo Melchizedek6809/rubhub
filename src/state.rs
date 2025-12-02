@@ -19,7 +19,8 @@ pub struct GlobalState {
 
 impl GlobalState {
     pub async fn new() -> anyhow::Result<Self> {
-        let db_url = std::env::var("DATABASE_URL")?;
+        let db_url = std::env::var("DATABASE_URL")
+            .unwrap_or_else(|_| "postgresql://postgres:postgres@localhost:5432/rubhub".to_owned());
 
         let git_root = std::env::var("GIT_ROOT").unwrap_or_else(|_| "./data/git".to_owned());
         let git_root = PathBuf::from(git_root);

@@ -8,6 +8,7 @@ CREATE TABLE users (
     user_type user_type NOT NULL,
     email varchar(255),
     name varchar(128),
+    password_hash TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
     meta jsonb NOT NULL DEFAULT '{}'::jsonb
 );

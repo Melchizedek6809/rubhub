@@ -7,7 +7,7 @@ import { SQL } from "bun";
 const MIGRATIONS_DIR = "./migrations";
 
 // Hardcode connection string or read from env
-const pg = new SQL("postgresql://postgres:postgres@localhost:5432/jam2nite");
+const pg = new SQL("postgresql://postgres:postgres@localhost:5432/rubhub");
 
 async function ensureMigrationsTable() {
 	await pg`

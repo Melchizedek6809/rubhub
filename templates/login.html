@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Login</title>
+</head>
+<body>
+	<section>
+		<h1>Login or register</h1>
+		<p>Use a simple username and password to sign in.</p>
+		{% match message %}
+			{% when Some with (msg) %}
+				<div class="message" role="alert">{{ msg }}</div>
+			{% when None %}
+		{% endmatch %}
+		<div class="auth-grid">
+			<div class="auth-card">
+				<h2>Login</h2>
+				<form method="post" action="/login">
+					<input type="hidden" name="action" value="login">
+					<label for="login-username">Username</label>
+					<input id="login-username" name="username" type="text" autocomplete="username" required>
+
+					<label for="login-password">Password</label>
+					<input id="login-password" name="password" type="password" autocomplete="current-password" required>
+
+					<button type="submit">Sign in</button>
+				</form>
+			</div>
+			<div class="auth-card">
+				<h2>Register</h2>
+				<form method="post" action="/login">
+					<input type="hidden" name="action" value="register">
+					<label for="register-username">Username</label>
+					<input id="register-username" name="username" type="text" autocomplete="username" required>
+
+					<label for="register-password">Password</label>
+					<input id="register-password" name="password" type="password" autocomplete="new-password" required>
+
+					<button type="submit">Create account</button>
+				</form>
+			</div>
+		</div>
+	</section>
+</body>
+</html>

@@ -6,13 +6,16 @@ use tower_http::services::ServeDir;
 
 mod api;
 mod app;
+mod auth;
 mod entities;
 mod state;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     #[cfg(debug_assertions)]
-    dotenvy::dotenv()?;
+    if dotenvy::dotenv().is_err() {
+        println!("No .env found, using dev defaults");
+    }
 
     let state = state::GlobalState::new().await?;
 
@@ -22,6 +25,8 @@ async fn main() -> anyhow::Result<()> {
     // build our application with a single route
     let app = Router::new()
         .route("/", get(|| async { Html(app::index().await) }))
+        .route("/login", get(auth::login_page).post(auth::handle_login))
+        .route("/logout", get(auth::logout))
         .nest("/api", api::router())
         .nest_service(
             "/public",

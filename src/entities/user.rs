@@ -13,6 +13,7 @@ pub struct Model {
     pub user_type: UserType,
     pub email: Option<String>,
     pub name: Option<String>,
+    pub password_hash: Option<String>,
     pub description: String,
     pub meta: Json,
 }
