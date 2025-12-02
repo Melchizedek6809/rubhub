@@ -9,6 +9,7 @@ mod app;
 mod auth;
 mod entities;
 mod services;
+mod ssh;
 mod state;
 
 #[tokio::main]
@@ -57,7 +58,7 @@ async fn main() -> anyhow::Result<()> {
         )
         .fallback(|| async { (StatusCode::NOT_FOUND, Html(app::not_found().await)) })
         .layer(CookieManagerLayer::new())
-        .with_state(state);
+        .with_state(state.clone());
 
     let socket = tokio::net::TcpSocket::new_v4()?;
 
@@ -75,7 +76,14 @@ async fn main() -> anyhow::Result<()> {
     let listener = socket.listen(1024)?;
 
     println!("rubhub ready on {bind_addr}");
-    axum::serve(listener, app).await?;
+    tokio::select! {
+        http_res = axum::serve(listener, app) => {
+            eprintln!("HTTP server stopped: {:?}", http_res);
+        }
+        ssh_res = ssh::start_ssh_server() => {
+            eprintln!("SSH server stopped: {:?}", ssh_res);
+        }
+    }
 
     Ok(())
 }
