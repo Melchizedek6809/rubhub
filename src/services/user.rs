@@ -275,6 +275,7 @@ async fn replace_ssh_keys(
             id: Set(Uuid::new_v4()),
             user_id: Set(user_id),
             public_key: Set(key.clone()),
+            hostname: Set("".to_owned()),
             created_at: Set(None),
         })
         .collect();

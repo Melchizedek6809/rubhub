@@ -84,8 +84,8 @@
 
             <label style="grid-column: 1 / -1;">
                 SSH public keys (one per line)
-                <textarea name="ssh_keys" spellcheck="false">{%- for key in ssh_keys -%}{{ key }}{%- if !loop.last %}
-{%- endif -%}{%- endfor -%}</textarea>
+                <textarea name="ssh_keys" spellcheck="false">{% for key in ssh_keys %}{{ key }}
+{% endfor %}</textarea>
             </label>
 
             <div class="actions" style="grid-column: 1 / -1;">

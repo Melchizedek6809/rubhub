@@ -5,10 +5,13 @@ use std::sync::Arc;
 use russh::keys::{Certificate, *};
 use russh::server::{Msg, Server as _, Session};
 use russh::*;
+use sea_orm::EntityTrait;
 use tokio::net::TcpListener;
 use tokio::sync::Mutex;
 
-pub async fn start_ssh_server() -> Result<(), std::io::Error> {
+use crate::state::GlobalState;
+
+pub async fn start_ssh_server(state: GlobalState) -> Result<(), std::io::Error> {
     let key = fs::read_to_string("./data/private_key").expect("You need to generate a keypair first");
     let key = russh::keys::PrivateKey::from_openssh(key).expect("Invalid private key");
     let keys: Vec<PrivateKey> = vec![key];
@@ -27,6 +30,7 @@ pub async fn start_ssh_server() -> Result<(), std::io::Error> {
     let config = Arc::new(config);
     let mut sh = Server {
         clients: Arc::new(Mutex::new(HashMap::new())),
+        state,
         id: 0,
     };
 
@@ -42,6 +46,7 @@ pub async fn start_ssh_server() -> Result<(), std::io::Error> {
 #[derive(Clone)]
 struct Server {
     clients: Arc<Mutex<HashMap<usize, (ChannelId, russh::server::Handle)>>>,
+    state: GlobalState,
     id: usize,
 }
 
@@ -58,11 +63,13 @@ impl Server {
 
 impl server::Server for Server {
     type Handler = Self;
+
     fn new_client(&mut self, _: Option<std::net::SocketAddr>) -> Self {
         let s = self.clone();
         self.id += 1;
         s
     }
+
     fn handle_session_error(&mut self, _error: <Self::Handler as russh::server::Handler>::Error) {
         eprintln!("Session error: {_error:#?}");
     }
@@ -85,17 +92,28 @@ impl server::Handler for Server {
 
     async fn auth_publickey(
         &mut self,
-        _: &str,
-        _key: &ssh_key::PublicKey,
+        _user: &str,
+        key: &ssh_key::PublicKey,
     ) -> Result<server::Auth, Self::Error> {
-        Ok(server::Auth::Accept)
+        let openssh = key.to_openssh()?;
+        println!("Auth publickey: {openssh}");
+
+        let row = crate::entities::ssh_key::Entity::find().one(&self.state.db).await;
+        match row {
+            Ok(Some(row)) => {
+                println!("Row: {row:?}");
+                Ok(server::Auth::Accept)
+            },
+            _ => Err(russh::Error::RequestDenied),
+        }
     }
 
     async fn auth_openssh_certificate(
         &mut self,
         _user: &str,
-        _certificate: &Certificate,
+        certificate: &Certificate,
     ) -> Result<server::Auth, Self::Error> {
+        println!("Auth openssh cert: {certificate:?}");
         Ok(server::Auth::Accept)
     }
 
@@ -116,24 +134,14 @@ impl server::Handler for Server {
         Ok(())
     }
 
+    // Disallow IP forwarding
     async fn tcpip_forward(
         &mut self,
-        address: &str,
-        port: &mut u32,
-        session: &mut Session,
+        _address: &str,
+        _port: &mut u32,
+        _session: &mut Session,
     ) -> Result<bool, Self::Error> {
-        let handle = session.handle();
-        let address = address.to_string();
-        let port = *port;
-        tokio::spawn(async move {
-            let channel = handle
-                .channel_open_forwarded_tcpip(address, port, "1.2.3.4", 1234)
-                .await
-                .unwrap();
-            let _ = channel.data(&b"Hello from a forwarded port"[..]).await;
-            let _ = channel.eof().await;
-        });
-        Ok(true)
+        Err(russh::Error::RequestDenied)
     }
 }
 

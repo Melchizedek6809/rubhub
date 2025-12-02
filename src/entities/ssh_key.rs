@@ -7,6 +7,7 @@ pub struct Model {
     pub id: Uuid,
     pub user_id: Uuid,
     pub public_key: String,
+    pub hostname: String,
     pub created_at: Option<DateTimeWithTimeZone>,
 }
 

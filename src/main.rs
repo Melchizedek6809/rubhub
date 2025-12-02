@@ -80,7 +80,7 @@ async fn main() -> anyhow::Result<()> {
         http_res = axum::serve(listener, app) => {
             eprintln!("HTTP server stopped: {:?}", http_res);
         }
-        ssh_res = ssh::start_ssh_server() => {
+        ssh_res = ssh::start_ssh_server(state.clone()) => {
             eprintln!("SSH server stopped: {:?}", ssh_res);
         }
     }
