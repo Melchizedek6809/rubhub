@@ -1,97 +1,97 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Settings</title>
-	<style>
-		section {
-			max-width: 900px;
-			margin: 0 auto;
-			padding: 20px;
-			display: flex;
-			flex-direction: column;
-			gap: 16px;
-		}
+    <title>Settings</title>
+    <style>
+        section {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
 
-		form {
-			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-			gap: 14px 18px;
-		}
+        form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 14px 18px;
+        }
 
-		label {
-			display: flex;
-			flex-direction: column;
-			gap: 6px;
-			font-weight: 600;
-		}
+        label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-weight: 600;
+        }
 
-		input, textarea {
-			padding: 10px;
-			font-size: 16px;
-			border: 1px solid #ddd;
-			border-radius: 6px;
-		}
+        input, textarea {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
 
-		textarea {
-			min-height: 180px;
-			font-family: monospace;
-			white-space: pre;
-		}
+        textarea {
+            min-height: 180px;
+            font-family: monospace;
+            white-space: pre;
+        }
 
-		.actions {
-			display: flex;
-			gap: 10px;
-		}
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
 
-		button {
-			padding: 10px 14px;
-			font-size: 16px;
-			background: #111827;
-			color: white;
-			border: none;
-			border-radius: 6px;
-			cursor: pointer;
-		}
+        button {
+            padding: 10px 14px;
+            font-size: 16px;
+            background: #111827;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
 
-		.message {
-			background: #e6f4ea;
-			border: 1px solid #c7ebd5;
-			color: #234f2e;
-			padding: 10px;
-			border-radius: 6px;
-		}
-	</style>
+        .message {
+            background: #e6f4ea;
+            border: 1px solid #c7ebd5;
+            color: #234f2e;
+            padding: 10px;
+            border-radius: 6px;
+        }
+    </style>
 </head>
 <body>
-	<section>
-		<h1>User settings</h1>
-		<p>Update your username, email, and SSH public keys.</p>
-		{% match message %}
-			{% when Some with (msg) %}
-				<div class="message" role="status">{{ msg }}</div>
-			{% when None %}
-		{% endmatch %}
-		<form method="post" action="/settings">
-			<label>
-				Username
-				<input name="username" type="text" value="{{ username }}" required>
-			</label>
+    <section>
+        <h1>User settings</h1>
+        <p>Update your username, email, and SSH public keys.</p>
+        {% match message %}
+            {% when Some with (msg) %}
+                <div class="message" role="status">{{ msg }}</div>
+            {% when None %}
+        {% endmatch %}
+        <form method="post" action="/settings">
+            <label>
+                Username
+                <input name="username" type="text" value="{{ username }}" required>
+            </label>
 
-			<label>
-				Email
-				<input name="email" type="email" value="{{ email }}">
-			</label>
+            <label>
+                Email
+                <input name="email" type="email" value="{{ email }}">
+            </label>
 
-			<label style="grid-column: 1 / -1;">
-				SSH public keys (one per line)
-				<textarea name="ssh_keys" spellcheck="false">{%- for key in ssh_keys -%}{{ key }}{%- if !loop.last %}
+            <label style="grid-column: 1 / -1;">
+                SSH public keys (one per line)
+                <textarea name="ssh_keys" spellcheck="false">{%- for key in ssh_keys -%}{{ key }}{%- if !loop.last %}
 {%- endif -%}{%- endfor -%}</textarea>
-			</label>
+            </label>
 
-			<div class="actions" style="grid-column: 1 / -1;">
-				<button type="submit">Save</button>
-			</div>
-		</form>
-	</section>
+            <div class="actions" style="grid-column: 1 / -1;">
+                <button type="submit">Save</button>
+            </div>
+        </form>
+    </section>
 </body>
 </html>

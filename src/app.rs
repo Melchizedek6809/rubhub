@@ -25,6 +25,24 @@ struct SettingsTemplate<'a> {
     message: Option<&'a str>,
 }
 
+#[derive(Template)]
+#[template(path = "projects.html")]
+struct ProjectsTemplate<'a> {
+    projects: &'a [ProjectSummary<'a>],
+}
+
+#[derive(Clone, Debug)]
+pub struct ProjectSummary<'a> {
+    pub name: &'a str,
+    pub slug: &'a str,
+}
+
+#[derive(Template)]
+#[template(path = "project_new.html")]
+struct NewProjectTemplate<'a> {
+    message: Option<&'a str>,
+}
+
 #[cfg(not(debug_assertions))]
 const APP_THEME: &str = include_str!("../dist/app.html");
 
@@ -85,6 +103,22 @@ pub async fn settings(
     }
     .render()
     .unwrap();
+
+    let parts = extract_html_parts(&contents);
+
+    theme(parts.0, parts.1).await
+}
+
+pub async fn projects(projects: &[ProjectSummary<'_>]) -> String {
+    let contents = ProjectsTemplate { projects }.render().unwrap();
+
+    let parts = extract_html_parts(&contents);
+
+    theme(parts.0, parts.1).await
+}
+
+pub async fn new_project(message: Option<&str>) -> String {
+    let contents = NewProjectTemplate { message }.render().unwrap();
 
     let parts = extract_html_parts(&contents);
 

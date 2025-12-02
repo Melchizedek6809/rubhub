@@ -8,6 +8,7 @@ mod api;
 mod app;
 mod auth;
 mod entities;
+mod services;
 mod state;
 
 #[tokio::main]
@@ -30,6 +31,11 @@ async fn main() -> anyhow::Result<()> {
         .route(
             "/settings",
             get(auth::settings_page).post(auth::handle_settings),
+        )
+        .route("/projects", get(auth::projects_page))
+        .route(
+            "/projects/new",
+            get(auth::new_project_page).post(auth::handle_new_project),
         )
         .nest("/api", api::router())
         .nest_service(

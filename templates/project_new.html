@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>New project</title>
+    <style>
+        section {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-weight: 600;
+        }
+
+        input {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        button {
+            padding: 10px 12px;
+            font-size: 16px;
+            background: #111827;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .message {
+            background: #e6f4ea;
+            border: 1px solid #c7ebd5;
+            color: #234f2e;
+            padding: 10px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <section>
+        <h1>Create a new project</h1>
+        <p>Give it a name and we'll generate a slug.</p>
+        {% if let Some(msg) = message %}
+            <div class="message" role="status">{{ msg }}</div>
+        {% endif %}
+        <form method="post" action="/projects/new">
+            <label>
+                Project name
+                <input name="name" type="text" required>
+            </label>
+            <button type="submit">Create project</button>
+        </form>
+    </section>
+</body>
+</html>
