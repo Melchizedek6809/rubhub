@@ -69,3 +69,28 @@ pub async fn handle_new_project(
 ) -> Result<Response, Redirect> {
     project::handle_new_project(&state, cookies, form).await
 }
+
+pub async fn project_page(
+    State(state): State<GlobalState>,
+    cookies: Cookies,
+    axum::extract::Path(slug): axum::extract::Path<String>,
+) -> Result<Html<String>, Redirect> {
+    project::project_page(&state, cookies, slug).await
+}
+
+pub async fn project_settings_page(
+    State(state): State<GlobalState>,
+    cookies: Cookies,
+    axum::extract::Path(slug): axum::extract::Path<String>,
+) -> Result<Html<String>, Redirect> {
+    project::project_settings_page(&state, cookies, slug).await
+}
+
+pub async fn handle_project_settings(
+    State(state): State<GlobalState>,
+    cookies: Cookies,
+    axum::extract::Path(slug): axum::extract::Path<String>,
+    Form(form): Form<project::ProjectSettingsForm>,
+) -> Result<Response, Redirect> {
+    project::handle_project_settings(&state, cookies, slug, form).await
+}

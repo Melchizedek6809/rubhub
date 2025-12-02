@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Project</title>
+    <style>
+        section {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 14px;
+        }
+    </style>
+</head>
+<body>
+    <section>
+        <h1>{{ name }}</h1>
+        <div class="card">
+            <p>Slug: {{ slug }}</p>
+        </div>
+        <p><a href="/projects/{{ slug }}/settings">Project settings</a></p>
+    </section>
+</body>
+</html>

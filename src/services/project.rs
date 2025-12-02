@@ -87,6 +87,108 @@ pub async fn handle_new_project(
     }
 }
 
+pub async fn project_page(
+    state: &GlobalState,
+    cookies: tower_cookies::Cookies,
+    slug: String,
+) -> Result<Html<String>, Redirect> {
+    let current_user = match session::current_user(state, &cookies).await {
+        Ok(user) => user,
+        Err(_) => return Err(Redirect::to("/login")),
+    };
+
+    let project = project::Entity::find()
+        .filter(project::Column::Owner.eq(current_user.id))
+        .filter(project::Column::Slug.eq(slug.clone()))
+        .one(&state.db)
+        .await
+        .ok()
+        .flatten();
+
+    let Some(project) = project else {
+        return Err(Redirect::to("/projects"));
+    };
+
+    Ok(Html(app::project(&project.name, &project.slug).await))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ProjectSettingsForm {
+    pub name: String,
+}
+
+pub async fn project_settings_page(
+    state: &GlobalState,
+    cookies: tower_cookies::Cookies,
+    slug: String,
+) -> Result<Html<String>, Redirect> {
+    let current_user = match session::current_user(state, &cookies).await {
+        Ok(user) => user,
+        Err(_) => return Err(Redirect::to("/login")),
+    };
+
+    let project = project::Entity::find()
+        .filter(project::Column::Owner.eq(current_user.id))
+        .filter(project::Column::Slug.eq(slug.clone()))
+        .one(&state.db)
+        .await
+        .ok()
+        .flatten();
+
+    let Some(project) = project else {
+        return Err(Redirect::to("/projects"));
+    };
+
+    Ok(Html(
+        app::project_settings(&project.name, &project.slug, None).await,
+    ))
+}
+
+pub async fn handle_project_settings(
+    state: &GlobalState,
+    cookies: tower_cookies::Cookies,
+    slug: String,
+    form: ProjectSettingsForm,
+) -> Result<Response, Redirect> {
+    let current_user = match session::current_user(state, &cookies).await {
+        Ok(user) => user,
+        Err(_) => return Err(Redirect::to("/login")),
+    };
+
+    let mut project = match project::Entity::find()
+        .filter(project::Column::Owner.eq(current_user.id))
+        .filter(project::Column::Slug.eq(slug.clone()))
+        .one(&state.db)
+        .await
+        .ok()
+        .flatten()
+    {
+        Some(p) => p,
+        None => return Err(Redirect::to("/projects")),
+    };
+
+    let name = form.name.trim();
+    if name.is_empty() {
+        return Ok(Html(
+            app::project_settings(name, &project.slug, Some("Name is required.")).await,
+        )
+        .into_response());
+    }
+
+    project.name = name.to_owned();
+    let mut active: project::ActiveModel = project.into();
+    active.name = Set(name.to_owned());
+
+    if active.update(&state.db).await.is_err() {
+        return Ok(Html(
+            app::project_settings(name, &slug, Some("Could not update project.")).await,
+        )
+        .into_response());
+    }
+
+    Ok(Redirect::to(&format!("/projects/{}/settings", slug)).into_response())
+}
+
 async fn generate_unique_slug(state: &GlobalState, name: &str, owner: Uuid) -> String {
     let base = slugify(name);
     let mut slug = base.clone();

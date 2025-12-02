@@ -37,6 +37,11 @@ async fn main() -> anyhow::Result<()> {
             "/projects/new",
             get(auth::new_project_page).post(auth::handle_new_project),
         )
+        .route("/projects/{slug}", get(auth::project_page))
+        .route(
+            "/projects/{slug}/settings",
+            get(auth::project_settings_page).post(auth::handle_project_settings),
+        )
         .nest("/api", api::router())
         .nest_service(
             "/public",

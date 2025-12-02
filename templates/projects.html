@@ -50,16 +50,16 @@
         </div>
         {% if projects.len() == 0 %}
             <p>You have no projects yet.</p>
-        {% else %}
-            <div class="projects">
-                {% for project in projects %}
-                    <div class="card">
-                        <h3>{{ project.name }}</h3>
-                        <p>Slug: {{ project.slug }}</p>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    </section>
+		{% else %}
+			<div class="projects">
+				{% for project in projects %}
+					<div class="card">
+						<h3><a href="/projects/{{ project.slug }}">{{ project.name }}</a></h3>
+						<p>Slug: {{ project.slug }}</p>
+					</div>
+				{% endfor %}
+			</div>
+		{% endif %}
+	</section>
 </body>
 </html>
