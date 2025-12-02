@@ -16,6 +16,15 @@ struct LoginTemplate<'a> {
     message: Option<&'a str>,
 }
 
+#[derive(Template)]
+#[template(path = "settings.html")]
+struct SettingsTemplate<'a> {
+    username: &'a str,
+    email: &'a str,
+    ssh_keys: &'a [String],
+    message: Option<&'a str>,
+}
+
 #[cfg(not(debug_assertions))]
 const APP_THEME: &str = include_str!("../dist/app.html");
 
@@ -56,6 +65,26 @@ pub async fn not_found() -> String {
 
 pub async fn login(message: Option<&str>) -> String {
     let contents = LoginTemplate { message }.render().unwrap();
+
+    let parts = extract_html_parts(&contents);
+
+    theme(parts.0, parts.1).await
+}
+
+pub async fn settings(
+    username: &str,
+    email: &str,
+    ssh_keys: &[String],
+    message: Option<&str>,
+) -> String {
+    let contents = SettingsTemplate {
+        username,
+        email,
+        ssh_keys,
+        message,
+    }
+    .render()
+    .unwrap();
 
     let parts = extract_html_parts(&contents);
 

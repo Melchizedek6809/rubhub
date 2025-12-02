@@ -39,6 +39,7 @@ export class UserBadge extends LitElement {
     if (this.user) {
       return html`
         <span>${this.user.username}</span>
+        <hub-button href="/settings">Settings</hub-button>
         <hub-button @click=${this.handleLogout}>Logout</hub-button>
       `;
     }

@@ -15,6 +15,10 @@ button {
     border-right-color: var(--primary-color-dark);
     border-radius: var(--space-s);
     cursor: pointer;
+    display: inline-block;
+    line-height: 1.3em;
+    font-size: 1rem;
+    text-decoration: none;
 }
 `;
 

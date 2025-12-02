@@ -27,6 +27,10 @@ async fn main() -> anyhow::Result<()> {
         .route("/", get(|| async { Html(app::index().await) }))
         .route("/login", get(auth::login_page).post(auth::handle_login))
         .route("/logout", get(auth::logout))
+        .route(
+            "/settings",
+            get(auth::settings_page).post(auth::handle_settings),
+        )
         .nest("/api", api::router())
         .nest_service(
             "/public",
