@@ -1696,33 +1696,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4a5f13b858c8d314ee3e8f639011f7ccefe71f97f96e50151fb991f267928e2c"
 
 [[package]]
-name = "jam2nite"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum",
- "base64",
- "dotenvy",
- "futures",
- "image",
- "reqwest",
- "sea-orm",
- "serde",
- "serde_json",
- "serde_yaml",
- "sha2",
- "time",
- "tokio",
- "tower",
- "tower-cookies",
- "tower-http",
- "url",
- "urlencoding",
- "uuid",
- "webp",
-]
-
-[[package]]
 name = "jobserver"
 version = "0.1.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2797,6 +2770,33 @@ dependencies = [
  "spki",
  "subtle",
  "zeroize",
+]
+
+[[package]]
+name = "rubhub"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "base64",
+ "dotenvy",
+ "futures",
+ "image",
+ "reqwest",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2",
+ "time",
+ "tokio",
+ "tower",
+ "tower-cookies",
+ "tower-http",
+ "url",
+ "urlencoding",
+ "uuid",
+ "webp",
 ]
 
 [[package]]

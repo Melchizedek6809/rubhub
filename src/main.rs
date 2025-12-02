@@ -54,7 +54,7 @@ async fn main() -> anyhow::Result<()> {
 
     let listener = socket.listen(1024)?;
 
-    println!("jam2nite listening on {bind_addr}");
+    println!("rubhub ready on {bind_addr}");
     axum::serve(listener, app).await?;
 
     Ok(())
