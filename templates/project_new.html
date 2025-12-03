@@ -11,6 +11,7 @@
             <div class="message" role="status">{{ msg }}</div>
         {% endif %}
         <form method="post" action="/projects/new" class="stack card simple-form">
+            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
             <label>
                 Project name
                 <input name="name" type="text" required>

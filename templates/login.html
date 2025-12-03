@@ -17,6 +17,7 @@
                 <h2>Login</h2>
                 <form method="post" action="/login" class="stack">
                     <input type="hidden" name="action" value="login">
+                    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
                     <label for="login-username">Username / E-Mail</label>
                     <input id="login-username" name="username" type="text" autocomplete="username" required>
                     <input type="hidden" name="email" value="asd">
@@ -31,6 +32,7 @@
                 <h2>Register</h2>
                 <form method="post" action="/login" class="stack">
                     <input type="hidden" name="action" value="register">
+                    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
                     <label for="register-username">Username</label>
                     <input id="register-username" name="username" type="text" autocomplete="username" required>
 

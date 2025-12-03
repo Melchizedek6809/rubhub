@@ -18,6 +18,7 @@ struct NotFoundTemplate;
 #[template(path = "login.html")]
 struct LoginTemplate<'a> {
     message: Option<&'a str>,
+    csrf_token: &'a str,
 }
 
 #[derive(Template)]
@@ -27,6 +28,7 @@ struct SettingsTemplate<'a> {
     email: &'a str,
     ssh_keys: &'a [String],
     message: Option<&'a str>,
+    csrf_token: &'a str,
 }
 
 #[derive(Template)]
@@ -48,6 +50,7 @@ pub struct ProjectSummary<'a> {
 #[template(path = "project_new.html")]
 struct NewProjectTemplate<'a> {
     message: Option<&'a str>,
+    csrf_token: &'a str,
 }
 
 #[derive(Template)]
@@ -68,6 +71,7 @@ struct ProjectSettingsTemplate<'a> {
     username: &'a str,
     public_access: &'a str,
     message: Option<&'a str>,
+    csrf_token: &'a str,
 }
 
 #[cfg(not(debug_assertions))]
@@ -108,8 +112,13 @@ pub async fn not_found() -> String {
     theme(parts.0, parts.1).await
 }
 
-pub async fn login(message: Option<&str>) -> String {
-    let contents = LoginTemplate { message }.render().unwrap();
+pub async fn login(message: Option<&str>, csrf_token: &str) -> String {
+    let contents = LoginTemplate {
+        message,
+        csrf_token,
+    }
+    .render()
+    .unwrap();
 
     let parts = extract_html_parts(&contents);
 
@@ -121,12 +130,14 @@ pub async fn settings(
     email: &str,
     ssh_keys: &[String],
     message: Option<&str>,
+    csrf_token: &str,
 ) -> String {
     let contents = SettingsTemplate {
         username,
         email,
         ssh_keys,
         message,
+        csrf_token,
     }
     .render()
     .unwrap();
@@ -150,8 +161,13 @@ pub async fn projects(username: &str, projects: &[ProjectSummary<'_>], is_owner:
     theme(parts.0, parts.1).await
 }
 
-pub async fn new_project(message: Option<&str>) -> String {
-    let contents = NewProjectTemplate { message }.render().unwrap();
+pub async fn new_project(message: Option<&str>, csrf_token: &str) -> String {
+    let contents = NewProjectTemplate {
+        message,
+        csrf_token,
+    }
+    .render()
+    .unwrap();
 
     let parts = extract_html_parts(&contents);
 
@@ -186,6 +202,7 @@ pub async fn project_settings(
     username: &str,
     public_access: AccessType,
     message: Option<&str>,
+    csrf_token: &str,
 ) -> String {
     let contents = ProjectSettingsTemplate {
         name,
@@ -193,6 +210,7 @@ pub async fn project_settings(
         username,
         public_access: public_access.as_str(),
         message,
+        csrf_token,
     }
     .render()
     .unwrap();

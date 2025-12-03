@@ -2,7 +2,10 @@ use argon2::{
     Algorithm, Argon2, Params, Version,
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
-use axum::response::{Html, IntoResponse, Redirect, Response};
+use axum::{
+    http::StatusCode,
+    response::{Html, IntoResponse, Redirect, Response},
+};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, DatabaseTransaction, EntityTrait, QueryFilter, Set,
     TransactionTrait,
@@ -13,7 +16,7 @@ use uuid::Uuid;
 use crate::{
     app,
     entities::{UserType, ssh_key, user},
-    services::session as session_service,
+    services::{csrf, session as session_service},
     state::GlobalState,
 };
 
@@ -24,6 +27,8 @@ const USERNAME_BLACKLIST: &[&str] = &[
 
 #[derive(Debug, Deserialize)]
 pub struct LoginForm {
+    #[serde(rename = "_csrf")]
+    pub csrf_token: Option<String>,
     pub action: String,
     pub username: String,
     pub email: String,
@@ -32,13 +37,15 @@ pub struct LoginForm {
 
 #[derive(Debug, Deserialize)]
 pub struct SettingsForm {
+    #[serde(rename = "_csrf")]
+    pub csrf_token: Option<String>,
     pub username: String,
     pub email: Option<String>,
     pub ssh_keys: Option<String>,
 }
 
-pub async fn login_page() -> Html<String> {
-    render_login_page(None).await
+pub async fn login_page(cookies: tower_cookies::Cookies) -> Html<String> {
+    render_login_page(&cookies, None).await
 }
 
 pub async fn handle_login(
@@ -46,14 +53,21 @@ pub async fn handle_login(
     cookies: tower_cookies::Cookies,
     form: LoginForm,
 ) -> Result<Response, (axum::http::StatusCode, Html<String>)> {
+    if let Err(err) = csrf::verify_form_token(&cookies, form.csrf_token.as_deref()) {
+        return Err((
+            StatusCode::FORBIDDEN,
+            render_login_page(&cookies, Some(err.message())).await,
+        ));
+    }
+
     let username = form.username.trim();
     let email = form.email.trim();
     let password = form.password.trim();
 
     if username.is_empty() || password.is_empty() || email.is_empty() {
         return Err((
-            axum::http::StatusCode::BAD_REQUEST,
-            render_login_page(Some("Username and password are required.")).await,
+            StatusCode::BAD_REQUEST,
+            render_login_page(&cookies, Some("Username and password are required.")).await,
         ));
     }
 
@@ -67,8 +81,8 @@ pub async fn handle_login(
             .await
             .map(IntoResponse::into_response),
         _ => Err((
-            axum::http::StatusCode::BAD_REQUEST,
-            render_login_page(Some("Unsupported action.")).await,
+            StatusCode::BAD_REQUEST,
+            render_login_page(&cookies, Some("Unsupported action.")).await,
         )),
     }
 }
@@ -99,9 +113,14 @@ pub async fn settings_page(
         })
         .collect();
 
-    Ok(Html(
-        app::settings(&current_user.name, &current_user.email, &ssh_keys, None).await,
-    ))
+    Ok(render_settings_page(
+        &cookies,
+        &current_user.name,
+        &current_user.email,
+        &ssh_keys,
+        None,
+    )
+    .await)
 }
 
 pub async fn handle_settings(
@@ -113,6 +132,28 @@ pub async fn handle_settings(
         Ok(user) => user,
         Err(_) => return Ok(Redirect::to("/login").into_response()),
     };
+
+    if let Err(err) = csrf::verify_form_token(&cookies, form.csrf_token.as_deref()) {
+        let ssh_keys: Vec<String> = form
+            .ssh_keys
+            .unwrap_or_default()
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty())
+            .map(ToOwned::to_owned)
+            .collect();
+        return Err((
+            StatusCode::FORBIDDEN,
+            render_settings_page(
+                &cookies,
+                current_user.name.as_str(),
+                current_user.email.as_str(),
+                &ssh_keys,
+                Some(err.message()),
+            )
+            .await,
+        ));
+    }
 
     let username = form.username.trim();
     let email = form.email.unwrap_or_default().trim().to_owned();
@@ -127,15 +168,22 @@ pub async fn handle_settings(
 
     if username.is_empty() {
         return Err((
-            axum::http::StatusCode::BAD_REQUEST,
-            Html(app::settings(username, &email, &ssh_keys, Some("Username is required.")).await),
+            StatusCode::BAD_REQUEST,
+            render_settings_page(
+                &cookies,
+                username,
+                &email,
+                &ssh_keys,
+                Some("Username is required."),
+            )
+            .await,
         ));
     }
 
     if let Err(msg) = validate_username(username) {
         return Err((
-            axum::http::StatusCode::BAD_REQUEST,
-            Html(app::settings(username, &email, &ssh_keys, Some(msg)).await),
+            StatusCode::BAD_REQUEST,
+            render_settings_page(&cookies, username, &email, &ssh_keys, Some(msg)).await,
         ));
     }
 
@@ -149,22 +197,21 @@ pub async fn handle_settings(
         .await
     {
         return Err((
-            axum::http::StatusCode::CONFLICT,
-            Html(
-                app::settings(
-                    username,
-                    &email,
-                    &ssh_keys,
-                    Some("That username is already taken."),
-                )
-                .await,
-            ),
+            StatusCode::CONFLICT,
+            render_settings_page(
+                &cookies,
+                username,
+                &email,
+                &ssh_keys,
+                Some("That username is already taken."),
+            )
+            .await,
         ));
     }
 
     let txn = match state.db.begin().await {
         Ok(txn) => txn,
-        Err(err) => return Err(internal_error(err).await),
+        Err(err) => return Err(internal_error(&cookies, err).await),
     };
 
     let mut user_active: user::ActiveModel = current_user.clone().into();
@@ -172,23 +219,28 @@ pub async fn handle_settings(
     user_active.email = Set(email.to_owned());
 
     if let Err(err) = user_active.update(&txn).await {
-        return Err(internal_error(err).await);
+        return Err(internal_error(&cookies, err).await);
     }
 
     if let Err(err) = replace_ssh_keys(&txn, current_user.id, &ssh_keys).await {
-        return Err(internal_error(err).await);
+        return Err(internal_error(&cookies, err).await);
     }
 
     if let Err(err) = txn.commit().await {
-        return Err(internal_error(err).await);
+        return Err(internal_error(&cookies, err).await);
     }
 
     session_service::set_user_cookie(&cookies, current_user.id, username);
 
-    Ok(
-        Html(app::settings(username, &email, &ssh_keys, Some("Settings updated.")).await)
-            .into_response(),
+    Ok(render_settings_page(
+        &cookies,
+        username,
+        &email,
+        &ssh_keys,
+        Some("Settings updated."),
     )
+    .await
+    .into_response())
 }
 
 async fn handle_login_action(
@@ -205,11 +257,11 @@ async fn handle_login_action(
         Ok(Some(u)) => u,
         Ok(None) => {
             return Err((
-                axum::http::StatusCode::UNAUTHORIZED,
-                render_login_page(Some("Invalid username or password.")).await,
+                StatusCode::UNAUTHORIZED,
+                render_login_page(&cookies, Some("Invalid username or password.")).await,
             ));
         }
-        Err(err) => return Err(internal_error(err).await),
+        Err(err) => return Err(internal_error(&cookies, err).await),
     };
 
     let user_id = user.id;
@@ -226,14 +278,14 @@ async fn handle_login_action(
             if let Err(err) =
                 session_service::create_session(state, &cookies, user_id, username).await
             {
-                return Err(internal_error(err).await);
+                return Err(internal_error(&cookies, err).await);
             }
             return Ok(Redirect::to("/"));
         }
         PasswordVerification::Invalid | PasswordVerification::Error => {
             return Err((
-                axum::http::StatusCode::UNAUTHORIZED,
-                render_login_page(Some("Invalid username or password.")).await,
+                StatusCode::UNAUTHORIZED,
+                render_login_page(&cookies, Some("Invalid username or password.")).await,
             ));
         }
     }
@@ -244,7 +296,7 @@ async fn handle_login_action(
     let _ = user_active.update(&state.db).await;
 
     if let Err(err) = session_service::create_session(state, &cookies, user_id, username).await {
-        return Err(internal_error(err).await);
+        return Err(internal_error(&cookies, err).await);
     }
 
     Ok(Redirect::to("/"))
@@ -259,8 +311,8 @@ async fn handle_register_action(
 ) -> Result<Redirect, (axum::http::StatusCode, Html<String>)> {
     if let Err(msg) = validate_username(username) {
         return Err((
-            axum::http::StatusCode::BAD_REQUEST,
-            render_login_page(Some(msg)).await,
+            StatusCode::BAD_REQUEST,
+            render_login_page(&cookies, Some(msg)).await,
         ));
     }
 
@@ -274,19 +326,19 @@ async fn handle_register_action(
         .await
     {
         Ok(result) => result,
-        Err(err) => return Err(internal_error(err).await),
+        Err(err) => return Err(internal_error(&cookies, err).await),
     };
 
     if existing.is_some() {
         return Err((
-            axum::http::StatusCode::CONFLICT,
-            render_login_page(Some("That username is already taken.")).await,
+            StatusCode::CONFLICT,
+            render_login_page(&cookies, Some("That username is already taken.")).await,
         ));
     }
 
     let password_hash = match hash_password(password) {
         Ok(hash) => hash,
-        Err(err) => return Err(internal_error(err).await),
+        Err(err) => return Err(internal_error(&cookies, err).await),
     };
 
     let new_user = user::ActiveModel {
@@ -300,11 +352,11 @@ async fn handle_register_action(
 
     let inserted = match new_user.insert(&state.db).await {
         Ok(user) => user,
-        Err(err) => return Err(internal_error(err).await),
+        Err(err) => return Err(internal_error(&cookies, err).await),
     };
     if let Err(err) = session_service::create_session(state, &cookies, inserted.id, username).await
     {
-        return Err(internal_error(err).await);
+        return Err(internal_error(&cookies, err).await);
     }
 
     Ok(Redirect::to("/"))
@@ -328,8 +380,8 @@ fn validate_username(username: &str) -> Result<(), &'static str> {
 }
 
 fn desired_params() -> Params {
-    // 19 MiB memory, 2 iterations, 1 lane keeps CPU modest while resisting GPU attacks.
-    Params::new(19 * 1024, 2, 1, None).expect("argon2 params are valid")
+    // 4 MiB memory, 6 iterations, 1 lane keeps CPU modest while resisting GPU attacks.
+    Params::new(4 * 1024, 6, 1, None).expect("argon2 params are valid")
 }
 
 fn password_hasher() -> Argon2<'static> {
@@ -387,16 +439,34 @@ fn verify_password_hash(password: &str, stored: &str) -> PasswordVerification {
     }
 }
 
-async fn internal_error<E: std::fmt::Display>(err: E) -> (axum::http::StatusCode, Html<String>) {
+async fn render_settings_page(
+    cookies: &tower_cookies::Cookies,
+    username: &str,
+    email: &str,
+    ssh_keys: &[String],
+    message: Option<&str>,
+) -> Html<String> {
+    let csrf_token = csrf::ensure_csrf_cookie(cookies);
+    Html(app::settings(username, email, ssh_keys, message, &csrf_token).await)
+}
+
+async fn internal_error<E: std::fmt::Display>(
+    cookies: &tower_cookies::Cookies,
+    err: E,
+) -> (axum::http::StatusCode, Html<String>) {
     eprintln!("auth error: {err}");
     (
         axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-        render_login_page(Some("Something went wrong. Please try again.")).await,
+        render_login_page(cookies, Some("Something went wrong. Please try again.")).await,
     )
 }
 
-async fn render_login_page(message: Option<&str>) -> Html<String> {
-    Html(app::login(message).await)
+async fn render_login_page(
+    cookies: &tower_cookies::Cookies,
+    message: Option<&str>,
+) -> Html<String> {
+    let csrf_token = csrf::ensure_csrf_cookie(cookies);
+    Html(app::login(message, &csrf_token).await)
 }
 
 async fn replace_ssh_keys(

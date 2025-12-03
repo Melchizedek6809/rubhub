@@ -14,8 +14,8 @@ use crate::{
     state::GlobalState,
 };
 
-pub async fn login_page() -> Html<String> {
-    user::login_page().await
+pub async fn login_page(cookies: Cookies) -> Html<String> {
+    user::login_page(cookies).await
 }
 
 pub async fn handle_login(

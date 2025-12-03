@@ -11,12 +11,14 @@ use uuid::Uuid;
 use crate::{
     app::{self, ProjectSummary},
     entities::{AccessType, project, user},
-    services::session,
+    services::{csrf, session},
     state::GlobalState,
 };
 
 #[derive(Debug, Deserialize)]
 pub struct NewProjectForm {
+    #[serde(rename = "_csrf")]
+    pub csrf_token: Option<String>,
     pub name: String,
 }
 
@@ -63,7 +65,7 @@ pub async fn new_project_page(
     cookies: tower_cookies::Cookies,
 ) -> Result<Html<String>, Redirect> {
     match session::current_user(state, &cookies).await {
-        Ok(_) => Ok(Html(app::new_project(None).await)),
+        Ok(_) => Ok(render_new_project_page(&cookies, None).await),
         Err(_) => Err(Redirect::to("/login")),
     }
 }
@@ -105,13 +107,25 @@ pub async fn handle_new_project(
         Err(_) => return Err(Redirect::to("/login")),
     };
 
+    if let Err(err) = csrf::verify_form_token(&cookies, form.csrf_token.as_deref()) {
+        return Ok((
+            StatusCode::FORBIDDEN,
+            render_new_project_page(&cookies, Some(err.message())).await,
+        )
+            .into_response());
+    }
+
     let name = form.name.trim();
     if name.is_empty() {
-        return Ok(Html(app::new_project(Some("Name is required.")).await).into_response());
+        return Ok(render_new_project_page(&cookies, Some("Name is required."))
+            .await
+            .into_response());
     }
 
     if let Err(msg) = validate_project_name(name) {
-        return Ok(Html(app::new_project(Some(msg)).await).into_response());
+        return Ok(render_new_project_page(&cookies, Some(msg))
+            .await
+            .into_response());
     }
 
     let slug = generate_unique_slug(state, name, current_user.id).await;
@@ -133,14 +147,20 @@ pub async fn handle_new_project(
         Ok(_) => {
             let res = create_bare_repo(state, username.clone(), slug.clone()).await;
             if res.is_err() {
-                Ok(Html(app::new_project(Some("Could not create project.")).await).into_response())
+                Ok(
+                    render_new_project_page(&cookies, Some("Could not create project."))
+                        .await
+                        .into_response(),
+                )
             } else {
                 Ok(Redirect::to(&format!("/{username}/projects")).into_response())
             }
         }
-        Err(_) => {
-            Ok(Html(app::new_project(Some("Could not create project.")).await).into_response())
-        }
+        Err(_) => Ok(
+            render_new_project_page(&cookies, Some("Could not create project."))
+                .await
+                .into_response(),
+        ),
     }
 }
 
@@ -191,6 +211,8 @@ pub async fn project_page(
 
 #[derive(Debug, Deserialize)]
 pub struct ProjectSettingsForm {
+    #[serde(rename = "_csrf")]
+    pub csrf_token: Option<String>,
     pub name: String,
     pub public_access: String,
 }
@@ -232,16 +254,15 @@ pub async fn project_settings_page(
         return Err(Redirect::to(&format!("/{username}/{slug}")));
     }
 
-    Ok(Html(
-        app::project_settings(
-            &project.name,
-            &project.slug,
-            &current_user.name,
-            project.public_access,
-            None,
-        )
-        .await,
-    ))
+    Ok(render_project_settings_page(
+        &cookies,
+        &project.name,
+        &project.slug,
+        &current_user.name,
+        project.public_access,
+        None,
+    )
+    .await)
 }
 
 pub async fn handle_project_settings(
@@ -282,47 +303,57 @@ pub async fn handle_project_settings(
         return Err(Redirect::to(&format!("/{username}/{slug}")));
     }
 
+    if let Err(err) = csrf::verify_form_token(&cookies, form.csrf_token.as_deref()) {
+        let page = render_project_settings_page(
+            &cookies,
+            &project.name,
+            &project.slug,
+            &current_user.name,
+            project.public_access,
+            Some(err.message()),
+        )
+        .await;
+        return Ok((StatusCode::FORBIDDEN, page).into_response());
+    }
+
     let name = form.name.trim();
     let public_access = match parse_public_access(&form.public_access) {
         Ok(level) => level,
         Err(msg) => {
-            return Ok(Html(
-                app::project_settings(
-                    name,
-                    &project.slug,
-                    &current_user.name,
-                    project.public_access,
-                    Some(msg),
-                )
-                .await,
-            )
-            .into_response());
-        }
-    };
-    if let Err(msg) = validate_project_name(name) {
-        return Ok(Html(
-            app::project_settings(
+            return Ok(render_project_settings_page(
+                &cookies,
                 name,
                 &project.slug,
                 &current_user.name,
                 project.public_access,
                 Some(msg),
             )
-            .await,
+            .await
+            .into_response());
+        }
+    };
+    if let Err(msg) = validate_project_name(name) {
+        return Ok(render_project_settings_page(
+            &cookies,
+            name,
+            &project.slug,
+            &current_user.name,
+            project.public_access,
+            Some(msg),
         )
+        .await
         .into_response());
     }
     if name.is_empty() {
-        return Ok(Html(
-            app::project_settings(
-                name,
-                &project.slug,
-                &current_user.name,
-                project.public_access,
-                Some("Name is required."),
-            )
-            .await,
+        return Ok(render_project_settings_page(
+            &cookies,
+            name,
+            &project.slug,
+            &current_user.name,
+            project.public_access,
+            Some("Name is required."),
         )
+        .await
         .into_response());
     }
 
@@ -333,20 +364,39 @@ pub async fn handle_project_settings(
     active.public_access = Set(public_access);
 
     if active.update(&state.db).await.is_err() {
-        return Ok(Html(
-            app::project_settings(
-                name,
-                &slug,
-                &current_user.name,
-                public_access,
-                Some("Could not update project."),
-            )
-            .await,
+        return Ok(render_project_settings_page(
+            &cookies,
+            name,
+            &slug,
+            &current_user.name,
+            public_access,
+            Some("Could not update project."),
         )
+        .await
         .into_response());
     }
 
     Ok(Redirect::to(&format!("/{username}/{slug}/settings")).into_response())
+}
+
+async fn render_new_project_page(
+    cookies: &tower_cookies::Cookies,
+    message: Option<&str>,
+) -> Html<String> {
+    let csrf_token = csrf::ensure_csrf_cookie(cookies);
+    Html(app::new_project(message, &csrf_token).await)
+}
+
+async fn render_project_settings_page(
+    cookies: &tower_cookies::Cookies,
+    name: &str,
+    slug: &str,
+    username: &str,
+    public_access: AccessType,
+    message: Option<&str>,
+) -> Html<String> {
+    let csrf_token = csrf::ensure_csrf_cookie(cookies);
+    Html(app::project_settings(name, slug, username, public_access, message, &csrf_token).await)
 }
 
 async fn not_found() -> (StatusCode, Html<String>) {
