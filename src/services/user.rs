@@ -14,7 +14,7 @@ use crate::{
     state::GlobalState,
 };
 
-const USERNAME_BLACKLIST: &[&str] = &["projects"];
+const USERNAME_BLACKLIST: &[&str] = &["projects", "api", "login", "logout", "settings", "public", "dist", "assets", "news", "blog", "about", "tos", "privacy", "forum", "chat"];
 
 #[derive(Debug, Deserialize)]
 pub struct LoginForm {

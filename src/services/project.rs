@@ -350,10 +350,8 @@ pub async fn project_access_level(
 }
 
 fn project_access_level_for(project: &project::Model, user_id: Option<Uuid>) -> AccessType {
-    if let Some(uid) = user_id {
-        if uid == project.owner {
-            return AccessType::Admin;
-        }
+    if let Some(uid) = user_id && uid == project.owner {
+        return AccessType::Admin;
     }
 
     project.public_access

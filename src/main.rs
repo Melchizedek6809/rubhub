@@ -1,5 +1,6 @@
 use axum::{Router, response::Html, routing::get};
 use reqwest::StatusCode;
+use tokio::runtime::Builder;
 use tower::ServiceBuilder;
 use tower_cookies::CookieManagerLayer;
 use tower_http::services::ServeDir;
@@ -12,8 +13,7 @@ mod services;
 mod ssh;
 mod state;
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn start_server() -> anyhow::Result<()> {
     #[cfg(debug_assertions)]
     if dotenvy::dotenv().is_err() {
         println!("No .env found, using dev defaults");
@@ -86,4 +86,17 @@ async fn main() -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+fn main() {
+    let runtime = Builder::new_multi_thread()
+        .worker_threads(2)     // <-- your number here
+        .max_blocking_threads(1024)
+        .enable_all()
+        .build()
+        .unwrap();
+
+    runtime.block_on(async {
+        start_server().await.expect("Server should be running");
+    });
 }
