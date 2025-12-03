@@ -1,6 +1,7 @@
 use axum::response::{Html, IntoResponse, Redirect, Response};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, DatabaseTransaction, EntityTrait, QueryFilter, Set, TransactionTrait
+    ActiveModelTrait, ColumnTrait, Condition, DatabaseTransaction, EntityTrait, QueryFilter, Set,
+    TransactionTrait,
 };
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -12,6 +13,8 @@ use crate::{
     services::session as session_service,
     state::GlobalState,
 };
+
+const USERNAME_BLACKLIST: &[&str] = &["projects"];
 
 #[derive(Debug, Deserialize)]
 pub struct LoginForm {
@@ -83,13 +86,7 @@ pub async fn settings_page(
     let ssh_keys: Vec<String> = keys.into_iter().map(|k| k.public_key).collect();
 
     Ok(Html(
-        app::settings(
-            &current_user.name,
-            &current_user.email,
-            &ssh_keys,
-            None,
-        )
-        .await,
+        app::settings(&current_user.name, &current_user.email, &ssh_keys, None).await,
     ))
 }
 
@@ -118,6 +115,36 @@ pub async fn handle_settings(
         return Err((
             axum::http::StatusCode::BAD_REQUEST,
             Html(app::settings(username, &email, &ssh_keys, Some("Username is required.")).await),
+        ));
+    }
+
+    if let Err(msg) = validate_username(username) {
+        return Err((
+            axum::http::StatusCode::BAD_REQUEST,
+            Html(app::settings(username, &email, &ssh_keys, Some(msg)).await),
+        ));
+    }
+
+    if let Ok(Some(_)) = user::Entity::find()
+        .filter(
+            Condition::all()
+                .add(user::Column::Name.eq(username))
+                .add(user::Column::Id.ne(current_user.id)),
+        )
+        .one(&state.db)
+        .await
+    {
+        return Err((
+            axum::http::StatusCode::CONFLICT,
+            Html(
+                app::settings(
+                    username,
+                    &email,
+                    &ssh_keys,
+                    Some("That username is already taken."),
+                )
+                .await,
+            ),
         ));
     }
 
@@ -199,10 +226,19 @@ async fn handle_register_action(
     email: &str,
     password_hash: &str,
 ) -> Result<Redirect, (axum::http::StatusCode, Html<String>)> {
+    if let Err(msg) = validate_username(username) {
+        return Err((
+            axum::http::StatusCode::BAD_REQUEST,
+            render_login_page(Some(msg)).await,
+        ));
+    }
+
     let existing = match user::Entity::find()
-        .filter(Condition::any()
-            .add(user::Column::Name.eq(username))
-            .add(user::Column::Email.eq(email)))
+        .filter(
+            Condition::any()
+                .add(user::Column::Name.eq(username))
+                .add(user::Column::Email.eq(email)),
+        )
         .one(&state.db)
         .await
     {
@@ -236,6 +272,23 @@ async fn handle_register_action(
     }
 
     Ok(Redirect::to("/"))
+}
+
+fn validate_username(username: &str) -> Result<(), &'static str> {
+    if username.len() < 3 {
+        return Err("Username must be at least 3 characters.");
+    }
+
+    if !username.chars().all(|ch| ch.is_ascii_alphanumeric()) {
+        return Err("Username can only contain letters and numbers.");
+    }
+
+    let lower = username.to_ascii_lowercase();
+    if USERNAME_BLACKLIST.iter().any(|reserved| lower == *reserved) {
+        return Err("That username is not allowed.");
+    }
+
+    Ok(())
 }
 
 fn hash_password(password: &str) -> String {

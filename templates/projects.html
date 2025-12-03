@@ -2,61 +2,21 @@
 <html>
 <head>
     <title>Your projects</title>
-    <style>
-        section {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .projects {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 12px;
-        }
-
-        .card {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 12px;
-        }
-
-        button, a.button {
-            padding: 10px 12px;
-            font-size: 16px;
-            background: #111827;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            text-decoration: none;
-        }
-    </style>
 </head>
 <body>
     <section>
-        <div class="header">
-            <h1>Your projects</h1>
-            <a class="button" href="/projects/new">New project</a>
+        <div class="page-header">
+            <h1>{{ username }}'s projects</h1>
+            {% if is_owner %}
+                <a class="btn" href="/projects/new">New project</a>
+            {% endif %}
         </div>
         {% if projects.len() == 0 %}
-            <p>You have no projects yet.</p>
+            <p>No projects published yet.</p>
 		{% else %}
-			<div class="projects">
+			<div class="card-grid">
 				{% for project in projects %}
-					<div class="card">
-						<h3><a href="/projects/{{ project.slug }}">{{ project.name }}</a></h3>
-						<p>Slug: {{ project.slug }}</p>
-					</div>
+					{% include "project_card.html" %}
 				{% endfor %}
 			</div>
 		{% endif %}

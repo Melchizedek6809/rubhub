@@ -5,10 +5,10 @@ use std::sync::Arc;
 use russh::keys::{Certificate, *};
 use russh::server::{Msg, Server as _, Session};
 use russh::*;
-use sea_orm::{ColumnTrait,EntityTrait,QueryFilter};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 use tokio::process::Command;
-use tokio::io::{AsyncReadExt,AsyncWriteExt};
 use uuid::Uuid;
 
 use crate::state::GlobalState;
@@ -16,7 +16,8 @@ use crate::state::GlobalState;
 use crate::entities::ssh_key as db_ssh_key;
 
 pub async fn start_ssh_server(state: GlobalState) -> Result<(), std::io::Error> {
-    let key = fs::read_to_string("./data/private_key").expect("You need to generate a keypair first");
+    let key =
+        fs::read_to_string("./data/private_key").expect("You need to generate a keypair first");
     let key = russh::keys::PrivateKey::from_openssh(key).expect("Invalid private key");
     let keys: Vec<PrivateKey> = vec![key];
 
@@ -36,9 +37,7 @@ pub async fn start_ssh_server(state: GlobalState) -> Result<(), std::io::Error> 
         ..Default::default()
     };
     let config = Arc::new(config);
-    let mut sh = Server {
-        state,
-    };
+    let mut sh = Server { state };
 
     let socket = TcpListener::bind(("127.0.0.1", 2222)).await.unwrap();
     let server = sh.run_on_socket(config, &socket);
@@ -64,19 +63,39 @@ struct Connection {
 }
 
 impl Connection {
-    async fn handle_upload_pack(&mut self, path: String, rx_from_ssh: tokio::sync::mpsc::Receiver<Vec<u8>>,) -> Result<(), russh::Error> {
-        self.handle_with_command("git-upload-pack".to_string(), path, rx_from_ssh).await
+    async fn handle_upload_pack(
+        &mut self,
+        path: String,
+        rx_from_ssh: tokio::sync::mpsc::Receiver<Vec<u8>>,
+    ) -> Result<(), russh::Error> {
+        self.handle_with_command("git-upload-pack".to_string(), path, rx_from_ssh)
+            .await
     }
 
-    async fn handle_receive_pack(&mut self, path: String, rx_from_ssh: tokio::sync::mpsc::Receiver<Vec<u8>>,) -> Result<(), russh::Error> {
-        self.handle_with_command("git-receive-pack".to_string(), path, rx_from_ssh).await
+    async fn handle_receive_pack(
+        &mut self,
+        path: String,
+        rx_from_ssh: tokio::sync::mpsc::Receiver<Vec<u8>>,
+    ) -> Result<(), russh::Error> {
+        self.handle_with_command("git-receive-pack".to_string(), path, rx_from_ssh)
+            .await
     }
 
-    async fn handle_archive_pack(&mut self, path: String, rx_from_ssh: tokio::sync::mpsc::Receiver<Vec<u8>>,) -> Result<(), russh::Error> {
-        self.handle_with_command("git-upload-archive".to_string(), path, rx_from_ssh).await
+    async fn handle_archive_pack(
+        &mut self,
+        path: String,
+        rx_from_ssh: tokio::sync::mpsc::Receiver<Vec<u8>>,
+    ) -> Result<(), russh::Error> {
+        self.handle_with_command("git-upload-archive".to_string(), path, rx_from_ssh)
+            .await
     }
 
-    async fn handle_with_command(&mut self, command: String, path: String, mut rx_from_ssh: tokio::sync::mpsc::Receiver<Vec<u8>>,) -> Result<(), russh::Error> {
+    async fn handle_with_command(
+        &mut self,
+        command: String,
+        path: String,
+        mut rx_from_ssh: tokio::sync::mpsc::Receiver<Vec<u8>>,
+    ) -> Result<(), russh::Error> {
         let path = self.state.config.git_root.join(path);
 
         let handle = self.handle.clone().unwrap();
@@ -112,7 +131,11 @@ impl Connection {
                 };
                 // println!("-> {}", String::from_utf8_lossy(&buf[..n]));
 
-                if handle.data(id, CryptoVec::from_slice(&buf[..n])).await.is_err() {
+                if handle
+                    .data(id, CryptoVec::from_slice(&buf[..n]))
+                    .await
+                    .is_err()
+                {
                     break;
                 }
             }
@@ -154,17 +177,18 @@ impl server::Handler for Connection {
         match self.user_id {
             Some(user_id) => {
                 let user = crate::entities::user::Entity::find_by_id(user_id)
-                    .one(&self.state.db).await;
+                    .one(&self.state.db)
+                    .await;
 
                 match user {
                     Ok(Some(_user)) => {
                         self.handle = Some(session.handle());
                         self.channel_id = Some(channel.id());
                         Ok(true)
-                    },
+                    }
                     _ => Err(russh::Error::NoAuthMethod),
                 }
-            },
+            }
             None => Err(russh::Error::NoAuthMethod),
         }
     }
@@ -179,14 +203,15 @@ impl server::Handler for Connection {
 
         let row = db_ssh_key::Entity::find()
             .filter(db_ssh_key::Column::PublicKey.eq(&openssh))
-            .one(&self.state.db).await;
+            .one(&self.state.db)
+            .await;
 
         match row {
             Ok(Some(row)) => {
                 self.user_id = Some(row.user_id);
                 println!("Auth: {}", row.user_id);
                 Ok(server::Auth::Accept)
-            },
+            }
             _ => Err(russh::Error::RequestDenied),
         }
     }
@@ -209,7 +234,7 @@ impl server::Handler for Connection {
         let cmdline = String::from_utf8_lossy(data);
         let parts = cmdline.split_ascii_whitespace().collect::<Vec<&str>>();
 
-        println!("Exec: {parts:?}\r\n", );
+        println!("Exec: {parts:?}\r\n",);
 
         if parts.len() < 2 {
             Err(russh::Error::RequestDenied)
@@ -225,7 +250,7 @@ impl server::Handler for Connection {
                 "git-upload-pack" => self.handle_upload_pack(path, rx).await,
                 "git-receive-pack" => self.handle_receive_pack(path, rx).await,
                 "git-upload-archive" => self.handle_archive_pack(path, rx).await,
-                _ => Err(russh::Error::RequestDenied)
+                _ => Err(russh::Error::RequestDenied),
             }
         }
     }

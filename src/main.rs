@@ -26,21 +26,21 @@ async fn main() -> anyhow::Result<()> {
 
     // build our application with a single route
     let app = Router::new()
-        .route("/", get(|| async { Html(app::index().await) }))
+        .route("/", get(services::landing::index))
         .route("/login", get(auth::login_page).post(auth::handle_login))
         .route("/logout", get(auth::logout))
         .route(
             "/settings",
             get(auth::settings_page).post(auth::handle_settings),
         )
-        .route("/projects", get(auth::projects_page))
         .route(
             "/projects/new",
             get(auth::new_project_page).post(auth::handle_new_project),
         )
-        .route("/projects/{slug}", get(auth::project_page))
+        .route("/{username}/projects", get(auth::projects_page))
+        .route("/{username}/{slug}", get(auth::project_page))
         .route(
-            "/projects/{slug}/settings",
+            "/{username}/{slug}/settings",
             get(auth::project_settings_page).post(auth::handle_project_settings),
         )
         .nest("/api", api::router())

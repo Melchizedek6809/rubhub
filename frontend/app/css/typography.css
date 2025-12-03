@@ -50,6 +50,11 @@ p {
     margin-bottom: var(--space-m);
 }
 
+.muted {
+    color: var(--text-color-muted);
+    font-size: 0.95em;
+}
+
 h1:last-child,
 h2:last-child,
 h3:last-child,

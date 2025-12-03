@@ -10,6 +10,7 @@ button {
     cursor: pointer;
 }
 
+select,
 textarea,
 input {
     padding: var(--space-m);
@@ -44,4 +45,42 @@ input {
     padding: 10px;
     border-radius: 6px;
     margin-bottom: 16px;
+}
+
+.stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-s);
+}
+
+.actions {
+    display: flex;
+    gap: var(--space-s);
+}
+
+.simple-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.simple-form {
+    width: 100%;
+    max-width: 640px;
+    gap: var(--space-m);
+}
+
+.simple-form input,
+.simple-form select,
+.simple-form textarea {
+    width: 100%;
+    max-width: 480px;
+}
+
+.simple-form textarea {
+    min-height: 160px;
+}
+
+.simple-form button {
+    align-self: flex-start;
 }

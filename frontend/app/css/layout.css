@@ -33,6 +33,28 @@ main>section {
     max-width: var(--max-content-width);
 }
 
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-m);
+    flex-wrap: wrap;
+}
+
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--space-m);
+}
+
+.card {
+    border: 1px solid var(--background-color-muted);
+    border-radius: var(--space-s);
+    padding: var(--space-m);
+    background: var(--background-color-bright);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
 /* Footer stays at bottom because body is a column flexbox */
 footer {
     padding: var(--space-m);

@@ -1,4 +1,7 @@
-use axum::response::{Html, IntoResponse, Redirect, Response};
+use axum::{
+    http::StatusCode,
+    response::{Html, IntoResponse, Redirect, Response},
+};
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
 use tokio::{fs, process::Command};
@@ -6,7 +9,7 @@ use uuid::Uuid;
 
 use crate::{
     app::{self, ProjectSummary},
-    entities::{AccessType, project},
+    entities::{AccessType, project, user},
     services::session,
     state::GlobalState,
 };
@@ -19,14 +22,25 @@ pub struct NewProjectForm {
 pub async fn projects_page(
     state: &GlobalState,
     cookies: tower_cookies::Cookies,
-) -> Result<Html<String>, Redirect> {
-    let current_user = match session::current_user(state, &cookies).await {
-        Ok(user) => user,
-        Err(_) => return Err(Redirect::to("/login")),
+    username: String,
+) -> Result<Html<String>, (StatusCode, Html<String>)> {
+    let Some(owner) = user::Entity::find()
+        .filter(user::Column::Name.eq(username.clone()))
+        .one(&state.db)
+        .await
+        .ok()
+        .flatten()
+    else {
+        return Err(not_found().await);
     };
 
+    let is_owner = session::current_user(state, &cookies)
+        .await
+        .map(|user| user.id == owner.id)
+        .unwrap_or(false);
+
     let projects = project::Entity::find()
-        .filter(project::Column::Owner.eq(current_user.id))
+        .filter(project::Column::Owner.eq(owner.id))
         .all(&state.db)
         .await
         .unwrap_or_default();
@@ -36,10 +50,11 @@ pub async fn projects_page(
         .map(|p| ProjectSummary {
             name: p.name.as_str(),
             slug: p.slug.as_str(),
+            owner: owner.name.as_str(),
         })
         .collect();
 
-    Ok(Html(app::projects(&summaries).await))
+    Ok(Html(app::projects(&owner.name, &summaries, is_owner).await))
 }
 
 pub async fn new_project_page(
@@ -52,7 +67,11 @@ pub async fn new_project_page(
     }
 }
 
-pub async fn create_bare_repo(state: &GlobalState, user: String, project: String) -> Result<(), std::io::Error> {
+pub async fn create_bare_repo(
+    state: &GlobalState,
+    user: String,
+    project: String,
+) -> Result<(), std::io::Error> {
     let path = state.config.git_root.join(user);
     fs::create_dir_all(&path).await?;
 
@@ -61,12 +80,12 @@ pub async fn create_bare_repo(state: &GlobalState, user: String, project: String
         .arg("init")
         .arg("--bare")
         .arg(path)
-        .kill_on_drop(true)  // makes shutdowns cleaner
+        .kill_on_drop(true) // makes shutdowns cleaner
         .status()
         .await?;
 
     if status.success() {
-       Ok(())
+        Ok(())
     } else {
         Err(std::io::Error::other("git init --bare failed"))
     }
@@ -88,6 +107,7 @@ pub async fn handle_new_project(
     }
 
     let slug = generate_unique_slug(state, name, current_user.id).await;
+    let username = current_user.name.clone();
 
     let new_project = project::ActiveModel {
         id: Set(Uuid::new_v4()),
@@ -96,19 +116,20 @@ pub async fn handle_new_project(
         name: Set(name.to_owned()),
         description: Set(String::new()),
         default_access: Set(Some(AccessType::None)),
+        public_access: Set(AccessType::None),
         meta: Set(serde_json::json!({})),
         ..Default::default()
     };
 
     match new_project.insert(&state.db).await {
         Ok(_) => {
-            let res = create_bare_repo(state, current_user.name, name.to_owned()).await;
+            let res = create_bare_repo(state, username.clone(), name.to_owned()).await;
             if res.is_err() {
                 Ok(Html(app::new_project(Some("Could not create project.")).await).into_response())
             } else {
-                Ok(Redirect::to("/projects").into_response())
+                Ok(Redirect::to(&format!("/{username}/projects")).into_response())
             }
-        },
+        }
         Err(_) => {
             Ok(Html(app::new_project(Some("Could not create project.")).await).into_response())
         }
@@ -118,15 +139,21 @@ pub async fn handle_new_project(
 pub async fn project_page(
     state: &GlobalState,
     cookies: tower_cookies::Cookies,
+    username: String,
     slug: String,
-) -> Result<Html<String>, Redirect> {
-    let current_user = match session::current_user(state, &cookies).await {
-        Ok(user) => user,
-        Err(_) => return Err(Redirect::to("/login")),
+) -> Result<Html<String>, (StatusCode, Html<String>)> {
+    let Some(owner) = user::Entity::find()
+        .filter(user::Column::Name.eq(username.clone()))
+        .one(&state.db)
+        .await
+        .ok()
+        .flatten()
+    else {
+        return Err(not_found().await);
     };
 
     let project = project::Entity::find()
-        .filter(project::Column::Owner.eq(current_user.id))
+        .filter(project::Column::Owner.eq(owner.id))
         .filter(project::Column::Slug.eq(slug.clone()))
         .one(&state.db)
         .await
@@ -134,87 +161,212 @@ pub async fn project_page(
         .flatten();
 
     let Some(project) = project else {
-        return Err(Redirect::to("/projects"));
+        return Err(not_found().await);
     };
 
-    Ok(Html(app::project(&project.name, &project.slug).await))
+    let session_user = session::current_user(state, &cookies).await.ok();
+    let access_level =
+        project_access_level(state, session_user.as_ref().map(|user| user.id), project.id).await;
+    let can_manage = matches!(access_level, AccessType::Admin);
+
+    Ok(Html(
+        app::project_with_access(
+            &project.name,
+            &project.slug,
+            &owner.name,
+            access_level,
+            can_manage,
+        )
+        .await,
+    ))
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ProjectSettingsForm {
     pub name: String,
+    pub public_access: String,
 }
 
 pub async fn project_settings_page(
     state: &GlobalState,
     cookies: tower_cookies::Cookies,
+    username: String,
     slug: String,
 ) -> Result<Html<String>, Redirect> {
+    let Some(owner) = user::Entity::find()
+        .filter(user::Column::Name.eq(username.clone()))
+        .one(&state.db)
+        .await
+        .ok()
+        .flatten()
+    else {
+        return Err(Redirect::to("/"));
+    };
+
+    let Some(project) = project::Entity::find()
+        .filter(project::Column::Owner.eq(owner.id))
+        .filter(project::Column::Slug.eq(slug.clone()))
+        .one(&state.db)
+        .await
+        .ok()
+        .flatten()
+    else {
+        return Err(Redirect::to(&format!("/{username}/projects")));
+    };
+
     let current_user = match session::current_user(state, &cookies).await {
         Ok(user) => user,
         Err(_) => return Err(Redirect::to("/login")),
     };
 
-    let project = project::Entity::find()
-        .filter(project::Column::Owner.eq(current_user.id))
-        .filter(project::Column::Slug.eq(slug.clone()))
-        .one(&state.db)
-        .await
-        .ok()
-        .flatten();
-
-    let Some(project) = project else {
-        return Err(Redirect::to("/projects"));
-    };
+    let access_level = project_access_level(state, Some(current_user.id), project.id).await;
+    if access_level != AccessType::Admin {
+        return Err(Redirect::to(&format!("/{username}/{slug}")));
+    }
 
     Ok(Html(
-        app::project_settings(&project.name, &project.slug, None).await,
+        app::project_settings(
+            &project.name,
+            &project.slug,
+            &current_user.name,
+            project.public_access,
+            None,
+        )
+        .await,
     ))
 }
 
 pub async fn handle_project_settings(
     state: &GlobalState,
     cookies: tower_cookies::Cookies,
+    username: String,
     slug: String,
     form: ProjectSettingsForm,
 ) -> Result<Response, Redirect> {
-    let current_user = match session::current_user(state, &cookies).await {
-        Ok(user) => user,
-        Err(_) => return Err(Redirect::to("/login")),
+    let Some(owner) = user::Entity::find()
+        .filter(user::Column::Name.eq(username.clone()))
+        .one(&state.db)
+        .await
+        .ok()
+        .flatten()
+    else {
+        return Err(Redirect::to("/"));
     };
 
-    let mut project = match project::Entity::find()
-        .filter(project::Column::Owner.eq(current_user.id))
+    let Some(mut project) = project::Entity::find()
+        .filter(project::Column::Owner.eq(owner.id))
         .filter(project::Column::Slug.eq(slug.clone()))
         .one(&state.db)
         .await
         .ok()
         .flatten()
-    {
-        Some(p) => p,
-        None => return Err(Redirect::to("/projects")),
+    else {
+        return Err(Redirect::to(&format!("/{username}/projects")));
     };
 
+    let current_user = match session::current_user(state, &cookies).await {
+        Ok(user) => user,
+        Err(_) => return Err(Redirect::to("/login")),
+    };
+
+    let access_level = project_access_level(state, Some(current_user.id), project.id).await;
+    if access_level != AccessType::Admin {
+        return Err(Redirect::to(&format!("/{username}/{slug}")));
+    }
+
     let name = form.name.trim();
+    let public_access = match parse_public_access(&form.public_access) {
+        Ok(level) => level,
+        Err(msg) => {
+            return Ok(Html(
+                app::project_settings(
+                    name,
+                    &project.slug,
+                    &current_user.name,
+                    project.public_access,
+                    Some(msg),
+                )
+                .await,
+            )
+            .into_response());
+        }
+    };
     if name.is_empty() {
         return Ok(Html(
-            app::project_settings(name, &project.slug, Some("Name is required.")).await,
+            app::project_settings(
+                name,
+                &project.slug,
+                &current_user.name,
+                project.public_access,
+                Some("Name is required."),
+            )
+            .await,
         )
         .into_response());
     }
 
     project.name = name.to_owned();
+    project.public_access = public_access;
     let mut active: project::ActiveModel = project.into();
     active.name = Set(name.to_owned());
+    active.public_access = Set(public_access);
 
     if active.update(&state.db).await.is_err() {
         return Ok(Html(
-            app::project_settings(name, &slug, Some("Could not update project.")).await,
+            app::project_settings(
+                name,
+                &slug,
+                &current_user.name,
+                public_access,
+                Some("Could not update project."),
+            )
+            .await,
         )
         .into_response());
     }
 
-    Ok(Redirect::to(&format!("/projects/{}/settings", slug)).into_response())
+    Ok(Redirect::to(&format!("/{username}/{slug}/settings")).into_response())
+}
+
+async fn not_found() -> (StatusCode, Html<String>) {
+    (StatusCode::NOT_FOUND, Html(app::not_found().await))
+}
+
+pub async fn project_access_level(
+    state: &GlobalState,
+    user_id: Option<Uuid>,
+    project_id: Uuid,
+) -> AccessType {
+    let Some(project) = project::Entity::find_by_id(project_id)
+        .one(&state.db)
+        .await
+        .ok()
+        .flatten()
+    else {
+        return AccessType::None;
+    };
+
+    project_access_level_for(&project, user_id)
+}
+
+fn project_access_level_for(project: &project::Model, user_id: Option<Uuid>) -> AccessType {
+    if let Some(uid) = user_id {
+        if uid == project.owner {
+            return AccessType::Admin;
+        }
+    }
+
+    project.public_access
+}
+
+fn parse_public_access(value: &str) -> Result<AccessType, &'static str> {
+    match value.to_ascii_lowercase().as_str() {
+        "none" => Ok(AccessType::None),
+        "read" => Ok(AccessType::Read),
+        "write" => Ok(AccessType::Write),
+        "admin" => Err("Public admin access is not allowed."),
+        _ => Err("Invalid access level."),
+    }
 }
 
 async fn generate_unique_slug(state: &GlobalState, name: &str, owner: Uuid) -> String {

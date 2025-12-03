@@ -8,6 +8,18 @@
 <body>
     <section>
         <h1>RubHub</h1>
+        <div>
+            <h2>Featured projects</h2>
+            {% if featured.len() == 0 %}
+                <p>No projects yet.</p>
+            {% else %}
+                <div class="card-grid">
+                    {% for project in featured %}
+                        {% include "project_card.html" %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
     </section>
 </body>
 

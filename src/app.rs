@@ -2,9 +2,13 @@ use askama::Template;
 #[cfg(debug_assertions)]
 use tokio::fs;
 
+use crate::entities::AccessType;
+
 #[derive(Template)]
 #[template(path = "index.html")]
-struct IndexTemplate;
+struct IndexTemplate<'a> {
+    featured: &'a [ProjectSummary<'a>],
+}
 
 #[derive(Template)]
 #[template(path = "404.html")]
@@ -28,13 +32,16 @@ struct SettingsTemplate<'a> {
 #[derive(Template)]
 #[template(path = "projects.html")]
 struct ProjectsTemplate<'a> {
+    username: &'a str,
     projects: &'a [ProjectSummary<'a>],
+    is_owner: bool,
 }
 
 #[derive(Clone, Debug)]
 pub struct ProjectSummary<'a> {
     pub name: &'a str,
     pub slug: &'a str,
+    pub owner: &'a str,
 }
 
 #[derive(Template)]
@@ -48,6 +55,9 @@ struct NewProjectTemplate<'a> {
 struct ProjectTemplate<'a> {
     name: &'a str,
     slug: &'a str,
+    owner: &'a str,
+    access_level: AccessType,
+    can_manage: bool,
 }
 
 #[derive(Template)]
@@ -55,6 +65,8 @@ struct ProjectTemplate<'a> {
 struct ProjectSettingsTemplate<'a> {
     name: &'a str,
     slug: &'a str,
+    username: &'a str,
+    public_access: &'a str,
     message: Option<&'a str>,
 }
 
@@ -80,8 +92,8 @@ async fn theme(head: &str, body: &str) -> String {
     contents.replace("<!--BODY-->", body)
 }
 
-pub async fn index() -> String {
-    let contents = IndexTemplate.render().unwrap();
+pub async fn index(featured: &[ProjectSummary<'_>]) -> String {
+    let contents = IndexTemplate { featured }.render().unwrap();
 
     let parts = extract_html_parts(&contents);
 
@@ -124,8 +136,14 @@ pub async fn settings(
     theme(parts.0, parts.1).await
 }
 
-pub async fn projects(projects: &[ProjectSummary<'_>]) -> String {
-    let contents = ProjectsTemplate { projects }.render().unwrap();
+pub async fn projects(username: &str, projects: &[ProjectSummary<'_>], is_owner: bool) -> String {
+    let contents = ProjectsTemplate {
+        username,
+        projects,
+        is_owner,
+    }
+    .render()
+    .unwrap();
 
     let parts = extract_html_parts(&contents);
 
@@ -140,18 +158,40 @@ pub async fn new_project(message: Option<&str>) -> String {
     theme(parts.0, parts.1).await
 }
 
-pub async fn project(name: &str, slug: &str) -> String {
-    let contents = ProjectTemplate { name, slug }.render().unwrap();
+pub async fn project_with_access(
+    name: &str,
+    slug: &str,
+    owner: &str,
+    access_level: AccessType,
+    can_manage: bool,
+) -> String {
+    let contents = ProjectTemplate {
+        name,
+        slug,
+        owner,
+        access_level,
+        can_manage,
+    }
+    .render()
+    .unwrap();
 
     let parts = extract_html_parts(&contents);
 
     theme(parts.0, parts.1).await
 }
 
-pub async fn project_settings(name: &str, slug: &str, message: Option<&str>) -> String {
+pub async fn project_settings(
+    name: &str,
+    slug: &str,
+    username: &str,
+    public_access: AccessType,
+    message: Option<&str>,
+) -> String {
     let contents = ProjectSettingsTemplate {
         name,
         slug,
+        username,
+        public_access: public_access.as_str(),
         message,
     }
     .render()

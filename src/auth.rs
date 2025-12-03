@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Form, State},
+    extract::{Form, Path, State},
     http::StatusCode,
     response::{Html, Redirect, Response},
 };
@@ -51,8 +51,9 @@ pub async fn handle_settings(
 pub async fn projects_page(
     State(state): State<GlobalState>,
     cookies: Cookies,
-) -> Result<Html<String>, Redirect> {
-    project::projects_page(&state, cookies).await
+    Path(username): Path<String>,
+) -> Result<Html<String>, (StatusCode, Html<String>)> {
+    project::projects_page(&state, cookies, username).await
 }
 
 pub async fn new_project_page(
@@ -73,24 +74,24 @@ pub async fn handle_new_project(
 pub async fn project_page(
     State(state): State<GlobalState>,
     cookies: Cookies,
-    axum::extract::Path(slug): axum::extract::Path<String>,
-) -> Result<Html<String>, Redirect> {
-    project::project_page(&state, cookies, slug).await
+    Path((username, slug)): Path<(String, String)>,
+) -> Result<Html<String>, (StatusCode, Html<String>)> {
+    project::project_page(&state, cookies, username, slug).await
 }
 
 pub async fn project_settings_page(
     State(state): State<GlobalState>,
     cookies: Cookies,
-    axum::extract::Path(slug): axum::extract::Path<String>,
+    Path((username, slug)): Path<(String, String)>,
 ) -> Result<Html<String>, Redirect> {
-    project::project_settings_page(&state, cookies, slug).await
+    project::project_settings_page(&state, cookies, username, slug).await
 }
 
 pub async fn handle_project_settings(
     State(state): State<GlobalState>,
     cookies: Cookies,
-    axum::extract::Path(slug): axum::extract::Path<String>,
+    Path((username, slug)): Path<(String, String)>,
     Form(form): Form<project::ProjectSettingsForm>,
 ) -> Result<Response, Redirect> {
-    project::handle_project_settings(&state, cookies, slug, form).await
+    project::handle_project_settings(&state, cookies, username, slug, form).await
 }

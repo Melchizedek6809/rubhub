@@ -11,6 +11,7 @@ pub struct Model {
     pub created_at: Option<DateTimeWithTimeZone>,
     pub owner: Uuid,
     pub default_access: Option<AccessType>,
+    pub public_access: AccessType,
     #[sea_orm(unique)]
     pub slug: String,
     pub name: String,

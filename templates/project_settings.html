@@ -2,54 +2,6 @@
 <html>
 <head>
     <title>Project settings</title>
-    <style>
-        section {
-            max-width: 720px;
-            margin: 0 auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        form {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        label {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            font-weight: 600;
-        }
-
-        input {
-            padding: 10px;
-            font-size: 16px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-        }
-
-        button {
-            padding: 10px 12px;
-            font-size: 16px;
-            background: #111827;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        .message {
-            background: #e6f4ea;
-            border: 1px solid #c7ebd5;
-            color: #234f2e;
-            padding: 10px;
-            border-radius: 6px;
-        }
-    </style>
 </head>
 <body>
     <section>
@@ -57,12 +9,22 @@
         {% if let Some(msg) = message %}
             <div class="message" role="status">{{ msg }}</div>
         {% endif %}
-        <form method="post" action="/projects/{{ slug }}/settings">
+        <form method="post" action="/{{ username }}/{{ slug }}/settings" class="stack card simple-form">
             <label>
                 Project name
                 <input name="name" type="text" value="{{ name }}" required>
             </label>
-            <button type="submit">Save</button>
+            <label>
+                Public access
+                <select name="public_access">
+                    <option value="none" {% if public_access == "none" %}selected{% endif %}>None</option>
+                    <option value="read" {% if public_access == "read" %}selected{% endif %}>Read</option>
+                    <option value="write" {% if public_access == "write" %}selected{% endif %}>Write</option>
+                </select>
+            </label>
+            <div class="actions">
+                <button type="submit">Save</button>
+            </div>
         </form>
     </section>
 </body>
