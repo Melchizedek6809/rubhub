@@ -6,6 +6,8 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
     pub user_id: Uuid,
+
+    #[sea_orm(column_type = "Text", unique, indexed)]
     pub public_key: String,
     pub hostname: String,
     pub created_at: Option<DateTimeWithTimeZone>,
