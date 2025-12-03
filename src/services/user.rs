@@ -316,6 +316,13 @@ async fn handle_register_action(
         ));
     }
 
+    if let Err(msg) = validate_password(password) {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            render_login_page(&cookies, Some(msg)).await,
+        ));
+    }
+
     let existing = match user::Entity::find()
         .filter(
             Condition::any()
@@ -374,6 +381,14 @@ fn validate_username(username: &str) -> Result<(), &'static str> {
     let lower = username.to_ascii_lowercase();
     if USERNAME_BLACKLIST.iter().any(|reserved| lower == *reserved) {
         return Err("That username is not allowed.");
+    }
+
+    Ok(())
+}
+
+fn validate_password(password: &str) -> Result<(), &'static str> {
+    if password.len() < 8 {
+        return Err("Password must be at least 8 characters.");
     }
 
     Ok(())
