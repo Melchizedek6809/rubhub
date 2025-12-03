@@ -1,0 +1,3 @@
+- [ ] Enforce SSH authorization per repo/path before invoking git commands.
+- [ ] Add CSRF protections to state-changing HTTP routes (tokens or Origin checks) plus secure cookie settings.
+- [ ] Introduce rate limiting (HTTP logins/actions and SSH auth attempts).

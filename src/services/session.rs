@@ -2,7 +2,7 @@ use axum::response::Redirect;
 use chrono::Utc;
 use sea_orm::{ActiveModelTrait, EntityTrait, Set};
 use time::Duration as CookieDuration;
-use tower_cookies::{Cookie, Cookies};
+use tower_cookies::{Cookie, Cookies, cookie::SameSite};
 use urlencoding;
 use uuid::Uuid;
 
@@ -79,6 +79,8 @@ pub fn set_user_cookie(cookies: &Cookies, user_id: Uuid, username: &str) {
     let user_cookie = Cookie::build((SESSION_USER_COOKIE, encoded_user_info))
         .path("/")
         .http_only(false)
+        .same_site(SameSite::Lax)
+        .secure(true)
         .max_age(CookieDuration::days(30))
         .build();
 
@@ -105,6 +107,8 @@ pub async fn create_session(
     let cookie = Cookie::build((SESSION_COOKIE, session_id.to_string()))
         .path("/")
         .http_only(true)
+        .same_site(SameSite::Lax)
+        .secure(true)
         .max_age(CookieDuration::days(30))
         .build();
 

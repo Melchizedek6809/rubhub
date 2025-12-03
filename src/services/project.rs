@@ -4,6 +4,7 @@ use axum::{
 };
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
+use std::io;
 use tokio::{fs, process::Command};
 use uuid::Uuid;
 
@@ -72,6 +73,9 @@ pub async fn create_bare_repo(
     user: String,
     project: String,
 ) -> Result<(), std::io::Error> {
+    ensure_safe_component(&user)?;
+    ensure_safe_component(&project)?;
+
     let path = state.config.git_root.join(user);
     fs::create_dir_all(&path).await?;
 
@@ -106,13 +110,17 @@ pub async fn handle_new_project(
         return Ok(Html(app::new_project(Some("Name is required.")).await).into_response());
     }
 
+    if let Err(msg) = validate_project_name(name) {
+        return Ok(Html(app::new_project(Some(msg)).await).into_response());
+    }
+
     let slug = generate_unique_slug(state, name, current_user.id).await;
     let username = current_user.name.clone();
 
     let new_project = project::ActiveModel {
         id: Set(Uuid::new_v4()),
         owner: Set(current_user.id),
-        slug: Set(slug),
+        slug: Set(slug.clone()),
         name: Set(name.to_owned()),
         description: Set(String::new()),
         default_access: Set(Some(AccessType::None)),
@@ -123,7 +131,7 @@ pub async fn handle_new_project(
 
     match new_project.insert(&state.db).await {
         Ok(_) => {
-            let res = create_bare_repo(state, username.clone(), name.to_owned()).await;
+            let res = create_bare_repo(state, username.clone(), slug.clone()).await;
             if res.is_err() {
                 Ok(Html(app::new_project(Some("Could not create project.")).await).into_response())
             } else {
@@ -291,6 +299,19 @@ pub async fn handle_project_settings(
             .into_response());
         }
     };
+    if let Err(msg) = validate_project_name(name) {
+        return Ok(Html(
+            app::project_settings(
+                name,
+                &project.slug,
+                &current_user.name,
+                project.public_access,
+                Some(msg),
+            )
+            .await,
+        )
+        .into_response());
+    }
     if name.is_empty() {
         return Ok(Html(
             app::project_settings(
@@ -350,7 +371,9 @@ pub async fn project_access_level(
 }
 
 fn project_access_level_for(project: &project::Model, user_id: Option<Uuid>) -> AccessType {
-    if let Some(uid) = user_id && uid == project.owner {
+    if let Some(uid) = user_id
+        && uid == project.owner
+    {
         return AccessType::Admin;
     }
 
@@ -418,4 +441,27 @@ fn slugify(name: &str) -> String {
     } else {
         result
     }
+}
+
+fn validate_project_name(name: &str) -> Result<(), &'static str> {
+    if name.len() < 3 {
+        return Err("Project name must be at least 3 characters.");
+    }
+
+    if !name.chars().all(|ch| ch.is_ascii_alphanumeric()) {
+        return Err("Only alphanumeric ASCII characters are allowed.");
+    }
+
+    Ok(())
+}
+
+fn ensure_safe_component(value: &str) -> io::Result<()> {
+    if value.is_empty() || !value.chars().all(|ch| ch.is_ascii_alphanumeric()) {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Invalid path component",
+        ));
+    }
+
+    Ok(())
 }

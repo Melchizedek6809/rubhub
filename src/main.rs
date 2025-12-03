@@ -22,7 +22,7 @@ async fn start_server() -> anyhow::Result<()> {
     let state = state::GlobalState::new().await?;
 
     let public_assets_dir = state.config.asset_root.join("public");
-    let bind_addr = state.config.bind_addr;
+    let bind_addr = state.config.http_bind_addr;
 
     // build our application with a single route
     let app = Router::new()
@@ -90,7 +90,7 @@ async fn start_server() -> anyhow::Result<()> {
 
 fn main() {
     let runtime = Builder::new_multi_thread()
-        .worker_threads(2)     // <-- your number here
+        .worker_threads(2) // <-- your number here
         .max_blocking_threads(1024)
         .enable_all()
         .build()

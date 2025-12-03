@@ -3633,6 +3633,7 @@ name = "rubhub"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "argon2",
  "askama",
  "axum",
  "base64",
@@ -3640,13 +3641,13 @@ dependencies = [
  "dotenvy",
  "futures",
  "image",
+ "rand_core 0.6.4",
  "reqwest",
  "russh",
  "sea-orm",
  "serde",
  "serde_json",
  "serde_yaml",
- "sha2",
  "time",
  "tokio",
  "tower",

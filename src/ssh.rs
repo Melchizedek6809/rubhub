@@ -39,11 +39,12 @@ pub async fn start_ssh_server(state: GlobalState) -> Result<(), std::io::Error> 
     let config = Arc::new(config);
     let mut sh = Server { state };
 
-    let socket = TcpListener::bind(("127.0.0.1", 2222)).await.unwrap();
+    let bind_addr = sh.state.config.ssh_bind_addr;
+    let socket = TcpListener::bind(bind_addr).await.unwrap();
     let server = sh.run_on_socket(config, &socket);
     let _handle = server.handle();
 
-    println!("Started rubhub SSH server on 2222");
+    println!("Started rubhub SSH server on {bind_addr}");
 
     server.await
 }
