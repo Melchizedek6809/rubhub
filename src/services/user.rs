@@ -1,7 +1,6 @@
 use axum::response::{Html, IntoResponse, Redirect, Response};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseTransaction, EntityTrait, QueryFilter, Set,
-    TransactionTrait,
+    ActiveModelTrait, ColumnTrait, Condition, DatabaseTransaction, EntityTrait, QueryFilter, Set, TransactionTrait
 };
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -18,6 +17,7 @@ use crate::{
 pub struct LoginForm {
     pub action: String,
     pub username: String,
+    pub email: String,
     pub password: String,
 }
 
@@ -38,9 +38,10 @@ pub async fn handle_login(
     form: LoginForm,
 ) -> Result<Response, (axum::http::StatusCode, Html<String>)> {
     let username = form.username.trim();
+    let email = form.email.trim();
     let password = form.password.trim();
 
-    if username.is_empty() || password.is_empty() {
+    if username.is_empty() || password.is_empty() || email.is_empty() {
         return Err((
             axum::http::StatusCode::BAD_REQUEST,
             render_login_page(Some("Username and password are required.")).await,
@@ -54,7 +55,7 @@ pub async fn handle_login(
         "login" => handle_login_action(state, cookies, username, &password_hash)
             .await
             .map(IntoResponse::into_response),
-        "register" => handle_register_action(state, cookies, username, &password_hash)
+        "register" => handle_register_action(state, cookies, username, email, &password_hash)
             .await
             .map(IntoResponse::into_response),
         _ => Err((
@@ -83,8 +84,8 @@ pub async fn settings_page(
 
     Ok(Html(
         app::settings(
-            current_user.name.as_deref().unwrap_or(""),
-            current_user.email.as_deref().unwrap_or(""),
+            &current_user.name,
+            &current_user.email,
             &ssh_keys,
             None,
         )
@@ -126,12 +127,8 @@ pub async fn handle_settings(
     };
 
     let mut user_active: user::ActiveModel = current_user.clone().into();
-    user_active.name = Set(Some(username.to_owned()));
-    user_active.email = Set(if email.is_empty() {
-        None
-    } else {
-        Some(email.clone())
-    });
+    user_active.name = Set(username.to_owned());
+    user_active.email = Set(email.to_owned());
 
     if let Err(err) = user_active.update(&txn).await {
         return Err(internal_error(err).await);
@@ -199,10 +196,13 @@ async fn handle_register_action(
     state: &GlobalState,
     cookies: tower_cookies::Cookies,
     username: &str,
+    email: &str,
     password_hash: &str,
 ) -> Result<Redirect, (axum::http::StatusCode, Html<String>)> {
     let existing = match user::Entity::find()
-        .filter(user::Column::Name.eq(username))
+        .filter(Condition::any()
+            .add(user::Column::Name.eq(username))
+            .add(user::Column::Email.eq(email)))
         .one(&state.db)
         .await
     {
@@ -220,7 +220,8 @@ async fn handle_register_action(
     let new_user = user::ActiveModel {
         id: Set(Uuid::new_v4()),
         user_type: Set(UserType::Normal),
-        name: Set(Some(username.to_owned())),
+        name: Set(username.to_owned()),
+        email: Set(email.to_owned()),
         password_hash: Set(Some(password_hash.to_owned())),
         ..Default::default()
     };
@@ -272,9 +273,8 @@ async fn replace_ssh_keys(
     let models: Vec<ssh_key::ActiveModel> = ssh_keys
         .iter()
         .map(|key| ssh_key::ActiveModel {
-            id: Set(Uuid::new_v4()),
-            user_id: Set(user_id),
             public_key: Set(key.clone()),
+            user_id: Set(user_id),
             hostname: Set("".to_owned()),
             created_at: Set(None),
         })

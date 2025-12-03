@@ -1,6 +1,7 @@
 use axum::response::{Html, IntoResponse, Redirect, Response};
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
+use tokio::{fs, process::Command};
 use uuid::Uuid;
 
 use crate::{
@@ -51,6 +52,26 @@ pub async fn new_project_page(
     }
 }
 
+pub async fn create_bare_repo(state: &GlobalState, user: String, project: String) -> Result<(), std::io::Error> {
+    let path = state.config.git_root.join(user);
+    fs::create_dir_all(&path).await?;
+
+    let path = path.join(project);
+    let status = Command::new("git")
+        .arg("init")
+        .arg("--bare")
+        .arg(path)
+        .kill_on_drop(true)  // makes shutdowns cleaner
+        .status()
+        .await?;
+
+    if status.success() {
+       Ok(())
+    } else {
+        Err(std::io::Error::other("git init --bare failed"))
+    }
+}
+
 pub async fn handle_new_project(
     state: &GlobalState,
     cookies: tower_cookies::Cookies,
@@ -80,7 +101,14 @@ pub async fn handle_new_project(
     };
 
     match new_project.insert(&state.db).await {
-        Ok(_) => Ok(Redirect::to("/projects").into_response()),
+        Ok(_) => {
+            let res = create_bare_repo(state, current_user.name, name.to_owned()).await;
+            if res.is_err() {
+                Ok(Html(app::new_project(Some("Could not create project.")).await).into_response())
+            } else {
+                Ok(Redirect::to("/projects").into_response())
+            }
+        },
         Err(_) => {
             Ok(Html(app::new_project(Some("Could not create project.")).await).into_response())
         }

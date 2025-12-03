@@ -6,8 +6,8 @@ CREATE TABLE users (
     created_at timestamptz DEFAULT now(),
     last_login timestamptz DEFAULT now(),
     user_type user_type NOT NULL,
-    email varchar(255),
-    name varchar(128),
+    email varchar(255) NOT NULL,
+    name varchar(128) NOT NULL,
     password_hash TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
     meta jsonb NOT NULL DEFAULT '{}'::jsonb
@@ -17,6 +17,7 @@ CREATE INDEX users_name_idx ON users USING btree (name);
 CREATE INDEX users_last_login_idx ON users USING btree (last_login);
 CREATE INDEX users_user_type_idx ON users USING btree (user_type);
 CREATE UNIQUE INDEX users_email_lower_idx ON users (lower(email));
+CREATE UNIQUE INDEX users_name_lower_idx ON users (lower(name));
 
 
 CREATE TABLE sessions (
@@ -90,3 +91,12 @@ CREATE TABLE project_messages (
 CREATE INDEX project_messages_project_idx ON project_messages USING btree (project);
 CREATE INDEX project_messages_project_created_at_idx ON project_messages (project, created_at);
 CREATE INDEX project_messages_project_id_idx ON project_messages (project, id);
+
+CREATE TABLE ssh_keys (
+    public_key text PRIMARY KEY,
+    user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    hostname text,
+    created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX ssh_keys_user_id_idx ON ssh_keys(user_id);

@@ -17,8 +17,9 @@
                 <h2>Login</h2>
                 <form method="post" action="/login">
                     <input type="hidden" name="action" value="login">
-                    <label for="login-username">Username</label>
+                    <label for="login-username">Username / E-Mail</label>
                     <input id="login-username" name="username" type="text" autocomplete="username" required>
+					<input type="hidden" name="email" value="asd">
 
                     <label for="login-password">Password</label>
                     <input id="login-password" name="password" type="password" autocomplete="current-password" required>
@@ -32,6 +33,9 @@
                     <input type="hidden" name="action" value="register">
                     <label for="register-username">Username</label>
                     <input id="register-username" name="username" type="text" autocomplete="username" required>
+
+					<label for="register-email">E-Mail</label>
+                    <input id="register-email" name="email" type="email" autocomplete="email" required>
 
                     <label for="register-password">Password</label>
                     <input id="register-password" name="password" type="password" autocomplete="new-password" required>
