@@ -5,11 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "127.0.0.1:3000:3000" # HTTP bound to localhost only
-      - "22:2222" # SSH exposed publicly on host port 22
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/rubhub
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/rubhub
       HTTP_BIND_ADDRESS: 0.0.0.0
       HTTP_BIND_PORT: 3000
       SSH_BIND_ADDRESS: 0.0.0.0
@@ -19,6 +16,9 @@ services:
       ASSET_ROOT: /app/data/assets
     volumes:
       - ./data:/app/data
+    deploy:
+      replicas: 2
+    network_mode: host
     depends_on:
       db:
         condition: service_healthy
