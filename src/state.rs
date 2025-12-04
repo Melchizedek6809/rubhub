@@ -9,6 +9,7 @@ pub struct AppConfig {
     pub asset_root: PathBuf,
     pub http_bind_addr: SocketAddr,
     pub ssh_bind_addr: SocketAddr,
+    pub ssh_public_host: String,
 }
 
 #[derive(Debug, Clone)]
@@ -47,6 +48,15 @@ impl GlobalState {
             .unwrap_or(2222);
         let ssh_addr = env::var("SSH_BIND_ADDRESS").unwrap_or_else(|_| "127.0.0.1".to_owned());
         let ssh_bind_addr = format!("{ssh_addr}:{ssh_port}").parse::<SocketAddr>()?;
+        let ssh_public_host = env::var("SSH_PUBLIC_HOST")
+            .or_else(|_| env::var("SSH_URL"))
+            .unwrap_or_else(|_| {
+                if ssh_port == 22 {
+                    ssh_addr.clone()
+                } else {
+                    format!("{ssh_addr}:{ssh_port}")
+                }
+            });
 
         let db = Database::connect(&db_url).await?;
         fs::create_dir_all(&git_root).await?;
@@ -58,6 +68,7 @@ impl GlobalState {
                 asset_root,
                 http_bind_addr,
                 ssh_bind_addr,
+                ssh_public_host,
             },
         };
 

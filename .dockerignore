@@ -1,0 +1,10 @@
+.git
+target
+node_modules
+data
+dist
+.env
+.env.*
+*.log
+*.pem
+**/*.trace

@@ -229,7 +229,7 @@ pub async fn project_page(
     let can_manage = matches!(access_level, AccessType::Admin);
     let ssh_clone_url = format!(
         "ssh://git@{}/{}/{}",
-        state.config.ssh_bind_addr, owner.name, project.slug
+        state.config.ssh_public_host, owner.name, project.slug
     );
 
     Ok(Html(

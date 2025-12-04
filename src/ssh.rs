@@ -1,13 +1,12 @@
-use std::fs;
-use std::process::Stdio;
-use std::sync::Arc;
+use std::{fs, io, path::Path, process::Stdio, sync::Arc};
 
 use russh::keys::*;
 use russh::server::{Msg, Server as _, Session};
 use russh::*;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use tokio::fs as tokio_fs;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpListener;
+use tokio::net::TcpSocket;
 use tokio::process::Command;
 use uuid::Uuid;
 
@@ -17,15 +16,49 @@ use crate::state::GlobalState;
 
 use crate::entities::ssh_key as db_ssh_key;
 
+async fn ensure_host_key(path: &str, key_type: &str) -> Result<(), io::Error> {
+    if Path::new(path).exists() {
+        return Ok(());
+    }
+
+    println!("Generating missing {key_type} host key at {path}");
+    let status = Command::new("ssh-keygen")
+        .arg("-t")
+        .arg(key_type)
+        .arg("-N")
+        .arg("")
+        .arg("-f")
+        .arg(path)
+        .status()
+        .await?;
+
+    if status.success() {
+        eprintln!("No {key_type} SSH key found, generated one using ssh-keygen");
+        Ok(())
+    } else {
+        Err(io::Error::other(format!("ssh-keygen failed for {path}")))
+    }
+}
+
+async fn ensure_host_keys() -> Result<(), io::Error> {
+    tokio_fs::create_dir_all("./data").await?;
+    ensure_host_key("./data/id_ed25519", "ed25519").await?;
+    ensure_host_key("./data/id_rsa", "rsa").await?;
+    Ok(())
+}
+
 pub async fn start_ssh_server(state: GlobalState) -> Result<(), std::io::Error> {
-    let key =
-        fs::read_to_string("./data/private_key").expect("You need to generate a keypair first");
-    let key = russh::keys::PrivateKey::from_openssh(key).expect("Invalid private key");
-    let keys: Vec<PrivateKey> = vec![key];
+    ensure_host_keys().await?;
+
+    let ed_key = fs::read_to_string("./data/id_ed25519")?;
+    let ed_key = russh::keys::PrivateKey::from_openssh(ed_key).map_err(io::Error::other)?;
+
+    let rsa_key = fs::read_to_string("./data/id_rsa")?;
+    let rsa_key = russh::keys::PrivateKey::from_openssh(rsa_key).map_err(io::Error::other)?;
+    let keys: Vec<PrivateKey> = vec![ed_key, rsa_key];
 
     let mut methods = MethodSet::empty();
     methods.push(MethodKind::PublicKey);
-
 
     let config = russh::server::Config {
         inactivity_timeout: Some(std::time::Duration::from_secs(10)),
@@ -43,7 +76,19 @@ pub async fn start_ssh_server(state: GlobalState) -> Result<(), std::io::Error> 
     let mut sh = Server { state };
 
     let bind_addr = sh.state.config.ssh_bind_addr;
-    let socket = TcpListener::bind(bind_addr).await.unwrap();
+    let socket = if bind_addr.is_ipv4() {
+        TcpSocket::new_v4()?
+    } else {
+        TcpSocket::new_v6()?
+    };
+    socket.set_reuseaddr(true)?;
+    #[cfg(target_os = "linux")]
+    {
+        socket.set_reuseport(true)?;
+    }
+    socket.bind(bind_addr)?;
+    let socket = socket.listen(1024)?;
+
     let server = sh.run_on_socket(config, &socket);
     let _handle = server.handle();
 
@@ -276,16 +321,17 @@ impl server::Handler for Connection {
         }
     }
 
-    async fn authentication_banner(
-            &mut self,
-        ) -> Result<Option<String>, Self::Error> {
-        Ok(Some("Welcome to rubhub.net
+    async fn authentication_banner(&mut self) -> Result<Option<String>, Self::Error> {
+        Ok(Some(
+            "Welcome to rubhub.net
 
 If you see \"Permission denied (publickey)\", generate an SSH key first:
 
     ssh-keygen -t ed25519
 
-You do NOT need an account, any key works for anonymous access.\r\n\r\n".to_string()))
+You do NOT need an account, any key works for anonymous access.\r\n\r\n"
+                .to_string(),
+        ))
     }
 
     async fn data(

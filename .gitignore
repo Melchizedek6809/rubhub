@@ -24,6 +24,7 @@ target
 
 .env
 /data
+/pgdata
 
 # dependencies
 /node_modules

@@ -1,0 +1,60 @@
+version: "3.8"
+
+services:
+  rubhub:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:3000:3000" # HTTP bound to localhost only
+      - "22:2222" # SSH exposed publicly on host port 22
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/rubhub
+      HTTP_BIND_ADDRESS: 0.0.0.0
+      HTTP_BIND_PORT: 3000
+      SSH_BIND_ADDRESS: 0.0.0.0
+      SSH_PORT: 2222
+      SSH_PUBLIC_HOST: rubhub.net # optional host:port for clone URLs
+      GIT_ROOT: /app/data/git
+      ASSET_ROOT: /app/data/assets
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  db:
+    image: postgres:18
+    shm_size: 128mb
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: rubhub
+    volumes:
+      - ./pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d rubhub"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "127.0.0.1:5432:5432" # DB bound to localhost only
+
+  migrate:
+    image: oven/bun:1.3-slim
+    working_dir: /app
+    command: ["bun", "run", "scripts/migrate.ts"]
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/rubhub
+    volumes:
+      - ./:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+volumes:
+  rubhub-data:
+  pgdata:

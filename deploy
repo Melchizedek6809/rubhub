@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+rsync -avhe ssh ./ --exclude '.env' --exclude '.git' --exclude 'data' --exclude 'node_modules' --exclude 'target' rubhub.net:~/src/rubhub
+ssh rubhub.net 'DOCKER_BUILDKIT=1 cd src/rubhub && docker compose up -d --build'
