@@ -10,13 +10,11 @@ pub struct Model {
     pub id: Uuid,
     pub created_at: Option<DateTimeWithTimeZone>,
     pub owner: Uuid,
-    pub default_access: Option<AccessType>,
     pub public_access: AccessType,
     #[sea_orm(unique)]
     pub slug: String,
     pub name: String,
     pub description: String,
-    pub meta: Json,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -31,8 +29,6 @@ pub enum Relation {
     User,
     #[sea_orm(has_many = "super::access::Entity")]
     Accesses,
-    #[sea_orm(has_many = "super::access_token::Entity")]
-    AccessTokens,
     #[sea_orm(has_many = "super::project_message::Entity")]
     ProjectMessages,
 }
@@ -46,12 +42,6 @@ impl Related<super::user::Entity> for Entity {
 impl Related<super::access::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Accesses.def()
-    }
-}
-
-impl Related<super::access_token::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::AccessTokens.def()
     }
 }
 

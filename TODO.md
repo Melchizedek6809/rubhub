@@ -1,1 +1,0 @@
-- [ ] Enforce SSH authorization per repo/path before invoking git commands.

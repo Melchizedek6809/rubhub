@@ -8,12 +8,8 @@ CREATE TABLE users (
     user_type user_type NOT NULL,
     email varchar(255) NOT NULL,
     name varchar(128) NOT NULL,
-    password_hash TEXT NOT NULL,
-    description TEXT NOT NULL DEFAULT '',
-    meta jsonb NOT NULL DEFAULT '{}'::jsonb
+    password_hash TEXT NOT NULL
 );
-CREATE INDEX users_email_idx ON users USING btree (email);
-CREATE INDEX users_name_idx ON users USING btree (name);
 CREATE INDEX users_last_login_idx ON users USING btree (last_login);
 CREATE INDEX users_user_type_idx ON users USING btree (user_type);
 CREATE UNIQUE INDEX users_email_lower_idx ON users (lower(email));
@@ -34,17 +30,17 @@ CREATE TABLE projects (
     id uuid PRIMARY KEY,
     created_at timestamptz DEFAULT now(),
     owner uuid NOT NULL,
-    default_access access_type DEFAULT 'none',
+    public_access access_type NOT NULL DEFAULT 'none',
 
-    slug varchar(128) NOT NULL UNIQUE CHECK (slug ~ '^[a-z0-9-]+$'),
+    slug varchar(128) NOT NULL,
     name varchar(128) NOT NULL,
     description TEXT NOT NULL DEFAULT '',
-    meta jsonb NOT NULL DEFAULT '{}'::jsonb,
 
-    CONSTRAINT projects_owner FOREIGN KEY (owner) REFERENCES public.users(id) ON DELETE cascade ON UPDATE no action
+    CONSTRAINT projects_owner FOREIGN KEY (owner) REFERENCES public.users(id) ON DELETE cascade ON UPDATE no action,
+    CONSTRAINT projects_owner_slug_unique UNIQUE (owner, slug),
+    CONSTRAINT projects_slug_format CHECK (slug ~ '^[a-z0-9_.-]+$')
 );
 CREATE INDEX projects_owner_idx ON projects USING btree (owner);
-CREATE INDEX projects_slug_idx ON projects USING btree (slug);
 
 
 CREATE TABLE accesses (
@@ -55,25 +51,23 @@ CREATE TABLE accesses (
     access_type access_type NOT NULL,
 
     CONSTRAINT access_user FOREIGN KEY (owner) REFERENCES public.users(id) ON DELETE cascade ON UPDATE no action,
-    CONSTRAINT access_project FOREIGN KEY (project) REFERENCES public.projects(id) ON DELETE cascade ON UPDATE no action
+    CONSTRAINT access_project FOREIGN KEY (project) REFERENCES public.projects(id) ON DELETE cascade ON UPDATE no action,
+    UNIQUE (project, owner)
 );
 CREATE INDEX accesses_project_idx ON accesses USING btree (project);
 CREATE INDEX accesses_owner_idx ON accesses USING btree (owner);
 CREATE INDEX accesses_project_owner_idx ON accesses (project, owner);
-ALTER TABLE accesses ADD UNIQUE (project, owner);
 
 
-CREATE TABLE access_tokens (
-    id uuid PRIMARY KEY,
+CREATE TABLE ssh_keys (
+    public_key text PRIMARY KEY,
+    user_id uuid NOT NULL,
+    hostname text,
     created_at timestamptz DEFAULT now(),
-    project uuid NOT NULL,
-    access_type access_type NOT NULL,
-    token uuid NOT NULL UNIQUE,
 
-    CONSTRAINT access_tokens_project FOREIGN KEY (project) REFERENCES public.projects(id) ON DELETE cascade ON UPDATE no action
+    CONSTRAINT ssh_keys_user FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE cascade ON UPDATE no action
 );
-CREATE INDEX access_tokens_project_idx ON access_tokens USING btree (project);
-CREATE INDEX access_tokens_token_idx ON access_tokens USING btree (token);
+CREATE INDEX ssh_keys_user_id_idx ON ssh_keys(user_id);
 
 
 CREATE TABLE project_messages (
@@ -92,11 +86,3 @@ CREATE INDEX project_messages_project_idx ON project_messages USING btree (proje
 CREATE INDEX project_messages_project_created_at_idx ON project_messages (project, created_at);
 CREATE INDEX project_messages_project_id_idx ON project_messages (project, id);
 
-CREATE TABLE ssh_keys (
-    public_key text PRIMARY KEY,
-    user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    hostname text,
-    created_at timestamptz DEFAULT now()
-);
-
-CREATE INDEX ssh_keys_user_id_idx ON ssh_keys(user_id);

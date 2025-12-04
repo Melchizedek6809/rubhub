@@ -166,9 +166,7 @@ pub async fn handle_new_project(
         slug: Set(slug.clone()),
         name: Set(name.to_owned()),
         description: Set(String::new()),
-        default_access: Set(Some(AccessType::None)),
         public_access: Set(public_access),
-        meta: Set(serde_json::json!({})),
         ..Default::default()
     };
 
@@ -245,6 +243,39 @@ pub async fn project_page(
         )
         .await,
     ))
+}
+
+pub async fn find_project_by_path(
+    state: &GlobalState,
+    path: &str,
+) -> Option<(project::Model, user::Model)> {
+    let trimmed = path.trim_matches('/');
+    let mut parts = trimmed.split('/');
+    let username = parts.next()?.trim();
+    let mut slug = parts.next()?.trim();
+
+    if parts.next().is_some() || username.is_empty() || slug.is_empty() {
+        return None;
+    }
+
+    if let Some(stripped) = slug.strip_suffix(".git") {
+        slug = stripped;
+    }
+
+    if validate_slug(username).is_err() || validate_slug(slug).is_err() {
+        return None;
+    }
+
+    let query = project::Entity::find()
+        .find_also_related(user::Entity)
+        .filter(project::Column::Slug.eq(slug))
+        .filter(user::Column::Name.eq(username));
+
+    let Some((project, owner)) = query.one(&state.db).await.ok()? else {
+        return None;
+    };
+
+    Some((project, owner?))
 }
 
 #[derive(Debug, Deserialize)]

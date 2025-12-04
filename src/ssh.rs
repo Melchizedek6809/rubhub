@@ -11,6 +11,8 @@ use tokio::net::TcpListener;
 use tokio::process::Command;
 use uuid::Uuid;
 
+use crate::entities::AccessType;
+use crate::services::project::{find_project_by_path, project_access_level};
 use crate::state::GlobalState;
 
 use crate::entities::ssh_key as db_ssh_key;
@@ -23,6 +25,7 @@ pub async fn start_ssh_server(state: GlobalState) -> Result<(), std::io::Error> 
 
     let mut methods = MethodSet::empty();
     methods.push(MethodKind::PublicKey);
+    methods.push(MethodKind::None);
 
     let config = russh::server::Config {
         inactivity_timeout: Some(std::time::Duration::from_secs(10)),
@@ -175,23 +178,19 @@ impl server::Handler for Connection {
         channel: Channel<Msg>,
         session: &mut Session,
     ) -> Result<bool, Self::Error> {
-        match self.user_id {
-            Some(user_id) => {
-                let user = crate::entities::user::Entity::find_by_id(user_id)
-                    .one(&self.state.db)
-                    .await;
+        if let Some(user_id) = self.user_id {
+            let user = crate::entities::user::Entity::find_by_id(user_id)
+                .one(&self.state.db)
+                .await;
 
-                match user {
-                    Ok(Some(_user)) => {
-                        self.handle = Some(session.handle());
-                        self.channel_id = Some(channel.id());
-                        Ok(true)
-                    }
-                    _ => Err(russh::Error::NoAuthMethod),
-                }
+            if user.is_err() || user.unwrap().is_none() {
+                return Err(russh::Error::NoAuthMethod);
             }
-            None => Err(russh::Error::NoAuthMethod),
         }
+
+        self.handle = Some(session.handle());
+        self.channel_id = Some(channel.id());
+        Ok(true)
     }
 
     async fn auth_publickey(
@@ -211,10 +210,21 @@ impl server::Handler for Connection {
             Ok(Some(row)) => {
                 self.user_id = Some(row.user_id);
                 println!("Auth: {}", row.user_id);
-                Ok(server::Auth::Accept)
             }
-            _ => Err(russh::Error::RequestDenied),
+            // Allow anonymous access, without a user_id this session only has access to public repos
+            _ => {
+                self.user_id = None;
+                println!("Anon Auth");
+            }
         }
+
+        Ok(server::Auth::Accept)
+    }
+
+    async fn auth_none(&mut self, _user: &str) -> Result<server::Auth, Self::Error> {
+        // Permit anonymous sessions (user_id stays None); per-project authorization is enforced later.
+        println!("Auth: none (anonymous)");
+        Ok(server::Auth::Accept)
     }
 
     async fn auth_openssh_certificate(
@@ -238,22 +248,47 @@ impl server::Handler for Connection {
         println!("Exec: {parts:?}\r\n",);
 
         if parts.len() < 2 {
-            Err(russh::Error::RequestDenied)
-        } else {
-            let path = parts[1];
-            let path = path.trim_start_matches("'").trim_end_matches("'");
-            let path = path.trim_start_matches("/").trim_end_matches("/");
-            let path = path.to_string();
+            return Err(russh::Error::RequestDenied);
+        }
 
-            let (tx, rx) = tokio::sync::mpsc::channel(16);
-            self.sender_to_git = Some(tx);
+        let Some(command) = parts.first() else {
+            return Err(russh::Error::RequestDenied);
+        };
 
-            match parts[0] {
-                "git-upload-pack" => self.handle_upload_pack(path, rx).await,
-                "git-receive-pack" => self.handle_receive_pack(path, rx).await,
-                "git-upload-archive" => self.handle_archive_pack(path, rx).await,
-                _ => Err(russh::Error::RequestDenied),
-            }
+        let required_access = match required_access_for_command(command) {
+            Some(access) => access,
+            None => return Err(russh::Error::RequestDenied),
+        };
+
+        let path = parts[1];
+        let path = path.trim_start_matches('\'').trim_end_matches('\'');
+        let path = path.trim_start_matches('/').trim_end_matches('/');
+        let path = path.to_string();
+
+        let Some((project, owner)) = find_project_by_path(&self.state, &path).await else {
+            return Err(russh::Error::RequestDenied);
+        };
+
+        let access_level = project_access_level(&self.state, self.user_id, project.id).await;
+
+        if !has_required_access(access_level, required_access) {
+            eprintln!(
+                "SSH access denied: user {:?} requested {command} on {}/{} (has {access_level:?}, needs {required_access:?})",
+                self.user_id, owner.name, project.slug
+            );
+            return Err(russh::Error::RequestDenied);
+        }
+
+        let repo_path = format!("{}/{}", owner.name, project.slug);
+
+        let (tx, rx) = tokio::sync::mpsc::channel(16);
+        self.sender_to_git = Some(tx);
+
+        match *command {
+            "git-upload-pack" => self.handle_upload_pack(repo_path, rx).await,
+            "git-receive-pack" => self.handle_receive_pack(repo_path, rx).await,
+            "git-upload-archive" => self.handle_archive_pack(repo_path, rx).await,
+            _ => Err(russh::Error::RequestDenied),
         }
     }
 
@@ -285,5 +320,25 @@ impl server::Handler for Connection {
         _session: &mut Session,
     ) -> Result<bool, Self::Error> {
         Err(russh::Error::RequestDenied)
+    }
+}
+
+fn required_access_for_command(command: &str) -> Option<AccessType> {
+    match command {
+        "git-upload-pack" | "git-upload-archive" => Some(AccessType::Read),
+        "git-receive-pack" => Some(AccessType::Write),
+        _ => None,
+    }
+}
+
+fn has_required_access(current: AccessType, required: AccessType) -> bool {
+    match required {
+        AccessType::None => true,
+        AccessType::Read => matches!(
+            current,
+            AccessType::Read | AccessType::Write | AccessType::Admin
+        ),
+        AccessType::Write => matches!(current, AccessType::Write | AccessType::Admin),
+        AccessType::Admin => matches!(current, AccessType::Admin),
     }
 }
