@@ -3,8 +3,8 @@ use tokio::runtime::Builder;
 mod api;
 mod app;
 mod auth;
-mod http;
 mod entities;
+mod http;
 mod pages;
 mod services;
 mod ssh;
@@ -24,7 +24,9 @@ fn main() {
         .unwrap();
 
     runtime.block_on(async {
-        let state = state::GlobalState::new().await.expect("Couldn't create GlobalState");
+        let state = state::GlobalState::new()
+            .await
+            .expect("Couldn't create GlobalState");
 
         tokio::select! {
             http_res = http::start_http_server(state.clone()) => {

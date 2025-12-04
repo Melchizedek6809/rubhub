@@ -8,37 +8,9 @@ use tower_cookies::Cookies;
 use crate::{
     services::{
         project::{self, NewProjectForm},
-        user::{self, LoginForm, SettingsForm},
     },
     state::GlobalState,
 };
-
-pub async fn login_page(cookies: Cookies) -> Html<String> {
-    user::login_page(cookies).await
-}
-
-pub async fn handle_login(
-    State(state): State<GlobalState>,
-    cookies: Cookies,
-    Form(form): Form<LoginForm>,
-) -> Result<Response, (StatusCode, Html<String>)> {
-    user::handle_login(&state, cookies, form).await
-}
-
-pub async fn settings_page(
-    State(state): State<GlobalState>,
-    cookies: Cookies,
-) -> Result<Html<String>, Redirect> {
-    user::settings_page(&state, cookies).await
-}
-
-pub async fn handle_settings(
-    State(state): State<GlobalState>,
-    cookies: Cookies,
-    Form(form): Form<SettingsForm>,
-) -> Result<Response, (StatusCode, Html<String>)> {
-    user::handle_settings(&state, cookies, form).await
-}
 
 pub async fn projects_page(
     State(state): State<GlobalState>,

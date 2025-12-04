@@ -12,11 +12,14 @@ pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
     // build our application with a single route
     let app = Router::new()
         .route("/", get(services::landing::index))
-        .route("/login", get(auth::login_page).post(auth::handle_login))
+        .route(
+            "/login",
+            get(pages::auth::login_page).post(pages::auth::handle_login),
+        )
         .route("/logout", get(pages::auth::logout))
         .route(
             "/settings",
-            get(auth::settings_page).post(auth::handle_settings),
+            get(pages::user::settings_page).post(pages::user::handle_settings),
         )
         .route(
             "/projects/new",
