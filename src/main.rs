@@ -1,5 +1,4 @@
-use axum::{Router, response::Html, routing::get};
-use reqwest::StatusCode;
+use axum::{Router, http::StatusCode, response::Html, routing::get};
 use tokio::runtime::Builder;
 use tower::ServiceBuilder;
 use tower_cookies::CookieManagerLayer;
