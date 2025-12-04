@@ -1,93 +1,21 @@
-use axum::{Router, http::StatusCode, response::Html, routing::get};
 use tokio::runtime::Builder;
-use tower::ServiceBuilder;
-use tower_cookies::CookieManagerLayer;
-use tower_http::services::ServeDir;
 
 mod api;
 mod app;
 mod auth;
+mod http;
 mod entities;
+mod pages;
 mod services;
 mod ssh;
 mod state;
 
-async fn start_server() -> anyhow::Result<()> {
+fn main() {
     #[cfg(debug_assertions)]
     if dotenvy::dotenv().is_err() {
         println!("No .env found, using dev defaults");
     }
 
-    let state = state::GlobalState::new().await?;
-
-    let public_assets_dir = state.config.asset_root.join("public");
-    let bind_addr = state.config.http_bind_addr;
-
-    // build our application with a single route
-    let app = Router::new()
-        .route("/", get(services::landing::index))
-        .route("/login", get(auth::login_page).post(auth::handle_login))
-        .route("/logout", get(auth::logout))
-        .route(
-            "/settings",
-            get(auth::settings_page).post(auth::handle_settings),
-        )
-        .route(
-            "/projects/new",
-            get(auth::new_project_page).post(auth::handle_new_project),
-        )
-        .route("/{username}/projects", get(auth::projects_page))
-        .route("/{username}/{slug}", get(auth::project_page))
-        .route(
-            "/{username}/{slug}/settings",
-            get(auth::project_settings_page).post(auth::handle_project_settings),
-        )
-        .nest("/api", api::router())
-        .nest_service(
-            "/public",
-            ServiceBuilder::new().service(ServeDir::new("public")),
-        )
-        .nest_service(
-            "/dist",
-            ServiceBuilder::new().service(ServeDir::new("dist")),
-        )
-        .nest_service(
-            "/assets",
-            ServiceBuilder::new().service(ServeDir::new(public_assets_dir)),
-        )
-        .fallback(|| async { (StatusCode::NOT_FOUND, Html(app::not_found().await)) })
-        .layer(CookieManagerLayer::new())
-        .with_state(state.clone());
-
-    let socket = tokio::net::TcpSocket::new_v4()?;
-
-    socket.set_reuseaddr(true)?;
-    assert!(socket.reuseaddr().unwrap());
-
-    #[cfg(target_os = "linux")]
-    {
-        println!("Setting SO_REUSEPORT since we're running on Linux");
-        socket.set_reuseport(true)?;
-        assert!(socket.reuseport().unwrap());
-    }
-    socket.bind(bind_addr)?;
-
-    let listener = socket.listen(1024)?;
-
-    println!("rubhub ready on {bind_addr}");
-    tokio::select! {
-        http_res = axum::serve(listener, app) => {
-            eprintln!("HTTP server stopped: {:?}", http_res);
-        }
-        ssh_res = ssh::start_ssh_server(state.clone()) => {
-            eprintln!("SSH server stopped: {:?}", ssh_res);
-        }
-    }
-
-    Ok(())
-}
-
-fn main() {
     let runtime = Builder::new_multi_thread()
         .worker_threads(2) // <-- your number here
         .max_blocking_threads(1024)
@@ -96,6 +24,15 @@ fn main() {
         .unwrap();
 
     runtime.block_on(async {
-        start_server().await.expect("Server should be running");
+        let state = state::GlobalState::new().await.expect("Couldn't create GlobalState");
+
+        tokio::select! {
+            http_res = http::start_http_server(state.clone()) => {
+                eprintln!("HTTP server stopped: {:?}", http_res);
+            }
+            ssh_res = ssh::start_ssh_server(state.clone()) => {
+                eprintln!("SSH server stopped: {:?}", ssh_res);
+            }
+        }
     });
 }

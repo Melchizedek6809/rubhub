@@ -8,7 +8,6 @@ use tower_cookies::Cookies;
 use crate::{
     services::{
         project::{self, NewProjectForm},
-        session,
         user::{self, LoginForm, SettingsForm},
     },
     state::GlobalState,
@@ -24,13 +23,6 @@ pub async fn handle_login(
     Form(form): Form<LoginForm>,
 ) -> Result<Response, (StatusCode, Html<String>)> {
     user::handle_login(&state, cookies, form).await
-}
-
-pub async fn logout(
-    State(state): State<GlobalState>,
-    cookies: Cookies,
-) -> Result<Redirect, (StatusCode, Html<String>)> {
-    Ok(session::logout(&state, cookies).await)
 }
 
 pub async fn settings_page(

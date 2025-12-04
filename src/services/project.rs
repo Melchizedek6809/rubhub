@@ -271,9 +271,7 @@ pub async fn find_project_by_path(
         .filter(project::Column::Slug.eq(slug))
         .filter(user::Column::Name.eq(username));
 
-    let Some((project, owner)) = query.one(&state.db).await.ok()? else {
-        return None;
-    };
+    let (project, owner) = (query.one(&state.db).await.ok()?)?;
 
     Some((project, owner?))
 }
