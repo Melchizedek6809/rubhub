@@ -6,7 +6,6 @@
 <body>
     <section>
         <h1>User settings</h1>
-        <p>Update your username, email, and SSH public keys.</p>
         {% match message %}
             {% when Some with (msg) %}
                 <div class="message" role="status">{{ msg }}</div>
@@ -14,10 +13,7 @@
         {% endmatch %}
         <form method="post" action="/settings" class="stack card simple-form">
             <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-            <label>
-                Username
-                <input name="username" type="text" value="{{ username }}" required>
-            </label>
+            <rubhub-slug-input label="Username" name="username" value="{{ username }}" autocomplete="username"></rubhub-slug-input>
 
             <label>
                 Email

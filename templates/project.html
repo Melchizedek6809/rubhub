@@ -6,14 +6,13 @@
 <body>
     <section>
         <h1>{{ name }}</h1>
-        <div class="card">
-            <p>Slug: {{ slug }}</p>
-            <p>Owner: {{ owner }}</p>
-            <p>Access: {{ access_level }}</p>
-        </div>
         {% if can_manage %}
             <p><a class="btn" href="/{{ owner }}/{{ slug }}/settings">Project settings</a></p>
         {% endif %}
+        <div class="card">
+            <p>Owner: {{ owner }}</p>
+            <p>Access: {{ access_level }}</p>
+        </div>
     </section>
 </body>
 </html>

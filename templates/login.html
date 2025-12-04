@@ -33,8 +33,7 @@
                 <form method="post" action="/login" class="stack">
                     <input type="hidden" name="action" value="register">
                     <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-                    <label for="register-username">Username</label>
-                    <input id="register-username" name="username" type="text" autocomplete="username" required>
+                    <rubhub-slug-input label="Username" name="username" autocomplete="username"></rubhub-slug-input>
 
                     <label for="register-email">E-Mail</label>
                     <input id="register-email" name="email" type="email" autocomplete="email" required>

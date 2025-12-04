@@ -16,7 +16,7 @@ use uuid::Uuid;
 use crate::{
     app,
     entities::{UserType, ssh_key, user},
-    services::{csrf, session as session_service},
+    services::{csrf, session as session_service, validation::validate_slug},
     state::GlobalState,
 };
 
@@ -374,8 +374,8 @@ fn validate_username(username: &str) -> Result<(), &'static str> {
         return Err("Username must be at least 3 characters.");
     }
 
-    if !username.chars().all(|ch| ch.is_ascii_alphanumeric()) {
-        return Err("Username can only contain letters and numbers.");
+    if let Err(msg) = validate_slug(username) {
+        return Err(msg);
     }
 
     let lower = username.to_ascii_lowercase();

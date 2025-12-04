@@ -20,6 +20,7 @@ input {
     border: solid 1px var(--primary-color);
     border-radius: var(--space-s);
     margin-bottom: var(--space-m);
+    width: 100%;
 }
 
 .auth-grid {
@@ -65,23 +66,10 @@ input {
     gap: 6px;
 }
 
-.simple-form {
-    width: 100%;
-    max-width: 640px;
-    gap: var(--space-m);
-}
-
-.simple-form input,
-.simple-form select,
-.simple-form textarea {
-    width: 100%;
-    max-width: 480px;
-}
-
-.simple-form textarea {
+textarea {
     min-height: 160px;
 }
 
 .simple-form button {
-    align-self: flex-start;
+    align-self: flex-end;
 }

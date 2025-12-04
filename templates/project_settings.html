@@ -11,10 +11,7 @@
         {% endif %}
         <form method="post" action="/{{ username }}/{{ slug }}/settings" class="stack card simple-form">
             <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-            <label>
-                Project name
-                <input name="name" type="text" value="{{ name }}" required>
-            </label>
+            <rubhub-slug-input label="Project name" name="name" value="{{ name }}" autocomplete="off"></rubhub-slug-input>
             <label>
                 Public access
                 <select name="public_access">

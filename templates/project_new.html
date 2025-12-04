@@ -12,10 +12,7 @@
         {% endif %}
         <form method="post" action="/projects/new" class="stack card simple-form">
             <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-            <label>
-                Project name
-                <input name="name" type="text" required>
-            </label>
+            <rubhub-slug-input label="Project name" name="name" autocomplete="off"></rubhub-slug-input>
             <button type="submit">Create project</button>
         </form>
     </section>

@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::{
     app::{self, ProjectSummary},
     entities::{AccessType, project, user},
-    services::{csrf, session},
+    services::{csrf, session, validation::validate_slug},
     state::GlobalState,
 };
 
@@ -498,19 +498,23 @@ fn validate_project_name(name: &str) -> Result<(), &'static str> {
         return Err("Project name must be at least 3 characters.");
     }
 
-    if !name.chars().all(|ch| ch.is_ascii_alphanumeric()) {
-        return Err("Only alphanumeric ASCII characters are allowed.");
+    if let Err(msg) = validate_slug(name) {
+        return Err(msg);
     }
 
     Ok(())
 }
 
 fn ensure_safe_component(value: &str) -> io::Result<()> {
-    if value.is_empty() || !value.chars().all(|ch| ch.is_ascii_alphanumeric()) {
+    if value.is_empty() {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
             "Invalid path component",
         ));
+    }
+
+    if let Err(msg) = validate_slug(value) {
+        return Err(io::Error::new(io::ErrorKind::InvalidInput, msg));
     }
 
     Ok(())
