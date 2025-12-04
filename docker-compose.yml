@@ -7,10 +7,10 @@ services:
       dockerfile: Dockerfile
     environment:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/rubhub
-      HTTP_BIND_ADDRESS: 0.0.0.0
+      HTTP_BIND_ADDRESS: 127.0.0.1
       HTTP_BIND_PORT: 3000
       SSH_BIND_ADDRESS: 0.0.0.0
-      SSH_PORT: 2222
+      SSH_PORT: 22
       SSH_PUBLIC_HOST: rubhub.net # optional host:port for clone URLs
       GIT_ROOT: /app/data/git
       ASSET_ROOT: /app/data/assets
