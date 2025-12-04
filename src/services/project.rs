@@ -20,6 +20,7 @@ pub struct NewProjectForm {
     #[serde(rename = "_csrf")]
     pub csrf_token: Option<String>,
     pub name: String,
+    pub public_access: Option<String>,
 }
 
 pub async fn projects_page(
@@ -65,7 +66,7 @@ pub async fn new_project_page(
     cookies: tower_cookies::Cookies,
 ) -> Result<Html<String>, Redirect> {
     match session::current_user(state, &cookies).await {
-        Ok(_) => Ok(render_new_project_page(&cookies, None).await),
+        Ok(_) => Ok(render_new_project_page(&cookies, None, AccessType::Read).await),
         Err(_) => Err(Redirect::to("/login")),
     }
 }
@@ -102,6 +103,12 @@ pub async fn handle_new_project(
     cookies: tower_cookies::Cookies,
     form: NewProjectForm,
 ) -> Result<Response, Redirect> {
+    let selected_public_access = form
+        .public_access
+        .as_deref()
+        .and_then(|value| parse_public_access(value).ok())
+        .unwrap_or(AccessType::Read);
+
     let current_user = match session::current_user(state, &cookies).await {
         Ok(user) => user,
         Err(_) => return Err(Redirect::to("/login")),
@@ -110,22 +117,44 @@ pub async fn handle_new_project(
     if let Err(err) = csrf::verify_form_token(&cookies, form.csrf_token.as_deref()) {
         return Ok((
             StatusCode::FORBIDDEN,
-            render_new_project_page(&cookies, Some(err.message())).await,
+            render_new_project_page(&cookies, Some(err.message()), selected_public_access).await,
         )
             .into_response());
     }
 
+    let public_access = match form
+        .public_access
+        .as_deref()
+        .map(parse_public_access)
+        .unwrap_or(Ok(AccessType::Read))
+    {
+        Ok(level) => level,
+        Err(msg) => {
+            return Ok(
+                render_new_project_page(&cookies, Some(msg), selected_public_access)
+                    .await
+                    .into_response(),
+            );
+        }
+    };
+
     let name = form.name.trim();
     if name.is_empty() {
-        return Ok(render_new_project_page(&cookies, Some("Name is required."))
-            .await
-            .into_response());
+        return Ok(render_new_project_page(
+            &cookies,
+            Some("Name is required."),
+            selected_public_access,
+        )
+        .await
+        .into_response());
     }
 
     if let Err(msg) = validate_project_name(name) {
-        return Ok(render_new_project_page(&cookies, Some(msg))
-            .await
-            .into_response());
+        return Ok(
+            render_new_project_page(&cookies, Some(msg), selected_public_access)
+                .await
+                .into_response(),
+        );
     }
 
     let slug = generate_unique_slug(state, name, current_user.id).await;
@@ -138,7 +167,7 @@ pub async fn handle_new_project(
         name: Set(name.to_owned()),
         description: Set(String::new()),
         default_access: Set(Some(AccessType::None)),
-        public_access: Set(AccessType::None),
+        public_access: Set(public_access),
         meta: Set(serde_json::json!({})),
         ..Default::default()
     };
@@ -147,20 +176,24 @@ pub async fn handle_new_project(
         Ok(_) => {
             let res = create_bare_repo(state, username.clone(), slug.clone()).await;
             if res.is_err() {
-                Ok(
-                    render_new_project_page(&cookies, Some("Could not create project."))
-                        .await
-                        .into_response(),
+                Ok(render_new_project_page(
+                    &cookies,
+                    Some("Could not create project."),
+                    selected_public_access,
                 )
+                .await
+                .into_response())
             } else {
                 Ok(Redirect::to(&format!("/{username}/projects")).into_response())
             }
         }
-        Err(_) => Ok(
-            render_new_project_page(&cookies, Some("Could not create project."))
-                .await
-                .into_response(),
-        ),
+        Err(_) => Ok(render_new_project_page(
+            &cookies,
+            Some("Could not create project."),
+            selected_public_access,
+        )
+        .await
+        .into_response()),
     }
 }
 
@@ -387,9 +420,10 @@ pub async fn handle_project_settings(
 async fn render_new_project_page(
     cookies: &tower_cookies::Cookies,
     message: Option<&str>,
+    public_access: AccessType,
 ) -> Html<String> {
     let csrf_token = csrf::ensure_csrf_cookie(cookies);
-    Html(app::new_project(message, &csrf_token).await)
+    Html(app::new_project(message, &csrf_token, public_access).await)
 }
 
 async fn render_project_settings_page(

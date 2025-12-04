@@ -27,6 +27,9 @@ export class RubhubSlugInput extends LitElement {
 	@property({ type: Boolean })
 	disabled = false;
 
+	@property({ type: Boolean })
+	autofocus = false;
+
 	@state()
 	private status: "idle" | "valid" | "invalid" = "idle";
 
@@ -58,7 +61,7 @@ export class RubhubSlugInput extends LitElement {
 			width: 100%;
 		}
 
-		input {
+		input.input {
 			width: 100%;
 			padding: var(--space-m);
 			padding-right: calc(2.5rem + --space-m);
@@ -210,11 +213,13 @@ export class RubhubSlugInput extends LitElement {
 				<label for="${this.inputId}">${this.label || ""}</label>
 				<div class="input-wrap">
 					<input
+						class="input"
 						id=${this.inputId}
 						name=${this.name}
 						.value=${this.value}
 						.placeholder=${this.placeholder}
 						?disabled=${this.disabled}
+						?autofocus=${this.autofocus}
 						autocomplete=${this.autocomplete || "off"}
 						autocorrect="off"
 						spellcheck="false"

@@ -6,13 +6,20 @@
 <body>
     <section>
         <h1>Create a new project</h1>
-        <p>Give it a name and we'll generate a slug.</p>
         {% if let Some(msg) = message %}
             <div class="message" role="status">{{ msg }}</div>
         {% endif %}
         <form method="post" action="/projects/new" class="stack card simple-form">
             <input type="hidden" name="_csrf" value="{{ csrf_token }}">
-            <rubhub-slug-input label="Project name" name="name" autocomplete="off"></rubhub-slug-input>
+            <rubhub-slug-input autofocus label="Project name" name="name" autocomplete="off"></rubhub-slug-input>
+            <label>
+                Public access
+                <select name="public_access">
+                    <option value="none" {% if public_access == "none" %}selected{% endif %}>None</option>
+                    <option value="read" {% if public_access == "read" %}selected{% endif %}>Read</option>
+                    <option value="write" {% if public_access == "write" %}selected{% endif %}>Write</option>
+                </select>
+            </label>
             <button type="submit">Create project</button>
         </form>
     </section>

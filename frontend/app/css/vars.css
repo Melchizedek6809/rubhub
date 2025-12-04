@@ -43,4 +43,8 @@
 		--background-color: #232528;
 		--background-color-bright: #121416;
 	}
+
+    * {
+        color-scheme: dark;
+    }
 }

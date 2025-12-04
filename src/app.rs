@@ -51,6 +51,7 @@ pub struct ProjectSummary<'a> {
 struct NewProjectTemplate<'a> {
     message: Option<&'a str>,
     csrf_token: &'a str,
+    public_access: &'a str,
 }
 
 #[derive(Template)]
@@ -162,10 +163,15 @@ pub async fn projects(username: &str, projects: &[ProjectSummary<'_>], is_owner:
     theme(parts.0, parts.1).await
 }
 
-pub async fn new_project(message: Option<&str>, csrf_token: &str) -> String {
+pub async fn new_project(
+    message: Option<&str>,
+    csrf_token: &str,
+    public_access: AccessType,
+) -> String {
     let contents = NewProjectTemplate {
         message,
         csrf_token,
+        public_access: public_access.as_str(),
     }
     .render()
     .unwrap();
