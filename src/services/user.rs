@@ -374,16 +374,12 @@ fn validate_username(username: &str) -> Result<(), &'static str> {
         return Err("Username must be at least 3 characters.");
     }
 
-    if let Err(msg) = validate_slug(username) {
-        return Err(msg);
-    }
-
     let lower = username.to_ascii_lowercase();
     if USERNAME_BLACKLIST.iter().any(|reserved| lower == *reserved) {
         return Err("That username is not allowed.");
     }
 
-    Ok(())
+    validate_slug(username)
 }
 
 fn validate_password(password: &str) -> Result<(), &'static str> {

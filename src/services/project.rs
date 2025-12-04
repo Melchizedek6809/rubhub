@@ -536,12 +536,7 @@ fn validate_project_name(name: &str) -> Result<(), &'static str> {
     if name.len() < 3 {
         return Err("Project name must be at least 3 characters.");
     }
-
-    if let Err(msg) = validate_slug(name) {
-        return Err(msg);
-    }
-
-    Ok(())
+    validate_slug(name)
 }
 
 fn ensure_safe_component(value: &str) -> io::Result<()> {
