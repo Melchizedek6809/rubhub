@@ -2,7 +2,7 @@ use std::fs;
 use std::process::Stdio;
 use std::sync::Arc;
 
-use russh::keys::{Certificate, *};
+use russh::keys::*;
 use russh::server::{Msg, Server as _, Session};
 use russh::*;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
@@ -25,7 +25,7 @@ pub async fn start_ssh_server(state: GlobalState) -> Result<(), std::io::Error> 
 
     let mut methods = MethodSet::empty();
     methods.push(MethodKind::PublicKey);
-    methods.push(MethodKind::None);
+
 
     let config = russh::server::Config {
         inactivity_timeout: Some(std::time::Duration::from_secs(10)),
@@ -199,7 +199,6 @@ impl server::Handler for Connection {
         key: &ssh_key::PublicKey,
     ) -> Result<server::Auth, Self::Error> {
         let openssh = key.to_openssh()?;
-        println!("Auth publickey: {openssh}");
 
         let row = db_ssh_key::Entity::find()
             .filter(db_ssh_key::Column::PublicKey.eq(&openssh))
@@ -209,31 +208,16 @@ impl server::Handler for Connection {
         match row {
             Ok(Some(row)) => {
                 self.user_id = Some(row.user_id);
-                println!("Auth: {}", row.user_id);
+                println!("Auth: {} - PK {openssh}", row.user_id);
             }
             // Allow anonymous access, without a user_id this session only has access to public repos
             _ => {
                 self.user_id = None;
-                println!("Anon Auth");
+                println!("Anon Auth - PK {openssh}");
             }
         }
 
         Ok(server::Auth::Accept)
-    }
-
-    async fn auth_none(&mut self, _user: &str) -> Result<server::Auth, Self::Error> {
-        // Permit anonymous sessions (user_id stays None); per-project authorization is enforced later.
-        println!("Auth: none (anonymous)");
-        Ok(server::Auth::Accept)
-    }
-
-    async fn auth_openssh_certificate(
-        &mut self,
-        _user: &str,
-        certificate: &Certificate,
-    ) -> Result<server::Auth, Self::Error> {
-        println!("Auth openssh cert: {certificate:?}");
-        Err(russh::Error::NoAuthMethod)
     }
 
     async fn exec_request(
@@ -290,6 +274,12 @@ impl server::Handler for Connection {
             "git-upload-archive" => self.handle_archive_pack(repo_path, rx).await,
             _ => Err(russh::Error::RequestDenied),
         }
+    }
+
+    async fn authentication_banner(
+            &mut self,
+        ) -> Result<Option<String>, Self::Error> {
+        Ok(Some("Welcome to rubhub.net, if you get a permission error make sure you have generated a SSH key using ssh-keygen (you don't need an account, just a key)\r\n".to_string()))
     }
 
     async fn data(
