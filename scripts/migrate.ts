@@ -6,7 +6,9 @@ import { SQL } from "bun";
 
 const MIGRATIONS_DIR = "./migrations";
 
-const dbUrl = process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/rubhub";
+const dbUrl =
+	process.env.DATABASE_URL ||
+	"postgresql://postgres:postgres@localhost:5432/rubhub";
 const pg = new SQL(dbUrl);
 
 async function ensureMigrationsTable() {

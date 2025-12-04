@@ -61,6 +61,7 @@ struct ProjectTemplate<'a> {
     owner: &'a str,
     access_level: AccessType,
     can_manage: bool,
+    ssh_clone_url: String,
 }
 
 #[derive(Template)]
@@ -180,6 +181,7 @@ pub async fn project_with_access(
     owner: &str,
     access_level: AccessType,
     can_manage: bool,
+    ssh_clone_url: String,
 ) -> String {
     let contents = ProjectTemplate {
         name,
@@ -187,6 +189,7 @@ pub async fn project_with_access(
         owner,
         access_level,
         can_manage,
+        ssh_clone_url,
     }
     .render()
     .unwrap();

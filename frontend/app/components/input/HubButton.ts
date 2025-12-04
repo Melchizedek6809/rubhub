@@ -1,10 +1,9 @@
-import {LitElement, css, html} from 'lit';
-import {customElement, property} from 'lit/decorators.js';
+import { css, html, LitElement } from "lit";
+import { customElement, property } from "lit/decorators.js";
 
-@customElement('hub-button')
+@customElement("hub-button")
 export class HubButton extends LitElement {
-
-  static styles = css`
+	static styles = css`
 .btn,
 button {
     padding: var(--space-s) var(--space-m);
@@ -22,14 +21,14 @@ button {
 }
 `;
 
-  @property()
-  href?: string;
+	@property()
+	href?: string;
 
-  render() {
-    if (this.href) {
-      return html`<a class="btn" href="${this.href}"><slot /></a>`;
-    } else {
-      return html`<button class="btn" href="${this.href}"><slot /></button>`;
-    }
-  }
+	render() {
+		if (this.href) {
+			return html`<a class="btn" href="${this.href}"><slot /></a>`;
+		} else {
+			return html`<button class="btn" href="${this.href}"><slot /></button>`;
+		}
+	}
 }

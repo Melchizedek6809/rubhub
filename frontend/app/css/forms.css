@@ -1,75 +1,75 @@
 .btn,
 button {
-    padding: var(--space-s) var(--space-m);
-    background: var(--primary-color);
-    color: var(--white);
-    border: solid 1px var(--primary-color-bright);
-    border-bottom-color: var(--primary-color-dark);
-    border-right-color: var(--primary-color-dark);
-    border-radius: var(--space-s);
-    cursor: pointer;
-    text-decoration: none;
+	padding: var(--space-s) var(--space-m);
+	background: var(--primary-color);
+	color: var(--white);
+	border: solid 1px var(--primary-color-bright);
+	border-bottom-color: var(--primary-color-dark);
+	border-right-color: var(--primary-color-dark);
+	border-radius: var(--space-s);
+	cursor: pointer;
+	text-decoration: none;
 }
 
 select,
 textarea,
 input {
-    padding: var(--space-m);
-    background: var(--background-color);
-    color: var(--text-color);
-    border: solid 1px var(--primary-color);
-    border-radius: var(--space-s);
-    margin-bottom: var(--space-m);
-    width: 100%;
+	padding: var(--space-m);
+	background: var(--background-color);
+	color: var(--text-color);
+	border: solid 1px var(--primary-color);
+	border-radius: var(--space-s);
+	margin-bottom: var(--space-m);
+	width: 100%;
 }
 
 .auth-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 18px;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	gap: 18px;
 }
 
 .auth-card {
-    border: 1px solid var(--primary-color);
-    padding: 16px;
-    border-radius: 8px;
+	border: 1px solid var(--primary-color);
+	padding: 16px;
+	border-radius: 8px;
 }
 
 .auth-card form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
 }
 
 .message {
-    background: var(--error-color);
-    color: var(--white);
-    padding: 10px;
-    border-radius: 6px;
-    margin-bottom: 16px;
+	background: var(--error-color);
+	color: var(--white);
+	padding: 10px;
+	border-radius: 6px;
+	margin-bottom: 16px;
 }
 
 .stack {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-s);
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-s);
 }
 
 .actions {
-    display: flex;
-    gap: var(--space-s);
+	display: flex;
+	gap: var(--space-s);
 }
 
 .simple-form label {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
 }
 
 textarea {
-    min-height: 160px;
+	min-height: 160px;
 }
 
 .simple-form button {
-    align-self: flex-end;
+	align-self: flex-end;
 }

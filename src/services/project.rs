@@ -196,6 +196,10 @@ pub async fn project_page(
     let access_level =
         project_access_level(state, session_user.as_ref().map(|user| user.id), project.id).await;
     let can_manage = matches!(access_level, AccessType::Admin);
+    let ssh_clone_url = format!(
+        "ssh://git@{}/{}/{}",
+        state.config.ssh_bind_addr, owner.name, project.slug
+    );
 
     Ok(Html(
         app::project_with_access(
@@ -204,6 +208,7 @@ pub async fn project_page(
             &owner.name,
             access_level,
             can_manage,
+            ssh_clone_url,
         )
         .await,
     ))

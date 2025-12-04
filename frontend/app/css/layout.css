@@ -1,83 +1,83 @@
 html,
 body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
+	margin: 0;
+	padding: 0;
+	height: 100%;
 }
 
 body {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
 }
 
 /* Header sticks to the top naturally */
 header {
-    display: flex;
-    justify-content: space-between;
-    /* left on one side, right on the other */
-    align-items: center;
-    padding: var(--space-m) var(--space-xl);
-    background: var(--background-color-bright);
+	display: flex;
+	justify-content: space-between;
+	/* left on one side, right on the other */
+	align-items: center;
+	padding: var(--space-m) var(--space-xl);
+	background: var(--background-color-bright);
 }
 
 /* The growy middle */
 main {
-    flex: 1;
-    padding: var(--space-l);
+	flex: 1;
+	padding: var(--space-l);
 }
 
-main>section {
-    margin: 0 auto var(--space-xl);
-    width: 100%;
-    max-width: var(--max-content-width);
+main > section {
+	margin: 0 auto var(--space-xl);
+	width: 100%;
+	max-width: var(--max-content-width);
 }
 
 .page-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-m);
-    flex-wrap: wrap;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-m);
+	flex-wrap: wrap;
 }
 
 .card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: var(--space-m);
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	gap: var(--space-m);
 }
 
 .card {
-    border: 1px solid var(--background-color-muted);
-    border-radius: var(--space-s);
-    padding: var(--space-m);
-    background: var(--background-color-bright);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+	border: 1px solid var(--background-color-muted);
+	border-radius: var(--space-s);
+	padding: var(--space-m);
+	background: var(--background-color-bright);
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 /* Footer stays at bottom because body is a column flexbox */
 footer {
-    padding: var(--space-m);
-    background: var(--background-color-bright);
+	padding: var(--space-m);
+	background: var(--background-color-bright);
 }
 
 /* Centered footer nav */
 .footer-nav {
-    display: flex;
-    justify-content: center;
-    gap: var(--space-l);
+	display: flex;
+	justify-content: center;
+	gap: var(--space-l);
 }
 
 .header-left,
 .header-right {
-    display: flex;
-    align-items: center;
-    gap: var(--space-l);
+	display: flex;
+	align-items: center;
+	gap: var(--space-l);
 }
 
 .logo {
-    font-size: 1.5rem;
-    text-decoration: none;
-    line-height: 1em;
-    color: var(--secondary-color);
+	font-size: 1.5rem;
+	text-decoration: none;
+	line-height: 1em;
+	color: var(--secondary-color);
 }

@@ -11,9 +11,15 @@
 			"frontend/**/*.ts",
 			"frontend/**/*.tsx",
 			"scripts/**/*.ts",
+			"templates/**/*.html",
 			"frontend/**/*.html",
 			"frontend/**/*.css"
 		]
+	},
+	"html": {
+		"parser": {
+			"interpolation": true
+		}
 	},
 	"formatter": {
 		"enabled": true,

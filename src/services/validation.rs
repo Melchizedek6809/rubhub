@@ -9,9 +9,10 @@ pub fn validate_slug(value: &str) -> Result<(), &'static str> {
         return Err("Value cannot start with a period.");
     }
 
-    if value.chars().all(|ch| {
-        ch.is_ascii_lowercase() || ch.is_ascii_digit() || matches!(ch, '-' | '_' | '.')
-    }) {
+    if value
+        .chars()
+        .all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || matches!(ch, '-' | '_' | '.'))
+    {
         Ok(())
     } else {
         Err("Only lowercase letters, numbers, dashes, underscores, and periods are allowed.")

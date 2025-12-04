@@ -1,5 +1,5 @@
-import {LitElement, css, html} from "lit";
-import {customElement, property, state} from "lit/decorators.js";
+import { css, html, LitElement } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
 
 @customElement("rubhub-slug-input")
 export class RubhubSlugInput extends LitElement {
@@ -9,22 +9,22 @@ export class RubhubSlugInput extends LitElement {
 
 	private inputId = `slug-${Math.random().toString(36).slice(2, 8)}`;
 
-	@property({type: String})
+	@property({ type: String })
 	label = "";
 
-	@property({type: String})
+	@property({ type: String })
 	name = "";
 
-	@property({type: String})
+	@property({ type: String })
 	value = "";
 
-	@property({type: String})
+	@property({ type: String })
 	placeholder = "";
 
-	@property({type: String})
+	@property({ type: String })
 	autocomplete = "off";
 
-	@property({type: Boolean})
+	@property({ type: Boolean })
 	disabled = false;
 
 	@state()
@@ -145,7 +145,7 @@ export class RubhubSlugInput extends LitElement {
 		const target = event.target as HTMLInputElement;
 		this.value = target.value;
 		this.queueValidation();
-		this.dispatchEvent(new Event("input", {bubbles: true, composed: true}));
+		this.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
 	}
 
 	private handleBlur() {
@@ -173,7 +173,7 @@ export class RubhubSlugInput extends LitElement {
 
 		const input = this.renderRoot.querySelector("input") ?? undefined;
 		if (message) {
-			this.internals.setValidity({customError: true}, message, input);
+			this.internals.setValidity({ customError: true }, message, input);
 		} else {
 			this.internals.setValidity({});
 		}
@@ -207,7 +207,7 @@ export class RubhubSlugInput extends LitElement {
 
 		return html`
 			<div class="field">
-				<label for="${this.inputId}">${this.label || ''}</label>
+				<label for="${this.inputId}">${this.label || ""}</label>
 				<div class="input-wrap">
 					<input
 						id=${this.inputId}

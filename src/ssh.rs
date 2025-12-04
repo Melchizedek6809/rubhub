@@ -242,6 +242,7 @@ impl server::Handler for Connection {
         } else {
             let path = parts[1];
             let path = path.trim_start_matches("'").trim_end_matches("'");
+            let path = path.trim_start_matches("/").trim_end_matches("/");
             let path = path.to_string();
 
             let (tx, rx) = tokio::sync::mpsc::channel(16);
