@@ -383,16 +383,16 @@ fn validate_username(username: &str) -> Result<(), &'static str> {
 }
 
 fn validate_password(password: &str) -> Result<(), &'static str> {
-    if password.len() < 8 {
-        return Err("Password must be at least 8 characters.");
+    if password.len() < 16 {
+        return Err("Password must be at least 16 characters.");
     }
 
     Ok(())
 }
 
 fn desired_params() -> Params {
-    // 4 MiB memory, 6 iterations, 1 lane keeps CPU modest while resisting GPU attacks.
-    Params::new(4 * 1024, 6, 1, None).expect("argon2 params are valid")
+    // 32 MiB memory, 2 iterations, 1 lane keeps CPU modest while resisting GPU attacks.
+    Params::new(32 * 1024, 2, 1, None).expect("argon2 params are valid")
 }
 
 fn password_hasher() -> Argon2<'static> {

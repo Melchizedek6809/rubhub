@@ -279,7 +279,13 @@ impl server::Handler for Connection {
     async fn authentication_banner(
             &mut self,
         ) -> Result<Option<String>, Self::Error> {
-        Ok(Some("Welcome to rubhub.net, if you get a permission error make sure you have generated a SSH key using ssh-keygen (you don't need an account, just a key)\r\n".to_string()))
+        Ok(Some("Welcome to rubhub.net
+
+If you see \"Permission denied (publickey)\", generate an SSH key first:
+
+    ssh-keygen -t ed25519
+
+You do NOT need an account, any key works for anonymous access.\r\n\r\n".to_string()))
     }
 
     async fn data(
