@@ -1,8 +1,6 @@
 use tokio::runtime::Builder;
 
-mod api;
 mod app;
-mod auth;
 mod entities;
 mod http;
 mod pages;

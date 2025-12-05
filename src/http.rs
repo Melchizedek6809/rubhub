@@ -3,7 +3,7 @@ use tower::ServiceBuilder;
 use tower_cookies::CookieManagerLayer;
 use tower_http::services::ServeDir;
 
-use crate::{api, app, auth, pages, services, state::GlobalState};
+use crate::{app, pages, services, state::GlobalState};
 
 pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
     let public_assets_dir = state.config.asset_root.join("public");
@@ -24,15 +24,15 @@ pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
         )
         .route(
             "/projects/new",
-            get(auth::new_project_page).post(auth::handle_new_project),
+            get(pages::project::new_project_page).post(pages::project::handle_new_project),
         )
-        .route("/{username}", get(auth::projects_page))
-        .route("/{username}/{slug}", get(auth::project_page))
+        .route("/{username}", get(pages::project::projects_page))
+        .route("/{username}/{slug}", get(pages::project::project_page))
         .route(
             "/{username}/{slug}/settings",
-            get(auth::project_settings_page).post(auth::handle_project_settings),
+            get(pages::project::project_settings_page)
+                .post(pages::project::handle_project_settings),
         )
-        .nest("/api", api::router())
         .nest_service(
             "/public",
             ServiceBuilder::new().service(ServeDir::new("public")),
