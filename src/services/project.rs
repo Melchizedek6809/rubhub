@@ -2,7 +2,7 @@ use axum::{
     http::StatusCode,
     response::{Html, IntoResponse, Redirect, Response},
 };
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
 use std::io;
 use tokio::{fs, process::Command};
@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::{
     app::{self, ProjectSummary},
     entities::{AccessType, project, user},
-    services::{csrf, session, validation::validate_slug},
+    services::{csrf, session, user::get_user_by_name, validation::{slugify, validate_project_name, validate_slug}},
     state::GlobalState,
 };
 
@@ -55,6 +55,7 @@ pub async fn projects_page(
             name: p.name.as_str(),
             slug: p.slug.as_str(),
             owner: owner.name.as_str(),
+            description: p.description.as_str(),
         })
         .collect();
 
@@ -182,7 +183,7 @@ pub async fn handle_new_project(
                 .await
                 .into_response())
             } else {
-                Ok(Redirect::to(&format!("/{username}/projects")).into_response())
+                Ok(Redirect::to(&format!("/{username}")).into_response())
             }
         }
         Err(_) => Ok(render_new_project_page(
@@ -281,7 +282,22 @@ pub struct ProjectSettingsForm {
     #[serde(rename = "_csrf")]
     pub csrf_token: Option<String>,
     pub name: String,
+    pub description: String,
     pub public_access: String,
+}
+
+pub async fn get_project(
+    db: &DatabaseConnection,
+    user_id: Uuid,
+    project_slug: String,
+) -> Option<project::Model> {
+    project::Entity::find()
+        .filter(project::Column::Owner.eq(user_id))
+        .filter(project::Column::Slug.eq(project_slug))
+        .one(db)
+        .await
+        .ok()
+        .flatten()
 }
 
 pub async fn project_settings_page(
@@ -290,25 +306,12 @@ pub async fn project_settings_page(
     username: String,
     slug: String,
 ) -> Result<Html<String>, Redirect> {
-    let Some(owner) = user::Entity::find()
-        .filter(user::Column::Name.eq(username.clone()))
-        .one(&state.db)
-        .await
-        .ok()
-        .flatten()
-    else {
+    let Some(owner) = get_user_by_name(&state.db, username.clone()).await else {
         return Err(Redirect::to("/"));
     };
 
-    let Some(project) = project::Entity::find()
-        .filter(project::Column::Owner.eq(owner.id))
-        .filter(project::Column::Slug.eq(slug.clone()))
-        .one(&state.db)
-        .await
-        .ok()
-        .flatten()
-    else {
-        return Err(Redirect::to(&format!("/{username}/projects")));
+    let Some(project) = get_project(&state.db, owner.id, slug.clone()).await else {
+        return Err(Redirect::to(&format!("/{username}")));
     };
 
     let current_user = match session::current_user(state, &cookies).await {
@@ -321,15 +324,7 @@ pub async fn project_settings_page(
         return Err(Redirect::to(&format!("/{username}/{slug}")));
     }
 
-    Ok(render_project_settings_page(
-        &cookies,
-        &project.name,
-        &project.slug,
-        &current_user.name,
-        project.public_access,
-        None,
-    )
-    .await)
+    Ok(render_project_settings_page(&cookies, owner, project, None).await)
 }
 
 pub async fn handle_project_settings(
@@ -339,25 +334,12 @@ pub async fn handle_project_settings(
     slug: String,
     form: ProjectSettingsForm,
 ) -> Result<Response, Redirect> {
-    let Some(owner) = user::Entity::find()
-        .filter(user::Column::Name.eq(username.clone()))
-        .one(&state.db)
-        .await
-        .ok()
-        .flatten()
-    else {
+    let Some(owner) = get_user_by_name(&state.db, username.clone()).await else {
         return Err(Redirect::to("/"));
     };
 
-    let Some(mut project) = project::Entity::find()
-        .filter(project::Column::Owner.eq(owner.id))
-        .filter(project::Column::Slug.eq(slug.clone()))
-        .one(&state.db)
-        .await
-        .ok()
-        .flatten()
-    else {
-        return Err(Redirect::to(&format!("/{username}/projects")));
+    let Some(mut project) = get_project(&state.db, owner.id, slug.clone()).await else {
+        return Err(Redirect::to(&format!("/{username}")));
     };
 
     let current_user = match session::current_user(state, &cookies).await {
@@ -371,53 +353,35 @@ pub async fn handle_project_settings(
     }
 
     if let Err(err) = csrf::verify_form_token(&cookies, form.csrf_token.as_deref()) {
-        let page = render_project_settings_page(
-            &cookies,
-            &project.name,
-            &project.slug,
-            &current_user.name,
-            project.public_access,
-            Some(err.message()),
-        )
-        .await;
+        let page =
+            render_project_settings_page(&cookies, owner, project, Some(err.message())).await;
         return Ok((StatusCode::FORBIDDEN, page).into_response());
     }
 
     let name = form.name.trim();
+    let description = form.description.trim();
     let public_access = match parse_public_access(&form.public_access) {
         Ok(level) => level,
         Err(msg) => {
-            return Ok(render_project_settings_page(
-                &cookies,
-                name,
-                &project.slug,
-                &current_user.name,
-                project.public_access,
-                Some(msg),
-            )
-            .await
-            .into_response());
+            return Ok(
+                render_project_settings_page(&cookies, owner, project, Some(msg))
+                    .await
+                    .into_response(),
+            );
         }
     };
     if let Err(msg) = validate_project_name(name) {
-        return Ok(render_project_settings_page(
-            &cookies,
-            name,
-            &project.slug,
-            &current_user.name,
-            project.public_access,
-            Some(msg),
-        )
-        .await
-        .into_response());
+        return Ok(
+            render_project_settings_page(&cookies, owner, project, Some(msg))
+                .await
+                .into_response(),
+        );
     }
     if name.is_empty() {
         return Ok(render_project_settings_page(
             &cookies,
-            name,
-            &project.slug,
-            &current_user.name,
-            project.public_access,
+            owner,
+            project,
             Some("Name is required."),
         )
         .await
@@ -429,18 +393,11 @@ pub async fn handle_project_settings(
     let mut active: project::ActiveModel = project.into();
     active.name = Set(name.to_owned());
     active.public_access = Set(public_access);
+    active.description = Set(description.to_owned());
 
     if active.update(&state.db).await.is_err() {
-        return Ok(render_project_settings_page(
-            &cookies,
-            name,
-            &slug,
-            &current_user.name,
-            public_access,
-            Some("Could not update project."),
-        )
-        .await
-        .into_response());
+        // A proper error message would be nicer here
+        return Err(Redirect::to(&format!("/{username}/{slug}")));
     }
 
     Ok(Redirect::to(&format!("/{username}/{slug}/settings")).into_response())
@@ -457,14 +414,12 @@ async fn render_new_project_page(
 
 async fn render_project_settings_page(
     cookies: &tower_cookies::Cookies,
-    name: &str,
-    slug: &str,
-    username: &str,
-    public_access: AccessType,
+    owner: user::Model,
+    project: project::Model,
     message: Option<&str>,
 ) -> Html<String> {
     let csrf_token = csrf::ensure_csrf_cookie(cookies);
-    Html(app::project_settings(name, slug, username, public_access, message, &csrf_token).await)
+    Html(app::project_settings(owner, project, message, &csrf_token).await)
 }
 
 async fn not_found() -> (StatusCode, Html<String>) {
@@ -530,42 +485,6 @@ async fn generate_unique_slug(state: &GlobalState, name: &str, owner: Uuid) -> S
     }
 
     format!("{base}-{}", owner.to_string().get(..8).unwrap_or("project"))
-}
-
-fn slugify(name: &str) -> String {
-    let mut result = String::new();
-    let mut last_dash = false;
-
-    for ch in name.chars() {
-        let lower = ch.to_ascii_lowercase();
-        if lower.is_ascii_alphanumeric() {
-            result.push(lower);
-            last_dash = false;
-        } else if !last_dash {
-            result.push('-');
-            last_dash = true;
-        }
-    }
-
-    while result.starts_with('-') {
-        result.remove(0);
-    }
-    while result.ends_with('-') {
-        result.pop();
-    }
-
-    if result.is_empty() {
-        "project".to_owned()
-    } else {
-        result
-    }
-}
-
-fn validate_project_name(name: &str) -> Result<(), &'static str> {
-    if name.len() < 3 {
-        return Err("Project name must be at least 3 characters.");
-    }
-    validate_slug(name)
 }
 
 fn ensure_safe_component(value: &str) -> io::Result<()> {

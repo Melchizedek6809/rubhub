@@ -1,12 +1,23 @@
-use axum::{Form, extract::State, http::StatusCode, response::{Html, IntoResponse, Redirect, Response}};
-use serde::Deserialize;
-use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set,
-    TransactionTrait,
+use axum::{
+    Form,
+    extract::State,
+    http::StatusCode,
+    response::{Html, IntoResponse, Redirect, Response},
 };
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set, TransactionTrait,
+};
+use serde::Deserialize;
 use tower_cookies::Cookies;
 
-use crate::{app, entities::{ssh_key, user}, services::{csrf, session as session_service, user::replace_ssh_keys, validation::validate_username}, state::GlobalState};
+use crate::{
+    app,
+    entities::{ssh_key, user},
+    services::{
+        csrf, session as session_service, user::replace_ssh_keys, validation::validate_username,
+    },
+    state::GlobalState,
+};
 
 #[derive(Debug, Deserialize)]
 pub struct SettingsForm {

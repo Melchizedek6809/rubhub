@@ -24,6 +24,7 @@ pub async fn index(State(state): State<GlobalState>) -> Html<String> {
                 name: project.name.as_str(),
                 slug: project.slug.as_str(),
                 owner: owner.name.as_str(),
+                description: project.description.as_str(),
             })
         })
         .collect();

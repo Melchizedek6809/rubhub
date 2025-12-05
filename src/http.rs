@@ -25,7 +25,7 @@ pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
             "/projects/new",
             get(auth::new_project_page).post(auth::handle_new_project),
         )
-        .route("/{username}/projects", get(auth::projects_page))
+        .route("/{username}", get(auth::projects_page))
         .route("/{username}/{slug}", get(auth::project_page))
         .route(
             "/{username}/{slug}/settings",

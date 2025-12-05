@@ -3,12 +3,20 @@ use argon2::{
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
 use sea_orm::{
-    ColumnTrait, DatabaseTransaction, EntityTrait, QueryFilter, Set,
+    ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, QueryFilter, Set,
 };
 use uuid::Uuid;
 
-use crate::entities::ssh_key;
+use crate::entities::{ssh_key, user};
 
+pub async fn get_user_by_name(db: &DatabaseConnection, name: String) -> Option<user::Model> {
+    user::Entity::find()
+        .filter(user::Column::Name.eq(name))
+        .one(db)
+        .await
+        .ok()
+        .flatten()
+}
 
 pub async fn replace_ssh_keys(
     txn: &DatabaseTransaction,

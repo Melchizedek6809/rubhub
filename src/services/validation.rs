@@ -44,3 +44,39 @@ pub fn validate_password(password: &str) -> Result<(), &'static str> {
 
     Ok(())
 }
+
+pub fn slugify(name: &str) -> String {
+    let mut result = String::new();
+    let mut last_dash = false;
+
+    for ch in name.chars() {
+        let lower = ch.to_ascii_lowercase();
+        if lower.is_ascii_alphanumeric() {
+            result.push(lower);
+            last_dash = false;
+        } else if !last_dash {
+            result.push('-');
+            last_dash = true;
+        }
+    }
+
+    while result.starts_with('-') {
+        result.remove(0);
+    }
+    while result.ends_with('-') {
+        result.pop();
+    }
+
+    if result.is_empty() {
+        "project".to_owned()
+    } else {
+        result
+    }
+}
+
+pub fn validate_project_name(name: &str) -> Result<(), &'static str> {
+    if name.len() < 3 {
+        return Err("Project name must be at least 3 characters.");
+    }
+    validate_slug(name)
+}

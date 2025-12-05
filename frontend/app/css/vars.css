@@ -9,6 +9,7 @@
 	--background-color-bright: #fff;
 	--background-color: #eaf6ff;
 	--text-color: #232528;
+	--text-color-subdued: #606468;
 
 	--white: #eaf6ff;
 	--black: #232528;
@@ -40,11 +41,12 @@
 @media (prefers-color-scheme: dark) {
 	:root {
 		--text-color: #eaf6ff;
+		--text-color-subdued: #a0a8b0;
 		--background-color: #232528;
 		--background-color-bright: #121416;
 	}
 
-    * {
-        color-scheme: dark;
-    }
+	* {
+		color-scheme: dark;
+	}
 }

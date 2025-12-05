@@ -6,9 +6,7 @@ use axum::{
 use tower_cookies::Cookies;
 
 use crate::{
-    services::{
-        project::{self, NewProjectForm},
-    },
+    services::project::{self, NewProjectForm},
     state::GlobalState,
 };
 

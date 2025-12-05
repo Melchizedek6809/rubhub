@@ -13,10 +13,8 @@ use crate::{
     entities::{UserType, user},
     services::{
         csrf, session,
-        user::{
-            PasswordVerification, hash_password,
-            verify_password_hash,
-        }, validation::{validate_password, validate_username},
+        user::{PasswordVerification, hash_password, verify_password_hash},
+        validation::{validate_password, validate_username},
     },
     state::GlobalState,
 };

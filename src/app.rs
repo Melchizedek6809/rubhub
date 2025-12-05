@@ -2,7 +2,7 @@ use askama::Template;
 #[cfg(debug_assertions)]
 use tokio::fs;
 
-use crate::entities::AccessType;
+use crate::entities::{AccessType, project, user};
 
 #[derive(Template)]
 #[template(path = "index.html")]
@@ -22,7 +22,7 @@ struct LoginTemplate<'a> {
 }
 
 #[derive(Template)]
-#[template(path = "settings.html")]
+#[template(path = "user_settings.html")]
 struct SettingsTemplate<'a> {
     username: &'a str,
     email: &'a str,
@@ -32,7 +32,7 @@ struct SettingsTemplate<'a> {
 }
 
 #[derive(Template)]
-#[template(path = "projects.html")]
+#[template(path = "project_list.html")]
 struct ProjectsTemplate<'a> {
     username: &'a str,
     projects: &'a [ProjectSummary<'a>],
@@ -44,6 +44,7 @@ pub struct ProjectSummary<'a> {
     pub name: &'a str,
     pub slug: &'a str,
     pub owner: &'a str,
+    pub description: &'a str,
 }
 
 #[derive(Template)]
@@ -68,10 +69,8 @@ struct ProjectTemplate<'a> {
 #[derive(Template)]
 #[template(path = "project_settings.html")]
 struct ProjectSettingsTemplate<'a> {
-    name: &'a str,
-    slug: &'a str,
-    username: &'a str,
-    public_access: &'a str,
+    owner: &'a user::Model,
+    project: &'a project::Model,
     message: Option<&'a str>,
     csrf_token: &'a str,
 }
@@ -206,18 +205,14 @@ pub async fn project_with_access(
 }
 
 pub async fn project_settings(
-    name: &str,
-    slug: &str,
-    username: &str,
-    public_access: AccessType,
+    owner: user::Model,
+    project: project::Model,
     message: Option<&str>,
     csrf_token: &str,
 ) -> String {
     let contents = ProjectSettingsTemplate {
-        name,
-        slug,
-        username,
-        public_access: public_access.as_str(),
+        owner: &owner,
+        project: &project,
         message,
         csrf_token,
     }

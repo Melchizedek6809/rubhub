@@ -42,7 +42,7 @@ export class UserNav extends LitElement {
 		return html`
       <nav aria-label="User navigation">
         <ul style="list-style:none; padding:0; margin:0; display:flex; gap:8px;">
-          <li><a href="/${this.user.username}/projects">Projects</a></li>
+          <li><a href="/${this.user.username}">Projects</a></li>
         </ul>
       </nav>
     `;

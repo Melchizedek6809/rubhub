@@ -26,5 +26,5 @@ function readSessionUser(): SessionUser | null {
 const browseLink = document.querySelector<HTMLAnchorElement>("#browse-link");
 if (browseLink) {
 	const user = readSessionUser();
-	browseLink.href = user ? `/${user.username}/projects` : "/login";
+	browseLink.href = user ? `/${user.username}` : "/login";
 }
