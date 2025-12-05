@@ -11,6 +11,10 @@ struct IndexTemplate<'a> {
 }
 
 #[derive(Template)]
+#[template(path = "contact.html")]
+struct ContactTemplate;
+
+#[derive(Template)]
 #[template(path = "404.html")]
 struct NotFoundTemplate;
 
@@ -99,18 +103,20 @@ async fn theme(head: &str, body: &str) -> String {
 
 pub async fn index(featured: &[ProjectSummary<'_>]) -> String {
     let contents = IndexTemplate { featured }.render().unwrap();
+    let (head, body) = extract_html_parts(&contents);
+    theme(head, body).await
+}
 
-    let parts = extract_html_parts(&contents);
-
-    theme(parts.0, parts.1).await
+pub async fn contact() -> String {
+    let contents = ContactTemplate.render().unwrap();
+    let (head, body) = extract_html_parts(&contents);
+    theme(head, body).await
 }
 
 pub async fn not_found() -> String {
     let contents = NotFoundTemplate.render().unwrap();
-
-    let parts = extract_html_parts(&contents);
-
-    theme(parts.0, parts.1).await
+    let (head, body) = extract_html_parts(&contents);
+    theme(head, body).await
 }
 
 pub async fn login(message: Option<&str>, csrf_token: &str) -> String {

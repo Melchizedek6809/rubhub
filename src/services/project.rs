@@ -11,7 +11,11 @@ use uuid::Uuid;
 use crate::{
     app::{self, ProjectSummary},
     entities::{AccessType, project, user},
-    services::{csrf, session, user::get_user_by_name, validation::{slugify, validate_project_name, validate_slug}},
+    services::{
+        csrf, session,
+        user::get_user_by_name,
+        validation::{slugify, validate_project_name, validate_slug},
+    },
     state::GlobalState,
 };
 

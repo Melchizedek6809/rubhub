@@ -81,3 +81,13 @@ footer {
 	line-height: 1em;
 	color: var(--secondary-color);
 }
+
+.header-left a#browse-link,
+.footer-nav a {
+	text-decoration: none;
+	color: var(--text-color);
+}
+
+.header-left a#browse-link {
+	margin-left: 1rem;
+}
