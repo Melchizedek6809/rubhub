@@ -3,7 +3,7 @@ use tower::ServiceBuilder;
 use tower_cookies::CookieManagerLayer;
 use tower_http::services::ServeDir;
 
-use crate::{app, pages, services, state::GlobalState};
+use crate::{app, pages, state::GlobalState};
 
 pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
     let public_assets_dir = state.config.asset_root.join("public");
@@ -11,7 +11,7 @@ pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
 
     // build our application with a single route
     let app = Router::new()
-        .route("/", get(services::landing::index))
+        .route("/", get(pages::landing::index))
         .route("/contact", get(|| async { Html(app::contact().await) }))
         .route(
             "/login",
