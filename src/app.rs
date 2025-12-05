@@ -62,11 +62,9 @@ struct NewProjectTemplate<'a> {
 #[derive(Template)]
 #[template(path = "project.html")]
 struct ProjectTemplate<'a> {
-    name: &'a str,
-    slug: &'a str,
-    owner: &'a str,
+    owner: &'a user::Model,
+    project: &'a project::Model,
     access_level: AccessType,
-    can_manage: bool,
     ssh_clone_url: String,
 }
 
@@ -187,19 +185,15 @@ pub async fn new_project(
 }
 
 pub async fn project_with_access(
-    name: &str,
-    slug: &str,
-    owner: &str,
+    owner: user::Model,
+    project: project::Model,
     access_level: AccessType,
-    can_manage: bool,
     ssh_clone_url: String,
 ) -> String {
     let contents = ProjectTemplate {
-        name,
-        slug,
-        owner,
+        owner: &owner,
+        project: &project,
         access_level,
-        can_manage,
         ssh_clone_url,
     }
     .render()

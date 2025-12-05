@@ -12,14 +12,10 @@ use crate::{
     app::{self, ProjectSummary},
     entities::{AccessType, project, user},
     services::{
-        csrf,
-        project::{
-            create_bare_repo, generate_unique_slug, get_project, parse_public_access,
+        csrf, project::{
+            generate_unique_slug, get_project, parse_public_access,
             project_access_level,
-        },
-        session,
-        user::get_user_by_name,
-        validation::validate_project_name,
+        }, repository::create_bare_repo, session, user::get_user_by_name, validation::validate_project_name
     },
     state::GlobalState,
 };
@@ -50,13 +46,7 @@ pub async fn projects_page(
     cookies: Cookies,
     Path(username): Path<String>,
 ) -> Result<Html<String>, (StatusCode, Html<String>)> {
-    let Some(owner) = user::Entity::find()
-        .filter(user::Column::Name.eq(username.clone()))
-        .one(&state.db)
-        .await
-        .ok()
-        .flatten()
-    else {
+    let Some(owner) = get_user_by_name(&state.db, username).await else {
         return Err(not_found().await);
     };
 
@@ -196,25 +186,11 @@ pub async fn project_page(
     cookies: Cookies,
     Path((username, slug)): Path<(String, String)>,
 ) -> Result<Html<String>, (StatusCode, Html<String>)> {
-    let Some(owner) = user::Entity::find()
-        .filter(user::Column::Name.eq(username.clone()))
-        .one(&state.db)
-        .await
-        .ok()
-        .flatten()
-    else {
+    let Some(owner) = get_user_by_name(&state.db, username).await else {
         return Err(not_found().await);
     };
 
-    let project = project::Entity::find()
-        .filter(project::Column::Owner.eq(owner.id))
-        .filter(project::Column::Slug.eq(slug.clone()))
-        .one(&state.db)
-        .await
-        .ok()
-        .flatten();
-
-    let Some(project) = project else {
+    let Some(project) = get_project(&state.db, owner.id, slug).await else {
         return Err(not_found().await);
     };
 
@@ -225,7 +201,6 @@ pub async fn project_page(
         project.id,
     )
     .await;
-    let can_manage = matches!(access_level, AccessType::Admin);
     let ssh_clone_url = format!(
         "ssh://git@{}/{}/{}",
         state.config.ssh_public_host, owner.name, project.slug
@@ -233,11 +208,9 @@ pub async fn project_page(
 
     Ok(Html(
         app::project_with_access(
-            &project.name,
-            &project.slug,
-            &owner.name,
+            owner,
+            project,
             access_level,
-            can_manage,
             ssh_clone_url,
         )
         .await,

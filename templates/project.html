@@ -6,16 +6,16 @@
 <body>
     <section>
         <div class="page-header">
-            <h1 class="project-header"><a href="/{{ owner }}">{{ owner }}</a>/<a href="/{{ owner }}/{{ slug }}">{{ name }}</a></h1>
-            {% if can_manage %}
-                <p><a class="btn" href="/{{ owner }}/{{ slug }}/settings">Project settings</a></p>
+            <h1 class="project-header"><a href="/{{ owner.name }}">{{ owner.name }}</a>/<a href="/{{ owner.name }}/{{ project.slug }}">{{ project.name }}</a></h1>
+            {% if access_level == AccessType::Admin %}
+                <p><a class="btn" href="/{{ owner.name }}/{{ project.slug }}/settings">Project settings</a></p>
             {% endif %}
         </div>
         <div class="card">
             <rubhub-clone-url value="{{ ssh_clone_url }}" label="Clone via SSH"></rubhub-clone-url>
         </div>
         <div class="card">
-            <p>Owner: {{ owner }}</p>
+            <p>Owner: {{ owner.name }}</p>
             <p>Access: {{ access_level }}</p>
         </div>
     </section>

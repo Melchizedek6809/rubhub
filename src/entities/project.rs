@@ -15,6 +15,11 @@ pub struct Model {
     pub slug: String,
     pub name: String,
     pub description: String,
+
+    pub default_branch: String,
+    pub newest_commit_time: Option<DateTimeWithTimeZone>,
+    pub newest_commit_hash: Option<String>
+
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

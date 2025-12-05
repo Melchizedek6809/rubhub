@@ -1,5 +1,5 @@
 use axum::{extract::State, response::Html};
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
 
 use crate::{
     app::{self, ProjectSummary},
@@ -11,11 +11,12 @@ pub async fn index(State(state): State<GlobalState>) -> Html<String> {
     let projects = project::Entity::find()
         .filter(project::Column::PublicAccess.ne(AccessType::None))
         .order_by_desc(project::Column::CreatedAt)
-        .limit(3)
         .find_also_related(user::Entity)
         .all(&state.db)
         .await
         .unwrap_or_default();
+
+    println!("{projects:?}");
 
     let featured: Vec<ProjectSummary<'_>> = projects
         .iter()

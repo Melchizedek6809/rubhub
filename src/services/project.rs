@@ -1,6 +1,4 @@
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
-use std::io;
-use tokio::{fs, process::Command};
 use uuid::Uuid;
 
 use crate::{
@@ -8,33 +6,6 @@ use crate::{
     services::validation::{slugify, validate_slug},
     state::GlobalState,
 };
-
-pub async fn create_bare_repo(
-    state: &GlobalState,
-    user: String,
-    project: String,
-) -> Result<(), std::io::Error> {
-    ensure_safe_component(&user)?;
-    ensure_safe_component(&project)?;
-
-    let path = state.config.git_root.join(user);
-    fs::create_dir_all(&path).await?;
-
-    let path = path.join(project);
-    let status = Command::new("git")
-        .arg("init")
-        .arg("--bare")
-        .arg(path)
-        .kill_on_drop(true) // makes shutdowns cleaner
-        .status()
-        .await?;
-
-    if status.success() {
-        Ok(())
-    } else {
-        Err(std::io::Error::other("git init --bare failed"))
-    }
-}
 
 pub async fn find_project_by_path(
     state: &GlobalState,
@@ -142,17 +113,3 @@ pub async fn generate_unique_slug(state: &GlobalState, name: &str, owner: Uuid) 
     format!("{base}-{}", owner.to_string().get(..8).unwrap_or("project"))
 }
 
-pub fn ensure_safe_component(value: &str) -> io::Result<()> {
-    if value.is_empty() {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "Invalid path component",
-        ));
-    }
-
-    if let Err(msg) = validate_slug(value) {
-        return Err(io::Error::new(io::ErrorKind::InvalidInput, msg));
-    }
-
-    Ok(())
-}
