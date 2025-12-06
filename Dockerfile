@@ -16,17 +16,12 @@ RUN bun run scripts/build.ts
 FROM rust:1.91-slim-trixie AS rust-builder
 WORKDIR /app
 
-RUN apt-get update \
-	&& apt-get install -y --no-install-recommends build-essential pkg-config ca-certificates git \
-	&& rm -rf /var/lib/apt/lists/*
+COPY Cargo.toml Cargo.lock dummy.rs ./
+RUN cargo build --release --locked --bin dummy-to-cache-dependencies
 
-COPY Cargo.toml Cargo.lock ./
 COPY src ./src
 COPY templates ./templates
-COPY migrations ./migrations
 COPY --from=bun-builder /app/dist ./dist
-RUN cargo fetch --locked
-
 RUN cargo build --release --locked
 
 FROM debian:trixie-slim
