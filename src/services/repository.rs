@@ -1,4 +1,4 @@
-use std::{io, path::PathBuf};
+use std::io;
 use anyhow::Result;
 use gix::Repository;
 use tokio::{fs, process::Command};
@@ -47,17 +47,28 @@ pub async fn create_bare_repo(
     }
 }
 
-pub struct GitRepository {
-    path: PathBuf,
-    repo: Repository,
+pub fn get_git_repo(state: &GlobalState, user_name: &str, project_slug: &str) -> Option<Repository> {
+    let path = state.config.git_root.join(user_name).join(project_slug);
+    match gix::open(path) {
+        Ok(repo) => Some(repo),
+        Err(e) => {
+            eprintln!("{e}");
+            None
+        }
+    }
 }
 
-impl GitRepository {
-    pub fn new(path: PathBuf) -> Result<Self> {
-        let repo = gix::open(path.clone())?;
-        Ok(Self {
-            path,
-            repo,
+pub fn get_git_branches(state: &GlobalState, user_name: &str, project_slug: &str) -> Option<Vec<GitBranch>> {
+    let repo = get_git_repo(state, user_name, project_slug)?;
+    let names = repo.branch_names();
+    Some(names.iter()
+        .map(|s| s.to_string())
+        .map(|name| GitBranch {
+            name
         })
-    }
+        .collect::<Vec<GitBranch>>())
+}
+
+pub struct GitBranch {
+    pub name: String,
 }

@@ -2,7 +2,7 @@ use askama::Template;
 #[cfg(debug_assertions)]
 use tokio::fs;
 
-use crate::entities::{AccessType, project, user};
+use crate::{entities::{AccessType, project, user}, services::repository::GitBranch};
 
 #[derive(Template)]
 #[template(path = "index.html")]
@@ -63,6 +63,7 @@ struct ProjectTemplate<'a> {
     project: &'a project::Model,
     access_level: AccessType,
     ssh_clone_url: String,
+    branches: Vec<GitBranch>,
 }
 
 #[derive(Template)]
@@ -180,12 +181,14 @@ pub async fn project_with_access(
     project: project::Model,
     access_level: AccessType,
     ssh_clone_url: String,
+    branches: Vec<GitBranch>,
 ) -> String {
     let contents = ProjectTemplate {
         owner: &owner,
         project: &project,
         access_level,
         ssh_clone_url,
+        branches,
     }
     .render()
     .unwrap();

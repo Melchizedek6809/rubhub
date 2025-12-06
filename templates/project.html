@@ -13,6 +13,11 @@
         </div>
         <div class="card">
             <rubhub-clone-url value="{{ ssh_clone_url }}" label="Clone via SSH"></rubhub-clone-url>
+            <select>
+            {% for branch in branches %}
+                <option value="{{ branch.name }}">{{ branch.name }}</option>
+            {% endfor %}
+            </select>
         </div>
     </section>
 </body>

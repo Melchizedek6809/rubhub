@@ -15,7 +15,7 @@ use crate::{
         project::{
             generate_unique_slug, get_project, parse_public_access,
             project_access_level,
-        }, repository::create_bare_repo, session, user::get_user_by_name, validation::validate_project_name
+        }, repository::{create_bare_repo, get_git_branches}, session, user::get_user_by_name, validation::validate_project_name
     },
     state::GlobalState,
 };
@@ -174,11 +174,15 @@ pub async fn project_page(
     cookies: Cookies,
     Path((username, slug)): Path<(String, String)>,
 ) -> Result<Html<String>, (StatusCode, Html<String>)> {
-    let Some(owner) = get_user_by_name(&state.db, username).await else {
+    let Some(owner) = get_user_by_name(&state.db, username.clone()).await else {
         return Err(not_found().await);
     };
 
-    let Some(project) = get_project(&state.db, owner.id, slug).await else {
+    let Some(project) = get_project(&state.db, owner.id, slug.clone()).await else {
+        return Err(not_found().await);
+    };
+
+    let Some(branches) = get_git_branches(&state, &username, &slug) else {
         return Err(not_found().await);
     };
 
@@ -189,6 +193,7 @@ pub async fn project_page(
         project.id,
     )
     .await;
+
     let ssh_clone_url = format!(
         "ssh://git@{}/{}/{}",
         state.config.ssh_public_host, owner.name, project.slug
@@ -200,6 +205,7 @@ pub async fn project_page(
             project,
             access_level,
             ssh_clone_url,
+            branches,
         )
         .await,
     ))
