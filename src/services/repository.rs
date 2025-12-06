@@ -68,6 +68,23 @@ pub fn get_git_summary(state: &GlobalState, user_name: &str, project_slug: &str)
     Some(GitSummary { branches })
 }
 
+pub fn get_git_info(state: &GlobalState, user_name: &str, project_slug: &str, name: &str) -> Option<GitCommitInfo> {
+    let repo = get_git_repo(state, user_name, project_slug)?;
+    println!("get_git_info {name}");
+    let Ok(reference) = repo.find_reference(name) else { return None };
+    let Ok(commit_id) = reference.id().shorten() else { return None };
+
+    Some(GitCommitInfo {
+        branch_name: reference.name().shorten().to_string(),
+        commit_id: commit_id.to_string(),
+    })
+}
+
 pub struct GitSummary {
     pub branches: Vec<String>,
+}
+
+pub struct GitCommitInfo {
+    pub branch_name: String,
+    pub commit_id: String,
 }

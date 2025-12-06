@@ -13,6 +13,7 @@ pub struct Model {
     pub user_type: UserType,
     pub email: String,
     pub name: String,
+    pub default_main_branch: String,
     pub password_hash: Option<String>,
 }
 

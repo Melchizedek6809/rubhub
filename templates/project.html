@@ -13,11 +13,13 @@
         </div>
         <div class="card">
             <rubhub-clone-url value="{{ ssh_clone_url }}" label="Clone via SSH"></rubhub-clone-url>
-            <select>
-            {% for branch in summary.branches %}
-                <option value="{{ branch }}">{{ branch }}</option>
-            {% endfor %}
-            </select>
+            <label>Branches:
+                <select>
+                {% for branch in summary.branches %}
+                    <option value="{{ branch }}" {% if branch.as_str() == info.branch_name %}selected{% endif %}>{{ branch }}</option>
+                {% endfor %}
+                </select>
+            </label>
         </div>
     </section>
 </body>
