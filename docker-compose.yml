@@ -43,7 +43,7 @@ services:
       - "127.0.0.1:5432:5432" # DB bound to localhost only
 
   migrate:
-    image: oven/bun:1.3-slim
+    image: oven/bun:1.3-alpine
     working_dir: /app
     command: ["bun", "run", "scripts/migrate.ts"]
     environment:
