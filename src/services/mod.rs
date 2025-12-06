@@ -1,4 +1,3 @@
-pub mod csrf;
 pub mod project;
 pub mod session;
 pub mod repository;

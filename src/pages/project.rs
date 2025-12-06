@@ -12,7 +12,7 @@ use crate::{
     app::{self, ProjectSummary},
     entities::{AccessType, project, user},
     services::{
-        csrf, project::{
+        project::{
             generate_unique_slug, get_project, parse_public_access,
             project_access_level,
         }, repository::create_bare_repo, session, user::get_user_by_name, validation::validate_project_name
@@ -22,16 +22,12 @@ use crate::{
 
 #[derive(Debug, Deserialize)]
 pub struct NewProjectForm {
-    #[serde(rename = "_csrf")]
-    pub csrf_token: Option<String>,
     pub name: String,
     pub public_access: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ProjectSettingsForm {
-    #[serde(rename = "_csrf")]
-    pub csrf_token: Option<String>,
     pub name: String,
     pub description: String,
     pub public_access: String,
@@ -99,14 +95,6 @@ pub async fn handle_new_project(
         Ok(user) => user,
         Err(_) => return Err(Redirect::to("/login")),
     };
-
-    if let Err(err) = csrf::verify_form_token(&cookies, form.csrf_token.as_deref()) {
-        return Ok((
-            StatusCode::FORBIDDEN,
-            render_new_project_page(&cookies, Some(err.message()), selected_public_access).await,
-        )
-            .into_response());
-    }
 
     let public_access = match form
         .public_access
@@ -267,12 +255,6 @@ pub async fn handle_project_settings(
         return Err(Redirect::to(&format!("/{username}/{slug}")));
     }
 
-    if let Err(err) = csrf::verify_form_token(&cookies, form.csrf_token.as_deref()) {
-        let page =
-            render_project_settings_page(&cookies, owner, project, Some(err.message())).await;
-        return Ok((StatusCode::FORBIDDEN, page).into_response());
-    }
-
     let name = form.name.trim();
     let description = form.description.trim();
     let public_access = match parse_public_access(&form.public_access) {
@@ -319,20 +301,18 @@ pub async fn handle_project_settings(
 }
 
 async fn render_new_project_page(
-    cookies: &tower_cookies::Cookies,
+    _cookies: &tower_cookies::Cookies,
     message: Option<&str>,
     public_access: AccessType,
 ) -> Html<String> {
-    let csrf_token = csrf::ensure_csrf_cookie(cookies);
-    Html(app::new_project(message, &csrf_token, public_access).await)
+    Html(app::new_project(message, public_access).await)
 }
 
 async fn render_project_settings_page(
-    cookies: &tower_cookies::Cookies,
+    _cookies: &tower_cookies::Cookies,
     owner: user::Model,
     project: project::Model,
     message: Option<&str>,
 ) -> Html<String> {
-    let csrf_token = csrf::ensure_csrf_cookie(cookies);
-    Html(app::project_settings(owner, project, message, &csrf_token).await)
+    Html(app::project_settings(owner, project, message).await)
 }

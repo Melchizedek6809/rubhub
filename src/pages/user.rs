@@ -14,15 +14,13 @@ use crate::{
     app,
     entities::{ssh_key, user},
     services::{
-        csrf, session as session_service, user::replace_ssh_keys, validation::validate_username,
+        session as session_service, user::replace_ssh_keys, validation::validate_username,
     },
     state::GlobalState,
 };
 
 #[derive(Debug, Deserialize)]
 pub struct SettingsForm {
-    #[serde(rename = "_csrf")]
-    pub csrf_token: Option<String>,
     pub username: String,
     pub email: Option<String>,
     pub ssh_keys: Option<String>,
@@ -87,28 +85,6 @@ pub async fn handle_settings(
         Ok(user) => user,
         Err(_) => return Ok(Redirect::to("/login").into_response()),
     };
-
-    if let Err(err) = csrf::verify_form_token(&cookies, form.csrf_token.as_deref()) {
-        let ssh_keys: Vec<String> = form
-            .ssh_keys
-            .unwrap_or_default()
-            .lines()
-            .map(str::trim)
-            .filter(|line| !line.is_empty())
-            .map(ToOwned::to_owned)
-            .collect();
-        return Err((
-            StatusCode::FORBIDDEN,
-            render_settings_page(
-                &cookies,
-                current_user.name.as_str(),
-                current_user.email.as_str(),
-                &ssh_keys,
-                Some(err.message()),
-            )
-            .await,
-        ));
-    }
 
     let username = form.username.trim();
     let email = form.email.unwrap_or_default().trim().to_owned();
@@ -203,12 +179,11 @@ pub async fn handle_settings(
 }
 
 async fn render_settings_page(
-    cookies: &tower_cookies::Cookies,
+    _cookies: &tower_cookies::Cookies,
     username: &str,
     email: &str,
     ssh_keys: &[String],
     message: Option<&str>,
 ) -> Html<String> {
-    let csrf_token = csrf::ensure_csrf_cookie(cookies);
-    Html(app::settings(username, email, ssh_keys, message, &csrf_token).await)
+    Html(app::settings(username, email, ssh_keys, message).await)
 }

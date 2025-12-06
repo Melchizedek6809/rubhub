@@ -22,7 +22,6 @@ struct NotFoundTemplate;
 #[template(path = "login.html")]
 struct LoginTemplate<'a> {
     message: Option<&'a str>,
-    csrf_token: &'a str,
 }
 
 #[derive(Template)]
@@ -32,7 +31,6 @@ struct SettingsTemplate<'a> {
     email: &'a str,
     ssh_keys: &'a [String],
     message: Option<&'a str>,
-    csrf_token: &'a str,
 }
 
 #[derive(Template)]
@@ -55,7 +53,6 @@ pub struct ProjectSummary<'a> {
 #[template(path = "project_new.html")]
 struct NewProjectTemplate<'a> {
     message: Option<&'a str>,
-    csrf_token: &'a str,
     public_access: &'a str,
 }
 
@@ -74,7 +71,6 @@ struct ProjectSettingsTemplate<'a> {
     owner: &'a user::Model,
     project: &'a project::Model,
     message: Option<&'a str>,
-    csrf_token: &'a str,
 }
 
 #[cfg(not(debug_assertions))]
@@ -117,10 +113,9 @@ pub async fn not_found() -> String {
     theme(head, body).await
 }
 
-pub async fn login(message: Option<&str>, csrf_token: &str) -> String {
+pub async fn login(message: Option<&str>) -> String {
     let contents = LoginTemplate {
         message,
-        csrf_token,
     }
     .render()
     .unwrap();
@@ -135,14 +130,12 @@ pub async fn settings(
     email: &str,
     ssh_keys: &[String],
     message: Option<&str>,
-    csrf_token: &str,
 ) -> String {
     let contents = SettingsTemplate {
         username,
         email,
         ssh_keys,
         message,
-        csrf_token,
     }
     .render()
     .unwrap();
@@ -168,12 +161,10 @@ pub async fn projects(username: &str, projects: &[ProjectSummary<'_>], is_owner:
 
 pub async fn new_project(
     message: Option<&str>,
-    csrf_token: &str,
     public_access: AccessType,
 ) -> String {
     let contents = NewProjectTemplate {
         message,
-        csrf_token,
         public_access: public_access.as_str(),
     }
     .render()
@@ -208,13 +199,11 @@ pub async fn project_settings(
     owner: user::Model,
     project: project::Model,
     message: Option<&str>,
-    csrf_token: &str,
 ) -> String {
     let contents = ProjectSettingsTemplate {
         owner: &owner,
         project: &project,
         message,
-        csrf_token,
     }
     .render()
     .unwrap();

@@ -81,7 +81,7 @@ pub fn set_user_cookie(cookies: &Cookies, user_id: Uuid, username: &str) {
         .http_only(false)
         .same_site(SameSite::Lax)
         .secure(true)
-        .max_age(CookieDuration::days(30))
+        .max_age(CookieDuration::days(90))
         .build();
 
     cookies.add(user_cookie);
@@ -109,7 +109,7 @@ pub async fn create_session(
         .http_only(true)
         .same_site(SameSite::Lax)
         .secure(true)
-        .max_age(CookieDuration::days(30))
+        .max_age(CookieDuration::days(90))
         .build();
 
     cookies.add(cookie);

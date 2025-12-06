@@ -12,7 +12,6 @@
             {% when None %}
         {% endmatch %}
         <form method="post" action="/settings" class="stack card simple-form">
-            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
             <rubhub-slug-input label="Username" name="username" value="{{ username }}" autocomplete="username"></rubhub-slug-input>
 
             <label>

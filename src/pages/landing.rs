@@ -16,8 +16,6 @@ pub async fn index(State(state): State<GlobalState>) -> Html<String> {
         .await
         .unwrap_or_default();
 
-    println!("{projects:?}");
-
     let featured: Vec<ProjectSummary<'_>> = projects
         .iter()
         .filter_map(|(project, owner)| {

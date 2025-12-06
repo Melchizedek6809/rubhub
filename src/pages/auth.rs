@@ -12,7 +12,7 @@ use crate::{
     app,
     entities::{UserType, user},
     services::{
-        csrf, session,
+        session,
         user::{PasswordVerification, hash_password, verify_password_hash},
         validation::{validate_password, validate_username},
     },
@@ -22,8 +22,6 @@ use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter
 
 #[derive(Debug, Deserialize)]
 pub struct LoginForm {
-    #[serde(rename = "_csrf")]
-    pub csrf_token: Option<String>,
     pub action: String,
     pub username: String,
     pub email: String,
@@ -42,11 +40,10 @@ pub async fn login_page(cookies: tower_cookies::Cookies) -> Html<String> {
 }
 
 async fn render_login_page(
-    cookies: &tower_cookies::Cookies,
+    _cookies: &tower_cookies::Cookies,
     message: Option<&str>,
 ) -> Html<String> {
-    let csrf_token = csrf::ensure_csrf_cookie(cookies);
-    Html(app::login(message, &csrf_token).await)
+    Html(app::login(message).await)
 }
 
 async fn internal_error<E: std::fmt::Display>(
@@ -64,13 +61,6 @@ pub async fn handle_login(
     cookies: tower_cookies::Cookies,
     Form(form): Form<LoginForm>,
 ) -> Result<Response, (axum::http::StatusCode, Html<String>)> {
-    if let Err(err) = csrf::verify_form_token(&cookies, form.csrf_token.as_deref()) {
-        return Err((
-            StatusCode::FORBIDDEN,
-            render_login_page(&cookies, Some(err.message())).await,
-        ));
-    }
-
     let username = form.username.trim();
     let email = form.email.trim();
     let password = form.password.trim();
