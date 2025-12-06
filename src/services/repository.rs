@@ -58,17 +58,16 @@ pub fn get_git_repo(state: &GlobalState, user_name: &str, project_slug: &str) ->
     }
 }
 
-pub fn get_git_branches(state: &GlobalState, user_name: &str, project_slug: &str) -> Option<Vec<GitBranch>> {
+pub fn get_git_summary(state: &GlobalState, user_name: &str, project_slug: &str) -> Option<GitSummary> {
     let repo = get_git_repo(state, user_name, project_slug)?;
-    let names = repo.branch_names();
-    Some(names.iter()
-        .map(|s| s.to_string())
-        .map(|name| GitBranch {
-            name
-        })
-        .collect::<Vec<GitBranch>>())
+    let Ok(names) = repo.references() else { return None };
+    let Ok(names) = names.all() else { return None };
+
+    let branches = names.flatten().map(|b| b.name().shorten().to_string()).collect::<Vec<String>>();
+
+    Some(GitSummary { branches })
 }
 
-pub struct GitBranch {
-    pub name: String,
+pub struct GitSummary {
+    pub branches: Vec<String>,
 }

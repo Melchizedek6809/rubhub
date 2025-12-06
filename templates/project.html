@@ -14,8 +14,8 @@
         <div class="card">
             <rubhub-clone-url value="{{ ssh_clone_url }}" label="Clone via SSH"></rubhub-clone-url>
             <select>
-            {% for branch in branches %}
-                <option value="{{ branch.name }}">{{ branch.name }}</option>
+            {% for branch in summary.branches %}
+                <option value="{{ branch }}">{{ branch }}</option>
             {% endfor %}
             </select>
         </div>

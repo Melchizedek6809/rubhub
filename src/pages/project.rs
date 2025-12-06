@@ -15,7 +15,7 @@ use crate::{
         project::{
             generate_unique_slug, get_project, parse_public_access,
             project_access_level,
-        }, repository::{create_bare_repo, get_git_branches}, session, user::get_user_by_name, validation::validate_project_name
+        }, repository::{create_bare_repo, get_git_summary}, session, user::get_user_by_name, validation::validate_project_name
     },
     state::GlobalState,
 };
@@ -182,7 +182,7 @@ pub async fn project_page(
         return Err(not_found().await);
     };
 
-    let Some(branches) = get_git_branches(&state, &username, &slug) else {
+    let Some(summary) = get_git_summary(&state, &username, &slug) else {
         return Err(not_found().await);
     };
 
@@ -205,7 +205,7 @@ pub async fn project_page(
             project,
             access_level,
             ssh_clone_url,
-            branches,
+            summary,
         )
         .await,
     ))
