@@ -1,6 +1,6 @@
-use std::io;
+use std::{io, time::{SystemTime, UNIX_EPOCH}};
 use anyhow::Result;
-use gix::Repository;
+use gix::{Repository, date::Time};
 use tokio::{fs, process::Command};
 
 use crate::{services::validation::validate_slug, state::GlobalState};
@@ -70,13 +70,19 @@ pub fn get_git_summary(state: &GlobalState, user_name: &str, project_slug: &str)
 
 pub fn get_git_info(state: &GlobalState, user_name: &str, project_slug: &str, name: &str) -> Option<GitCommitInfo> {
     let repo = get_git_repo(state, user_name, project_slug)?;
-    println!("get_git_info {name}");
-    let Ok(reference) = repo.find_reference(name) else { return None };
-    let Ok(commit_id) = reference.id().shorten() else { return None };
+    let Ok(mut reference) = repo.find_reference(name) else { return None };
+    let Ok(commit) = reference.peel_to_commit() else { return None };
+    let commit_id = commit.id().shorten_or_id().to_string();
+    let commit_author = commit.author().map(|a| format!("{} <{}>", a.name, a.email)).unwrap_or_default();
+    let commit_message = commit.message().map(|m| m.summary().to_string()).unwrap_or_default();
+    let commit_time = commit.time().unwrap_or_default();
 
     Some(GitCommitInfo {
         branch_name: reference.name().shorten().to_string(),
         commit_id: commit_id.to_string(),
+        commit_author,
+        commit_message,
+        commit_time,
     })
 }
 
@@ -87,4 +93,34 @@ pub struct GitSummary {
 pub struct GitCommitInfo {
     pub branch_name: String,
     pub commit_id: String,
+    pub commit_author: String,
+    pub commit_message: String,
+    pub commit_time: Time,
+}
+
+impl GitCommitInfo {
+    pub fn relative_time(&self) -> String {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
+
+        let diff = now - self.commit_time.seconds;
+        if diff < 60 {
+            return format!("{} seconds ago", diff);
+        }
+        if diff < 3600 {
+            return format!("{} minutes ago", diff / 60);
+        }
+        if diff < 86400 {
+            return format!("{} hours ago", diff / 3600);
+        }
+        if diff < 86400 * 30 {
+            return format!("{} days ago", diff / 86400);
+        }
+        if diff < 86400 * 365 {
+            return format!("{} months ago", diff / (86400 * 30));
+        }
+        format!("{} years ago", diff / (86400 * 365))
+    }
 }

@@ -21,6 +21,10 @@
                 </select>
             </label>
         </div>
+
+        <div class="card">
+            {{ info.commit_message }} - {{ info.commit_author }} - {{ info.commit_id }} - {{ info.relative_time() }}
+        </div>
     </section>
 </body>
 </html>
