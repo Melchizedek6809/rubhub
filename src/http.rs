@@ -50,7 +50,6 @@ pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
         .with_state(state.clone());
 
     let socket = tokio::net::TcpSocket::new_v4()?;
-
     socket.set_reuseaddr(true)?;
 
     // Enable reuseport on Linux, that way we can run multiple replicas
