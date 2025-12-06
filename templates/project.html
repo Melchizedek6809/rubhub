@@ -1,30 +1,39 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Project</title>
 </head>
+
 <body>
     <section>
         <div class="page-header">
-            <h1 class="project-header"><a href="/{{ owner.name }}">{{ owner.name }}</a>/<a href="/{{ owner.name }}/{{ project.slug }}">{{ project.name }}</a></h1>
+            <h1 class="project-header"><a href="/{{ owner.name }}">{{ owner.name }}</a>/<a
+                    href="/{{ owner.name }}/{{ project.slug }}">{{ project.name }}</a></h1>
             {% if access_level == AccessType::Admin %}
-                <p><a class="btn" href="/{{ owner.name }}/{{ project.slug }}/settings">Project settings</a></p>
+            <p><a class="btn" href="/{{ owner.name }}/{{ project.slug }}/settings">Project settings</a></p>
             {% endif %}
-        </div>
-        <div class="card">
-            <rubhub-clone-url value="{{ ssh_clone_url }}" label="Clone via SSH"></rubhub-clone-url>
-            <label>Branches:
-                <select>
-                {% for branch in summary.branches %}
-                    <option value="{{ branch }}" {% if branch.as_str() == info.branch_name %}selected{% endif %}>{{ branch }}</option>
-                {% endfor %}
-                </select>
-            </label>
         </div>
 
         <div class="card">
+            <rubhub-clone-url value="{{ ssh_clone_url }}" label="Clone via SSH"></rubhub-clone-url>
+            {% if summary.branches.len() > 0 %} <label>Branches:
+                <select>
+                    {% for branch in summary.branches %}
+                    <option value="{{ branch }}" {% if branch==selected_branch.as_str() %}selected{% endif %}>{{ branch
+                        }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            {% endif %}
+        </div>
+
+        {% if let Some(info) = info %}
+        <div class="card">
             {{ info.commit_message }} - {{ info.commit_author }} - {{ info.commit_id }} - {{ info.relative_time() }}
         </div>
+        {% endif %}
     </section>
 </body>
+
 </html>

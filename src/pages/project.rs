@@ -12,10 +12,11 @@ use crate::{
     app::{self, ProjectSummary},
     entities::{AccessType, project, user},
     services::{
-        project::{
-            generate_unique_slug, get_project, parse_public_access,
-            project_access_level,
-        }, repository::{create_bare_repo, get_git_info, get_git_summary}, session, user::get_user_by_name, validation::validate_project_name
+        project::{generate_unique_slug, get_project, parse_public_access, project_access_level},
+        repository::{create_bare_repo, get_git_info, get_git_summary},
+        session,
+        user::get_user_by_name,
+        validation::validate_project_name,
     },
     state::GlobalState,
 };
@@ -187,9 +188,7 @@ pub async fn project_page(
     };
 
     let current = project.main_branch.clone();
-    let Some(info) = get_git_info(&state, &username, &slug, &current) else {
-        return Err(not_found().await);
-    };
+    let info = get_git_info(&state, &username, &slug, &current);
 
     let session_user = session::current_user(&state, &cookies).await.ok();
     let access_level = project_access_level(
@@ -205,15 +204,7 @@ pub async fn project_page(
     );
 
     Ok(Html(
-        app::project_with_access(
-            owner,
-            project,
-            access_level,
-            ssh_clone_url,
-            summary,
-            info,
-        )
-        .await,
+        app::project_with_access(owner, project, access_level, ssh_clone_url, summary, info).await,
     ))
 }
 

@@ -2,7 +2,10 @@ use askama::Template;
 #[cfg(debug_assertions)]
 use tokio::fs;
 
-use crate::{entities::{AccessType, project, user}, services::repository::{GitCommitInfo, GitSummary}};
+use crate::{
+    entities::{AccessType, project, user},
+    services::repository::{GitCommitInfo, GitSummary},
+};
 
 #[derive(Template)]
 #[template(path = "index.html")]
@@ -63,8 +66,9 @@ struct ProjectTemplate<'a> {
     project: &'a project::Model,
     access_level: AccessType,
     ssh_clone_url: String,
+    selected_branch: String,
     summary: GitSummary,
-    info: GitCommitInfo,
+    info: Option<GitCommitInfo>,
 }
 
 #[derive(Template)]
@@ -116,11 +120,7 @@ pub async fn not_found() -> String {
 }
 
 pub async fn login(message: Option<&str>) -> String {
-    let contents = LoginTemplate {
-        message,
-    }
-    .render()
-    .unwrap();
+    let contents = LoginTemplate { message }.render().unwrap();
 
     let parts = extract_html_parts(&contents);
 
@@ -161,10 +161,7 @@ pub async fn projects(username: &str, projects: &[ProjectSummary<'_>], is_owner:
     theme(parts.0, parts.1).await
 }
 
-pub async fn new_project(
-    message: Option<&str>,
-    public_access: AccessType,
-) -> String {
+pub async fn new_project(message: Option<&str>, public_access: AccessType) -> String {
     let contents = NewProjectTemplate {
         message,
         public_access: public_access.as_str(),
@@ -183,8 +180,13 @@ pub async fn project_with_access(
     access_level: AccessType,
     ssh_clone_url: String,
     summary: GitSummary,
-    info: GitCommitInfo,
+    info: Option<GitCommitInfo>,
 ) -> String {
+    let selected_branch = info
+        .as_ref()
+        .map(|i| i.branch_name.to_string())
+        .unwrap_or_default();
+
     let contents = ProjectTemplate {
         owner: &owner,
         project: &project,
@@ -192,6 +194,7 @@ pub async fn project_with_access(
         ssh_clone_url,
         summary,
         info,
+        selected_branch,
     }
     .render()
     .unwrap();
