@@ -9,16 +9,9 @@ export class RubhubCloneUrl extends LitElement {
 			position: relative;
 		}
 
-		.wrapper {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-s);
-		}
-
 		#input-row {
 			display: flex;
 			align-items: stretch;
-			gap: var(--space-s);
 		}
 
 		label {
@@ -26,13 +19,15 @@ export class RubhubCloneUrl extends LitElement {
 		}
 
 		input {
-			width: 100%;
 			padding: var(--space-m);
-			padding-right: calc(2.5rem + --space-m);
 			background: var(--background-color);
 			color: var(--text-color);
 			border: solid 1px var(--primary-color);
-			border-radius: var(--space-s);
+			border-radius: var(--space-s) 0 0 var(--space-s);
+			border-right: none;
+			width: 100%;
+			font-size: 1rem;
+			line-height: 1.5em;
 		}
 
 		.copy-btn {
@@ -44,11 +39,12 @@ export class RubhubCloneUrl extends LitElement {
 			margin: 0;
 			background: var(--primary-color);
 			color: var(--white);
-			border: 1px solid var(--primary-color-bright);
-			border-bottom-color: var(--primary-color-dark);
-			border-right-color: var(--primary-color-dark);
-			border-radius: var(--space-s);
+			border: 1px solid var(--primary-color);
+			border-left: none;
+			border-radius: 0 var(--space-s) var(--space-s) 0;
 			cursor: pointer;
+			font-size: 1rem;
+			line-height: 1.5em;
 		}
 
 		#status {
@@ -79,7 +75,7 @@ export class RubhubCloneUrl extends LitElement {
 	`;
 
 	@property({ type: String })
-	label = "Clone with SSH";
+	label = "";
 
 	@property({ type: String })
 	value = "";
@@ -155,15 +151,13 @@ export class RubhubCloneUrl extends LitElement {
 		const showStatus = this.status !== "idle";
 
 		return html`
-			<div class="wrapper">
-				<label>${this.label}</label>
-				<div id="input-row">
-					<input name="cloneUrl" type="text" readonly .value=${this.value} aria-label=${this.label} />
-					<button class="copy-btn" type="button" @click=${this.copy}>Copy</button>
-				</div>
-				<div id="status" class="${showStatus ? "visible" : ""} ${this.status === "copied" ? "success" : ""} ${this.status === "error" ? "error" : ""}" role="status" aria-live="polite">
-					${this.statusMessage}
-				</div>
+			${this.label && html`<label>${this.label}</label>`}
+			<div id="input-row">
+				<input name="cloneUrl" type="text" readonly .value=${this.value} aria-label=${this.label} />
+				<button class="copy-btn" type="button" @click=${this.copy}>Copy</button>
+			</div>
+			<div id="status" class="${showStatus ? "visible" : ""} ${this.status === "copied" ? "success" : ""} ${this.status === "error" ? "error" : ""}" role="status" aria-live="polite">
+				${this.statusMessage}
 			</div>
 		`;
 	}

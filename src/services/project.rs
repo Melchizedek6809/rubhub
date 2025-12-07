@@ -112,4 +112,3 @@ pub async fn generate_unique_slug(state: &GlobalState, name: &str, owner: Uuid) 
 
     format!("{base}-{}", owner.to_string().get(..8).unwrap_or("project"))
 }
-

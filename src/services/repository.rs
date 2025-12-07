@@ -1,6 +1,9 @@
-use std::{io, time::{SystemTime, UNIX_EPOCH}};
 use anyhow::Result;
 use gix::{Repository, date::Time};
+use std::{
+    io,
+    time::{SystemTime, UNIX_EPOCH},
+};
 use tokio::{fs, process::Command};
 
 use crate::{services::validation::validate_slug, state::GlobalState};
@@ -47,7 +50,11 @@ pub async fn create_bare_repo(
     }
 }
 
-pub fn get_git_repo(state: &GlobalState, user_name: &str, project_slug: &str) -> Option<Repository> {
+pub fn get_git_repo(
+    state: &GlobalState,
+    user_name: &str,
+    project_slug: &str,
+) -> Option<Repository> {
     let path = state.config.git_root.join(user_name).join(project_slug);
     match gix::open(path) {
         Ok(repo) => Some(repo),
@@ -58,23 +65,47 @@ pub fn get_git_repo(state: &GlobalState, user_name: &str, project_slug: &str) ->
     }
 }
 
-pub fn get_git_summary(state: &GlobalState, user_name: &str, project_slug: &str) -> Option<GitSummary> {
+pub fn get_git_summary(
+    state: &GlobalState,
+    user_name: &str,
+    project_slug: &str,
+) -> Option<GitSummary> {
     let repo = get_git_repo(state, user_name, project_slug)?;
-    let Ok(names) = repo.references() else { return None };
+    let Ok(names) = repo.references() else {
+        return None;
+    };
     let Ok(names) = names.all() else { return None };
 
-    let branches = names.flatten().map(|b| b.name().shorten().to_string()).collect::<Vec<String>>();
+    let branches = names
+        .flatten()
+        .map(|b| b.name().shorten().to_string())
+        .collect::<Vec<String>>();
 
     Some(GitSummary { branches })
 }
 
-pub fn get_git_info(state: &GlobalState, user_name: &str, project_slug: &str, name: &str) -> Option<GitCommitInfo> {
+pub fn get_git_info(
+    state: &GlobalState,
+    user_name: &str,
+    project_slug: &str,
+    name: &str,
+) -> Option<GitCommitInfo> {
     let repo = get_git_repo(state, user_name, project_slug)?;
-    let Ok(mut reference) = repo.find_reference(name) else { return None };
-    let Ok(commit) = reference.peel_to_commit() else { return None };
+    let Ok(mut reference) = repo.find_reference(name) else {
+        return None;
+    };
+    let Ok(commit) = reference.peel_to_commit() else {
+        return None;
+    };
     let commit_id = commit.id().shorten_or_id().to_string();
-    let commit_author = commit.author().map(|a| format!("{} <{}>", a.name, a.email)).unwrap_or_default();
-    let commit_message = commit.message().map(|m| m.summary().to_string()).unwrap_or_default();
+    let commit_author = commit
+        .author()
+        .map(|a| format!("{} <{}>", a.name, a.email))
+        .unwrap_or_default();
+    let commit_message = commit
+        .message()
+        .map(|m| m.summary().to_string())
+        .unwrap_or_default();
     let commit_time = commit.time().unwrap_or_default();
 
     Some(GitCommitInfo {

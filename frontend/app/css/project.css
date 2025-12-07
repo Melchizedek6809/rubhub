@@ -1,0 +1,37 @@
+.commit-bar {
+	display: flex;
+	gap: var(--space-m);
+	align-content: center;
+	padding: var(--space-m) 0;
+}
+
+.flex-gap,
+.commit-message {
+	flex: 1;
+}
+
+.commit-author {
+	max-width: 16rem;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+.repo-bar {
+	display: flex;
+	gap: var(--space-m);
+	align-content: center;
+	padding: var(--space-m) 0;
+}
+
+.repo-bar > select {
+	width: auto;
+	margin-bottom: 0;
+}
+
+.commit-message {
+	color: var(--text-color-subdued);
+	text-overflow: ellipsis;
+	overflow: hidden;
+	white-space: nowrap;
+}

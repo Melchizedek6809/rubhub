@@ -13,9 +13,7 @@ use tower_cookies::Cookies;
 use crate::{
     app,
     entities::{ssh_key, user},
-    services::{
-        session as session_service, user::replace_ssh_keys, validation::validate_username,
-    },
+    services::{session as session_service, user::replace_ssh_keys, validation::validate_username},
     state::GlobalState,
 };
 

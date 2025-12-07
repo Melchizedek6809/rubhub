@@ -9,15 +9,15 @@ button {
     padding: var(--space-s) var(--space-m);
     background: var(--primary-color);
     color: var(--white);
-    border: solid 1px var(--primary-color-bright);
-    border-bottom-color: var(--primary-color-dark);
-    border-right-color: var(--primary-color-dark);
+    border: solid 1px var(--primary-color);
     border-radius: var(--space-s);
     cursor: pointer;
     display: inline-block;
     line-height: 1.3em;
     font-size: 1rem;
     text-decoration: none;
+    font-size: 1rem;
+	line-height: 1.5em;
 }
 `;
 

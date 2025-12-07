@@ -1,1 +1,3 @@
-fn main() {panic!("Dummy")}
+fn main() {
+    panic!("Dummy")
+}

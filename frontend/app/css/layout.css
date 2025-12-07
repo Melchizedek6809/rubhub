@@ -17,7 +17,7 @@ header {
 	justify-content: space-between;
 	/* left on one side, right on the other */
 	align-items: center;
-	padding: var(--space-m) var(--space-xl);
+	padding: var(--space-m) var(--space-l);
 	background: var(--background-color-bright);
 }
 
@@ -27,7 +27,7 @@ main {
 	padding: var(--space-l);
 }
 
-main > section {
+main>section {
 	margin: 0 auto var(--space-xl);
 	width: 100%;
 	max-width: var(--max-content-width);
@@ -50,21 +50,21 @@ main > section {
 .card {
 	border: 1px solid var(--background-color-muted);
 	border-radius: var(--space-s);
-	padding: var(--space-m);
+	padding: var(--space-m) var(--space-l);
 	background: var(--background-color-bright);
 	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 /* Footer stays at bottom because body is a column flexbox */
 footer {
-	padding: var(--space-m);
+	padding: var(--space-m) var(--space-l);
 	background: var(--background-color-bright);
 }
 
 /* Centered footer nav */
 .footer-nav {
 	display: flex;
-	justify-content: center;
+	justify-content: end;
 	gap: var(--space-l);
 }
 
