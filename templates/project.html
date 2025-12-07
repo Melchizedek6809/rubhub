@@ -11,7 +11,7 @@
             <h1 class="project-header"><a href="/{{ owner.name }}">{{ owner.name }}</a>/<a
                     href="/{{ owner.name }}/{{ project.slug }}">{{ project.name }}</a></h1>
             {% if access_level == AccessType::Admin %}
-            <p><a class="btn" href="/{{ owner.name }}/{{ project.slug }}/settings">Project settings</a></p>
+            <a class="btn" href="/{{ owner.name }}/{{ project.slug }}/settings">Project settings</a>
             {% endif %}
         </div>
 
@@ -29,6 +29,12 @@
                     <option selected>Empty Repo</option>
                 </select>
                 {% endif %}
+
+                <span class="repo-branches">{{ summary.branches.len() }} Branch{% if summary.branches.len() != 1
+                    %}es{% endif %}</span>
+
+                <span class="repo-tags">{{ summary.tags.len() }} Tag{% if summary.tags.len() != 1
+                    %}s{% endif %}</span>
 
                 <div class="flex-gap"> </div>
 

@@ -71,17 +71,28 @@ pub fn get_git_summary(
     project_slug: &str,
 ) -> Option<GitSummary> {
     let repo = get_git_repo(state, user_name, project_slug)?;
-    let Ok(names) = repo.references() else {
-        return None;
-    };
-    let Ok(names) = names.all() else { return None };
+    let mut tags = vec![];
+    let mut branches = vec![];
 
-    let branches = names
-        .flatten()
-        .map(|b| b.name().shorten().to_string())
-        .collect::<Vec<String>>();
+    if let Ok(refs) = repo.references() {
+        if let Ok(iter) = refs.prefixed("refs/tags/") {
+            for r in iter {
+                if let Ok(r) = r {
+                    tags.push(r.name().shorten().to_string());
+                }
+            }
+        }
 
-    Some(GitSummary { branches })
+        if let Ok(iter) = refs.prefixed("refs/heads/") {
+            for r in iter {
+                if let Ok(r) = r {
+                    branches.push(r.name().shorten().to_string());
+                }
+            }
+        }
+    }
+
+    Some(GitSummary { branches, tags })
 }
 
 pub fn get_git_info(
@@ -119,6 +130,7 @@ pub fn get_git_info(
 
 pub struct GitSummary {
     pub branches: Vec<String>,
+    pub tags: Vec<String>,
 }
 
 pub struct GitCommitInfo {
