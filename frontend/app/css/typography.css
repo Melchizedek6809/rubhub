@@ -68,14 +68,3 @@ p:last-child {
 a {
 	color: var(--primary-color);
 }
-
-.project-header {
-	color: var(--text-color);
-	font-size: 1.6rem;
-}
-.project-header a {
-	text-decoration: none;
-}
-.project-header a:first-of-type {
-	color: var(--text-color);
-}

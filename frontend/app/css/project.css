@@ -1,3 +1,21 @@
+.page-header {
+    margin-bottom: var(--space-l);
+}
+
+.project-header {
+    color: var(--text-color);
+    font-size: 1.6rem;
+    margin-bottom: 0;
+}
+
+.project-header a {
+    text-decoration: none;
+}
+
+.project-header a:first-of-type {
+    color: var(--text-color);
+}
+
 .commit-bar {
     display: flex;
     gap: var(--space-m);

@@ -49,7 +49,7 @@ main>section {
 
 .card {
 	border: 1px solid var(--background-color-muted);
-	border-radius: var(--space-s);
+	border-radius: var(--space-m);
 	padding: var(--space-m) var(--space-l);
 	background: var(--background-color-bright);
 	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
