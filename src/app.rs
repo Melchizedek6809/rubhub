@@ -69,6 +69,7 @@ struct ProjectTemplate<'a> {
     selected_branch: String,
     summary: GitSummary,
     info: Option<GitCommitInfo>,
+    readme_html: Option<String>,
 }
 
 #[derive(Template)]
@@ -179,6 +180,7 @@ pub async fn project_with_access(
     ssh_clone_url: String,
     summary: GitSummary,
     info: Option<GitCommitInfo>,
+    readme_html: Option<String>,
 ) -> String {
     let selected_branch = info
         .as_ref()
@@ -193,6 +195,7 @@ pub async fn project_with_access(
         summary,
         info,
         selected_branch,
+        readme_html,
     }
     .render()
     .unwrap();

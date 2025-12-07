@@ -1,5 +1,5 @@
 use anyhow::Result;
-use gix::{Repository, date::Time};
+use gix::{ObjectDetached, Repository, date::Time};
 use std::{
     io,
     time::{SystemTime, UNIX_EPOCH},
@@ -95,10 +95,10 @@ pub fn get_git_info(
     state: &GlobalState,
     user_name: &str,
     project_slug: &str,
-    name: &str,
+    branch: &str,
 ) -> Option<GitCommitInfo> {
     let repo = get_git_repo(state, user_name, project_slug)?;
-    let Ok(mut reference) = repo.find_reference(name) else {
+    let Ok(mut reference) = repo.find_reference(branch) else {
         return None;
     };
     let Ok(commit) = reference.peel_to_commit() else {
@@ -122,6 +122,36 @@ pub fn get_git_info(
         commit_message,
         commit_time,
     })
+}
+
+pub fn get_git_file(
+    state: &GlobalState,
+    user_name: &str,
+    project_slug: &str,
+    branch: &str,
+    path: &str,
+) -> Option<ObjectDetached> {
+    let repo = get_git_repo(state, user_name, project_slug)?;
+    let Ok(mut reference) = repo.find_reference(branch) else {
+        return None;
+    };
+    let Ok(commit) = reference.peel_to_commit() else {
+        return None;
+    };
+    let Ok(tree) = commit.tree() else {
+        return None;
+    };
+    let Ok(Some(entry)) = tree.lookup_entry_by_path(path) else {
+        return None;
+    };
+    let Ok(object) = entry.object() else {
+        return None;
+    };
+    let Ok(blob) = object.try_into_blob() else {
+        return None;
+    };
+
+    Some(blob.detach())
 }
 
 pub struct GitSummary {

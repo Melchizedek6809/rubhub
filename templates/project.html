@@ -49,6 +49,11 @@
                 <span class="commit-time">{{ info.relative_time() }}</span>
             </div>
             {% endif %}
+
+            {% if let Some(readme_html) = readme_html %}
+            <br/>
+            <div class="markdown">{{ readme_html|safe }}</div>
+            {% endif %}
         </div>
     </section>
 </body>

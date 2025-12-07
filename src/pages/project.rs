@@ -13,7 +13,7 @@ use crate::{
     entities::{AccessType, project, user},
     services::{
         project::{generate_unique_slug, get_project, parse_public_access, project_access_level},
-        repository::{create_bare_repo, get_git_info, get_git_summary},
+        repository::{create_bare_repo, get_git_file, get_git_info, get_git_summary},
         session,
         user::get_user_by_name,
         validation::{validate_project_name, validate_uri},
@@ -208,8 +208,28 @@ pub async fn project_page(
         state.config.ssh_public_host, owner.slug, project.slug
     );
 
+    let readme = get_git_file(&state, &username, &slug, &current, "README.md");
+    let readme = readme.map(|b| {
+        let str = String::from_utf8_lossy(&b.data);
+        let parser = pulldown_cmark::Parser::new(&str);
+
+        // Write to a new String buffer.
+        let mut html_output = String::new();
+        pulldown_cmark::html::push_html(&mut html_output, parser);
+        html_output
+    });
+
     Ok(Html(
-        app::project_with_access(owner, project, access_level, ssh_clone_url, summary, info).await,
+        app::project_with_access(
+            owner,
+            project,
+            access_level,
+            ssh_clone_url,
+            summary,
+            info,
+            readme,
+        )
+        .await,
     ))
 }
 

@@ -63,3 +63,7 @@
 .commit-time {
 	color: var(--text-color-subdued);
 }
+
+.markdown {
+	white-space: pre;
+}
