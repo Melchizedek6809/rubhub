@@ -16,7 +16,7 @@ use crate::{
         repository::{create_bare_repo, get_git_info, get_git_summary},
         session,
         user::get_user_by_name,
-        validation::validate_project_name,
+        validation::{validate_project_name, validate_uri},
     },
     state::GlobalState,
 };
@@ -266,6 +266,8 @@ pub async fn handle_project_settings(
     let name = form.name.trim();
     let description = form.description.trim();
     let main_branch = form.main_branch.trim();
+    let website = form.website.trim();
+
     let public_access = match parse_public_access(&form.public_access) {
         Ok(level) => level,
         Err(msg) => {
@@ -276,6 +278,7 @@ pub async fn handle_project_settings(
             );
         }
     };
+
     if let Err(msg) = validate_project_name(name) {
         return Ok(
             render_project_settings_page(&cookies, owner, project, Some(msg))
@@ -283,6 +286,17 @@ pub async fn handle_project_settings(
                 .into_response(),
         );
     }
+
+    if !website.is_empty()
+        && let Err(msg) = validate_uri(website)
+    {
+        return Ok(
+            render_project_settings_page(&cookies, owner, project, Some(msg))
+                .await
+                .into_response(),
+        );
+    }
+
     if name.is_empty() {
         return Ok(render_project_settings_page(
             &cookies,
@@ -311,7 +325,7 @@ pub async fn handle_project_settings(
     active.public_access = Set(public_access);
     active.description = Set(description.to_owned());
     active.main_branch = Set(main_branch.to_owned());
-    active.website = Set(form.website.trim().to_owned());
+    active.website = Set(website.to_owned());
 
     if active.update(&state.db).await.is_err() {
         // A proper error message would be nicer here

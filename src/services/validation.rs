@@ -74,6 +74,13 @@ pub fn slugify(name: &str) -> String {
     }
 }
 
+pub fn validate_uri(uri: &str) -> Result<(), &'static str> {
+    if !uri.starts_with("https://") {
+        return Err("Links must start with https://");
+    }
+    Ok(())
+}
+
 pub fn validate_project_name(name: &str) -> Result<(), &'static str> {
     if name.len() < 3 {
         return Err("Project name must be at least 3 characters.");

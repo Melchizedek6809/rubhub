@@ -41,15 +41,15 @@
 				{% endif %}
 			</dl>
 		</div>
-		{% if projects.len() > 0 %}
-			<br/>
-			<div class="page-header">
-				<h2 class="project-header">Projects</h2>
-				{% if is_owner %}
-					<a class="btn" href="/projects/new">New project</a>
-				{% endif %}
-			</div>
 
+		<br/>
+		<div class="page-header">
+			<h2 class="project-header">Projects</h2>
+			{% if is_owner %}
+				<a class="btn" href="/projects/new">New project</a>
+			{% endif %}
+		</div>
+		{% if projects.len() > 0 %}
 			<div class="card-grid">
 			{% for project in projects %}
 				{% include "project_card.html" %}

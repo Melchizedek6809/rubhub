@@ -13,7 +13,11 @@ use tower_cookies::Cookies;
 use crate::{
     app,
     entities::{ssh_key, user},
-    services::{session as session_service, user::replace_ssh_keys, validation::validate_username},
+    services::{
+        session as session_service,
+        user::replace_ssh_keys,
+        validation::{validate_uri, validate_username},
+    },
     state::GlobalState,
 };
 
@@ -87,6 +91,7 @@ pub async fn handle_settings(
     let slug = form.slug.trim();
     let default_main_branch = form.slug.trim();
     let email = form.email.trim().to_owned();
+    let website = form.website.trim();
     let ssh_keys: Vec<String> = form
         .ssh_keys
         .unwrap_or_default()
@@ -129,6 +134,15 @@ pub async fn handle_settings(
         ));
     }
 
+    if !website.is_empty()
+        && let Err(msg) = validate_uri(website)
+    {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            render_settings_page(&cookies, current_user, &ssh_keys, Some(msg)).await,
+        ));
+    }
+
     if let Ok(Some(_)) = user::Entity::find()
         .filter(
             Condition::all()
@@ -163,7 +177,7 @@ pub async fn handle_settings(
     user_active.pronouns = Set(form.pronouns.trim().to_owned());
     user_active.organization = Set(form.organization.trim().to_owned());
     user_active.location = Set(form.location.trim().to_owned());
-    user_active.website = Set(form.website.trim().to_owned());
+    user_active.website = Set(website.to_owned());
     user_active.description = Set(form.description.trim().to_owned());
     user_active.default_main_branch = Set(form.default_main_branch.trim().to_owned());
 
