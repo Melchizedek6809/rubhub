@@ -35,16 +35,23 @@ export class RubhubCloneUrl extends LitElement {
 			align-items: center;
 			gap: var(--space-xs);
 			white-space: nowrap;
-			padding: var(--space-m);
+			padding: var(--space-s) var(--space-m);
 			margin: 0;
 			background: var(--primary-color);
 			color: var(--white);
-			border: 1px solid var(--primary-color);
+			border: none;
 			border-left: none;
 			border-radius: 0 var(--space-s) var(--space-s) 0;
 			cursor: pointer;
 			font-size: 1rem;
-			line-height: 1.5em;
+			line-height: 1.315em;
+			transition: background-color 200ms ease-in-out;
+		}
+
+
+		.copy-btn:hover,
+		.copy-btn:focus {
+			background-color: var(--primary-color-dark);
 		}
 
 		#status {

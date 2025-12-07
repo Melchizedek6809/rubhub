@@ -9,7 +9,7 @@ button {
     padding: var(--space-s) var(--space-m);
     background: var(--primary-color);
     color: var(--white);
-    border: solid 1px var(--primary-color);
+    border: none;
     border-radius: var(--space-s);
     cursor: pointer;
     display: inline-block;
@@ -18,6 +18,15 @@ button {
     text-decoration: none;
     font-size: 1rem;
 	line-height: 1.5em;
+    transition: background-color 200ms ease-in-out;
+}
+
+
+.btn:hover,
+.btn:focus,
+button:hover,
+button:focus {
+	background-color: var(--primary-color-dark);
 }
 `;
 

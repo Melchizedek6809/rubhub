@@ -3,11 +3,19 @@ button {
 	padding: var(--space-s) var(--space-m);
 	background: var(--primary-color);
 	color: var(--white);
-	border: solid 1px var(--primary-color);
+	border: none;
 	border-radius: var(--space-s);
 	cursor: pointer;
 	text-decoration: none;
 	appearance: none;
+	transition: background-color 200ms ease-in-out;
+}
+
+.btn:hover,
+.btn:focus,
+button:hover,
+button:focus {
+	background-color: var(--primary-color-dark);
 }
 
 select,
@@ -22,7 +30,7 @@ input {
 	width: 100%;
 	line-height: 1.35em;
 	outline: none;
-	transition: border-color 150ms ease-in-out;
+	transition: border-color 200ms ease-in-out;
 }
 
 select:focus,
