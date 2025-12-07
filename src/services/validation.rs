@@ -78,5 +78,5 @@ pub fn validate_project_name(name: &str) -> Result<(), &'static str> {
     if name.len() < 3 {
         return Err("Project name must be at least 3 characters.");
     }
-    validate_slug(name)
+    Ok(())
 }

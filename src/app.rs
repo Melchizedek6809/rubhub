@@ -29,17 +29,16 @@ struct LoginTemplate<'a> {
 
 #[derive(Template)]
 #[template(path = "user_settings.html")]
-struct SettingsTemplate<'a> {
-    username: &'a str,
-    email: &'a str,
+struct UserSettingsTemplate<'a> {
+    user: &'a user::Model,
     ssh_keys: &'a [String],
     message: Option<&'a str>,
 }
 
 #[derive(Template)]
-#[template(path = "project_list.html")]
-struct ProjectsTemplate<'a> {
-    username: &'a str,
+#[template(path = "user.html")]
+struct UserTemplate<'a> {
+    user: &'a user::Model,
     projects: &'a [ProjectSummary<'a>],
     is_owner: bool,
 }
@@ -48,7 +47,8 @@ struct ProjectsTemplate<'a> {
 pub struct ProjectSummary<'a> {
     pub name: &'a str,
     pub slug: &'a str,
-    pub owner: &'a str,
+    pub owner_slug: &'a str,
+    pub owner_name: &'a str,
     pub description: &'a str,
 }
 
@@ -127,15 +127,9 @@ pub async fn login(message: Option<&str>) -> String {
     theme(parts.0, parts.1).await
 }
 
-pub async fn settings(
-    username: &str,
-    email: &str,
-    ssh_keys: &[String],
-    message: Option<&str>,
-) -> String {
-    let contents = SettingsTemplate {
-        username,
-        email,
+pub async fn settings(user: user::Model, ssh_keys: &[String], message: Option<&str>) -> String {
+    let contents = UserSettingsTemplate {
+        user: &user,
         ssh_keys,
         message,
     }
@@ -147,9 +141,13 @@ pub async fn settings(
     theme(parts.0, parts.1).await
 }
 
-pub async fn projects(username: &str, projects: &[ProjectSummary<'_>], is_owner: bool) -> String {
-    let contents = ProjectsTemplate {
-        username,
+pub async fn projects(
+    user: user::Model,
+    projects: &[ProjectSummary<'_>],
+    is_owner: bool,
+) -> String {
+    let contents = UserTemplate {
+        user: &user,
         projects,
         is_owner,
     }

@@ -76,18 +76,14 @@ pub fn get_git_summary(
 
     if let Ok(refs) = repo.references() {
         if let Ok(iter) = refs.prefixed("refs/tags/") {
-            for r in iter {
-                if let Ok(r) = r {
-                    tags.push(r.name().shorten().to_string());
-                }
+            for r in iter.flatten() {
+                tags.push(r.name().shorten().to_string());
             }
         }
 
         if let Ok(iter) = refs.prefixed("refs/heads/") {
-            for r in iter {
-                if let Ok(r) = r {
-                    branches.push(r.name().shorten().to_string());
-                }
+            for r in iter.flatten() {
+                branches.push(r.name().shorten().to_string());
             }
         }
     }
@@ -111,7 +107,7 @@ pub fn get_git_info(
     let commit_id = commit.id().shorten_or_id().to_string();
     let commit_author = commit
         .author()
-        .map(|a| format!("{} <{}>", a.name, a.email))
+        .map(|a| format!("{}", a.name))
         .unwrap_or_default();
     let commit_message = commit
         .message()
@@ -150,20 +146,25 @@ impl GitCommitInfo {
 
         let diff = now - self.commit_time.seconds;
         if diff < 60 {
-            return format!("{} seconds ago", diff);
+            return format!("{} second{} ago", diff, if diff != 1 { "s" } else { "" });
         }
         if diff < 3600 {
-            return format!("{} minutes ago", diff / 60);
+            let diff = diff / 60;
+            return format!("{} minute{} ago", diff, if diff != 1 { "s" } else { "" });
         }
         if diff < 86400 {
-            return format!("{} hours ago", diff / 3600);
+            let diff = diff / 3600;
+            return format!("{} hour{} ago", diff, if diff != 1 { "s" } else { "" });
         }
         if diff < 86400 * 30 {
-            return format!("{} days ago", diff / 86400);
+            let diff = diff / 86400;
+            return format!("{} day{} ago", diff, if diff != 1 { "s" } else { "" });
         }
         if diff < 86400 * 365 {
-            return format!("{} months ago", diff / (86400 * 30));
+            let diff = diff / (86400 * 30);
+            return format!("{} month{} ago", diff, if diff != 1 { "s" } else { "" });
         }
-        format!("{} years ago", diff / (86400 * 365))
+        let diff = diff / (86400 * 365);
+        format!("{} year{} ago", diff, if diff != 1 { "s" } else { "" })
     }
 }

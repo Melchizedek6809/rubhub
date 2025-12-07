@@ -22,7 +22,8 @@ pub async fn index(State(state): State<GlobalState>) -> Html<String> {
             owner.as_ref().map(|owner| ProjectSummary {
                 name: project.name.as_str(),
                 slug: project.slug.as_str(),
-                owner: owner.name.as_str(),
+                owner_slug: owner.slug.as_str(),
+                owner_name: owner.name.as_str(),
                 description: project.description.as_str(),
             })
         })

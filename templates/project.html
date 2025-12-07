@@ -8,10 +8,10 @@
 <body>
     <section>
         <div class="page-header">
-            <h1 class="project-header"><a href="/{{ owner.name }}">{{ owner.name }}</a>/<a
-                    href="/{{ owner.name }}/{{ project.slug }}">{{ project.name }}</a></h1>
+            <h1 class="project-header"><a href="/{{ owner.slug }}">{{ owner.name }}</a>/<a
+                    href="/{{ owner.slug }}/{{ project.slug }}">{{ project.name }}</a></h1>
             {% if access_level == AccessType::Admin %}
-            <a class="btn" href="/{{ owner.name }}/{{ project.slug }}/settings">Project settings</a>
+            <a class="btn" href="/{{ owner.slug }}/{{ project.slug }}/settings">Edit project</a>
             {% endif %}
         </div>
 

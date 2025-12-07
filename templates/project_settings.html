@@ -13,9 +13,17 @@
         {% if let Some(msg) = message %}
         <div class="message" role="status">{{ msg }}</div>
         {% endif %}
-        <form method="post" action="/{{ owner.name }}/{{ project.slug }}/settings" class="stack card simple-form">
-            <rubhub-slug-input autofocus label="Project name" name="name" value="{{ project.name }}"
-                autocomplete="off"></rubhub-slug-input>
+        <form method="post" action="/{{ owner.slug }}/{{ project.slug }}/settings" class="stack card simple-form">
+            <label>
+                ID (used in URIs, can't be changed)
+                <input name="slug" type="text" value="{{ project.slug }}" readonly>
+            </label>
+
+            <label>
+                Name
+                <input name="name" type="text" value="{{ project.name }}">
+            </label>
+
             <label>
                 Public access
                 <select name="public_access">
@@ -27,10 +35,22 @@
                     </option>
                 </select>
             </label>
+
+            <label>
+                Default branch name (main / master)
+                <input name="main_branch" type="text" value="{{ project.main_branch }}">
+            </label>
+
+            <label>
+                Website
+                <input name="website" type="text" value="{{ project.website }}">
+            </label>
+
             <label>
                 Description
                 <textarea name="description">{{ project.description }}</textarea>
             </label>
+
             <div class="actions">
                 <button type="submit">Save</button>
             </div>

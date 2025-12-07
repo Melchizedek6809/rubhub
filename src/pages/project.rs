@@ -32,6 +32,8 @@ pub struct ProjectSettingsForm {
     pub name: String,
     pub description: String,
     pub public_access: String,
+    pub main_branch: String,
+    pub website: String,
 }
 
 async fn not_found() -> (StatusCode, Html<String>) {
@@ -58,17 +60,20 @@ pub async fn projects_page(
         .await
         .unwrap_or_default();
 
+    let user = owner.clone();
+
     let summaries: Vec<_> = projects
         .iter()
         .map(|p| ProjectSummary {
             name: p.name.as_str(),
             slug: p.slug.as_str(),
-            owner: owner.name.as_str(),
+            owner_name: owner.name.as_str(),
+            owner_slug: owner.slug.as_str(),
             description: p.description.as_str(),
         })
         .collect();
 
-    Ok(Html(app::projects(&owner.name, &summaries, is_owner).await))
+    Ok(Html(app::projects(user, &summaries, is_owner).await))
 }
 
 pub async fn new_project_page(
@@ -132,13 +137,13 @@ pub async fn handle_new_project(
         );
     }
 
-    let slug = generate_unique_slug(&state, name, current_user.id).await;
-    let username = current_user.name.clone();
+    let project_slug = generate_unique_slug(&state, name, current_user.id).await;
+    let user_slug = current_user.slug.clone();
 
     let new_project = project::ActiveModel {
         id: Set(Uuid::new_v4()),
         owner: Set(current_user.id),
-        slug: Set(slug.clone()),
+        slug: Set(project_slug.clone()),
         name: Set(name.to_owned()),
         description: Set(String::new()),
         public_access: Set(public_access),
@@ -147,7 +152,7 @@ pub async fn handle_new_project(
 
     match new_project.insert(&state.db).await {
         Ok(_) => {
-            let res = create_bare_repo(&state, username.clone(), slug.clone()).await;
+            let res = create_bare_repo(&state, user_slug.clone(), project_slug.clone()).await;
             if res.is_err() {
                 Ok(render_new_project_page(
                     &cookies,
@@ -157,7 +162,7 @@ pub async fn handle_new_project(
                 .await
                 .into_response())
             } else {
-                Ok(Redirect::to(&format!("/{username}")).into_response())
+                Ok(Redirect::to(&format!("/{user_slug}")).into_response())
             }
         }
         Err(_) => Ok(render_new_project_page(
@@ -200,7 +205,7 @@ pub async fn project_page(
 
     let ssh_clone_url = format!(
         "ssh://git@{}/{}/{}",
-        state.config.ssh_public_host, owner.name, project.slug
+        state.config.ssh_public_host, owner.slug, project.slug
     );
 
     Ok(Html(
@@ -260,6 +265,7 @@ pub async fn handle_project_settings(
 
     let name = form.name.trim();
     let description = form.description.trim();
+    let main_branch = form.main_branch.trim();
     let public_access = match parse_public_access(&form.public_access) {
         Ok(level) => level,
         Err(msg) => {
@@ -287,6 +293,16 @@ pub async fn handle_project_settings(
         .await
         .into_response());
     }
+    if main_branch.is_empty() {
+        return Ok(render_project_settings_page(
+            &cookies,
+            owner,
+            project,
+            Some("Branch name is required."),
+        )
+        .await
+        .into_response());
+    }
 
     project.name = name.to_owned();
     project.public_access = public_access;
@@ -294,6 +310,8 @@ pub async fn handle_project_settings(
     active.name = Set(name.to_owned());
     active.public_access = Set(public_access);
     active.description = Set(description.to_owned());
+    active.main_branch = Set(main_branch.to_owned());
+    active.website = Set(form.website.trim().to_owned());
 
     if active.update(&state.db).await.is_err() {
         // A proper error message would be nicer here

@@ -12,11 +12,57 @@
             {% when None %}
         {% endmatch %}
         <form method="post" action="/settings" class="stack card simple-form">
-            <rubhub-slug-input label="Username" name="username" value="{{ username }}" autocomplete="username"></rubhub-slug-input>
+            <label>
+                ID (used in URIs, can't be changed)
+                <input name="slug" type="text" value="{{ user.slug }}" readonly>
+            </label>
+
+            <label>
+                Name
+                <input name="name" type="text" value="{{ user.name }}">
+            </label>
 
             <label>
                 Email
-                <input name="email" type="email" value="{{ email }}">
+                <input name="email" type="email" value="{{ user.email }}">
+            </label>
+
+            <br/>
+            <hr/>
+            <br/>
+
+            <label>
+                Pronouns
+                <input name="pronouns" type="text" value="{{ user.pronouns }}">
+            </label>
+
+            <label>
+                Organization
+                <input name="organization" type="text" value="{{ user.organization }}">
+            </label>
+
+            <label>
+                Location
+                <input name="location" type="text" value="{{ user.location }}">
+            </label>
+
+            <label>
+                Website
+                <input name="website" type="text" value="{{ user.website }}">
+            </label>
+
+            <label>
+                Bio
+            <textarea name="description">{{ user.description }}</textarea>
+            </label>
+
+            <br/>
+            <hr/>
+            <br/>
+
+            <label>
+                Default branch name (main / master)
+                <input name="default_main_branch" type="text" value="{{ user.default_main_branch }}">
             </label>
 
             <label>

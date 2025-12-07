@@ -303,12 +303,12 @@ impl server::Handler for Connection {
         if !has_required_access(access_level, required_access) {
             eprintln!(
                 "SSH access denied: user {:?} requested {command} on {}/{} (has {access_level:?}, needs {required_access:?})",
-                self.user_id, owner.name, project.slug
+                self.user_id, owner.slug, project.slug
             );
             return Err(russh::Error::RequestDenied);
         }
 
-        let repo_path = format!("{}/{}", owner.name, project.slug);
+        let repo_path = format!("{}/{}", owner.slug, project.slug);
 
         let (tx, rx) = tokio::sync::mpsc::channel(16);
         self.sender_to_git = Some(tx);

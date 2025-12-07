@@ -14,7 +14,7 @@ use crate::{
     services::{
         session,
         user::{PasswordVerification, hash_password, verify_password_hash},
-        validation::{validate_password, validate_username},
+        validation::{slugify, validate_password, validate_username},
     },
     state::GlobalState,
 };
@@ -88,7 +88,7 @@ async fn handle_login_action(
     password: &str,
 ) -> Result<Redirect, (axum::http::StatusCode, Html<String>)> {
     let user = match user::Entity::find()
-        .filter(user::Column::Name.eq(username))
+        .filter(user::Column::Slug.eq(username))
         .one(&state.db)
         .await
     {
@@ -159,10 +159,12 @@ async fn handle_register_action(
         ));
     }
 
+    let slug = slugify(username);
+
     let existing = match user::Entity::find()
         .filter(
             Condition::any()
-                .add(user::Column::Name.eq(username))
+                .add(user::Column::Slug.eq(slug.clone()))
                 .add(user::Column::Email.eq(email)),
         )
         .one(&state.db)
@@ -188,6 +190,7 @@ async fn handle_register_action(
         id: Set(Uuid::new_v4()),
         user_type: Set(UserType::Normal),
         name: Set(username.to_owned()),
+        slug: Set(slug.to_owned()),
         email: Set(email.to_owned()),
         password_hash: Set(Some(password_hash)),
         ..Default::default()

@@ -11,14 +11,13 @@ pub struct Model {
     pub created_at: Option<DateTimeWithTimeZone>,
     pub owner: Uuid,
     pub public_access: AccessType,
-    #[sea_orm(unique)]
     pub slug: String,
     pub name: String,
     pub description: String,
+    pub website: String,
 
     pub main_branch: String,
     pub newest_commit_time: Option<DateTimeWithTimeZone>,
-    pub newest_commit_hash: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -31,27 +30,11 @@ pub enum Relation {
         on_delete = "Cascade"
     )]
     User,
-    #[sea_orm(has_many = "super::access::Entity")]
-    Accesses,
-    #[sea_orm(has_many = "super::project_message::Entity")]
-    ProjectMessages,
 }
 
 impl Related<super::user::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::User.def()
-    }
-}
-
-impl Related<super::access::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Accesses.def()
-    }
-}
-
-impl Related<super::project_message::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::ProjectMessages.def()
     }
 }
 

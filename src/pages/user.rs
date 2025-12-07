@@ -19,8 +19,15 @@ use crate::{
 
 #[derive(Debug, Deserialize)]
 pub struct SettingsForm {
-    pub username: String,
-    pub email: Option<String>,
+    pub slug: String,
+    pub name: String,
+    pub email: String,
+    pub pronouns: String,
+    pub organization: String,
+    pub location: String,
+    pub website: String,
+    pub description: String,
+    pub default_main_branch: String,
     pub ssh_keys: Option<String>,
 }
 
@@ -50,27 +57,19 @@ pub async fn settings_page(
         })
         .collect();
 
-    Ok(render_settings_page(
-        &cookies,
-        &current_user.name,
-        &current_user.email,
-        &ssh_keys,
-        None,
-    )
-    .await)
+    Ok(render_settings_page(&cookies, current_user, &ssh_keys, None).await)
 }
 
 async fn internal_error(
     cookies: &tower_cookies::Cookies,
-    username: &str,
-    email: &str,
+    user: user::Model,
     ssh_keys: &[String],
     err: &str,
 ) -> (axum::http::StatusCode, Html<String>) {
     eprintln!("auth error: {err}");
     (
         axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-        render_settings_page(cookies, username, email, ssh_keys, Some(err)).await,
+        render_settings_page(cookies, user, ssh_keys, Some(err)).await,
     )
 }
 
@@ -84,8 +83,10 @@ pub async fn handle_settings(
         Err(_) => return Ok(Redirect::to("/login").into_response()),
     };
 
-    let username = form.username.trim();
-    let email = form.email.unwrap_or_default().trim().to_owned();
+    let name = form.name.trim();
+    let slug = form.slug.trim();
+    let default_main_branch = form.slug.trim();
+    let email = form.email.trim().to_owned();
     let ssh_keys: Vec<String> = form
         .ssh_keys
         .unwrap_or_default()
@@ -95,13 +96,12 @@ pub async fn handle_settings(
         .map(ToOwned::to_owned)
         .collect();
 
-    if username.is_empty() {
+    if slug.is_empty() {
         return Err((
             StatusCode::BAD_REQUEST,
             render_settings_page(
                 &cookies,
-                username,
-                &email,
+                current_user,
                 &ssh_keys,
                 Some("Username is required."),
             )
@@ -109,17 +109,30 @@ pub async fn handle_settings(
         ));
     }
 
-    if let Err(msg) = validate_username(username) {
+    if default_main_branch.is_empty() {
         return Err((
             StatusCode::BAD_REQUEST,
-            render_settings_page(&cookies, username, &email, &ssh_keys, Some(msg)).await,
+            render_settings_page(
+                &cookies,
+                current_user,
+                &ssh_keys,
+                Some("Default main branch is required"),
+            )
+            .await,
+        ));
+    }
+
+    if let Err(msg) = validate_username(slug) {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            render_settings_page(&cookies, current_user, &ssh_keys, Some(msg)).await,
         ));
     }
 
     if let Ok(Some(_)) = user::Entity::find()
         .filter(
             Condition::all()
-                .add(user::Column::Name.eq(username))
+                .add(user::Column::Slug.eq(slug))
                 .add(user::Column::Id.ne(current_user.id)),
         )
         .one(&state.db)
@@ -129,8 +142,7 @@ pub async fn handle_settings(
             StatusCode::CONFLICT,
             render_settings_page(
                 &cookies,
-                username,
-                &email,
+                current_user,
                 &ssh_keys,
                 Some("That username is already taken."),
             )
@@ -141,47 +153,46 @@ pub async fn handle_settings(
     let txn = match state.db.begin().await {
         Ok(txn) => txn,
         Err(err) => {
-            return Err(
-                internal_error(&cookies, username, &email, &ssh_keys, &err.to_string()).await,
-            );
+            return Err(internal_error(&cookies, current_user, &ssh_keys, &err.to_string()).await);
         }
     };
 
     let mut user_active: user::ActiveModel = current_user.clone().into();
-    user_active.name = Set(username.to_owned());
+    user_active.name = Set(name.to_owned());
     user_active.email = Set(email.to_owned());
+    user_active.pronouns = Set(form.pronouns.trim().to_owned());
+    user_active.organization = Set(form.organization.trim().to_owned());
+    user_active.location = Set(form.location.trim().to_owned());
+    user_active.website = Set(form.website.trim().to_owned());
+    user_active.description = Set(form.description.trim().to_owned());
+    user_active.default_main_branch = Set(form.default_main_branch.trim().to_owned());
 
     if let Err(err) = user_active.update(&txn).await {
-        return Err(internal_error(&cookies, username, &email, &ssh_keys, &err.to_string()).await);
+        return Err(internal_error(&cookies, current_user, &ssh_keys, &err.to_string()).await);
     }
 
     if let Err(err) = replace_ssh_keys(&txn, current_user.id, &ssh_keys).await {
-        return Err(internal_error(&cookies, username, &email, &ssh_keys, &err.to_string()).await);
+        return Err(internal_error(&cookies, current_user, &ssh_keys, &err.to_string()).await);
     }
 
     if let Err(err) = txn.commit().await {
-        return Err(internal_error(&cookies, username, &email, &ssh_keys, &err.to_string()).await);
+        return Err(internal_error(&cookies, current_user, &ssh_keys, &err.to_string()).await);
     }
 
-    session_service::set_user_cookie(&cookies, current_user.id, username);
+    session_service::set_user_cookie(&cookies, current_user.id, slug);
 
-    Ok(render_settings_page(
-        &cookies,
-        username,
-        &email,
-        &ssh_keys,
-        Some("Settings updated."),
+    Ok(
+        render_settings_page(&cookies, current_user, &ssh_keys, Some("Settings updated."))
+            .await
+            .into_response(),
     )
-    .await
-    .into_response())
 }
 
 async fn render_settings_page(
     _cookies: &tower_cookies::Cookies,
-    username: &str,
-    email: &str,
+    user: user::Model,
     ssh_keys: &[String],
     message: Option<&str>,
 ) -> Html<String> {
-    Html(app::settings(username, email, ssh_keys, message).await)
+    Html(app::settings(user, ssh_keys, message).await)
 }

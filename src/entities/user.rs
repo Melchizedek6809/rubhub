@@ -11,8 +11,17 @@ pub struct Model {
     pub created_at: Option<DateTimeWithTimeZone>,
     pub last_login: Option<DateTimeWithTimeZone>,
     pub user_type: UserType,
-    pub email: String,
+    #[sea_orm(unique)]
+    pub slug: String,
     pub name: String,
+    #[sea_orm(unique)]
+    pub email: String,
+    pub description: String,
+    pub pronouns: String,
+    pub organization: String,
+    pub location: String,
+    pub website: String,
+
     pub default_main_branch: String,
     pub password_hash: Option<String>,
 }
@@ -23,10 +32,6 @@ pub enum Relation {
     Sessions,
     #[sea_orm(has_many = "super::project::Entity")]
     Projects,
-    #[sea_orm(has_many = "super::access::Entity")]
-    Accesses,
-    #[sea_orm(has_many = "super::project_message::Entity")]
-    ProjectMessages,
 }
 
 impl Related<super::session::Entity> for Entity {
@@ -38,18 +43,6 @@ impl Related<super::session::Entity> for Entity {
 impl Related<super::project::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Projects.def()
-    }
-}
-
-impl Related<super::access::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Accesses.def()
-    }
-}
-
-impl Related<super::project_message::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::ProjectMessages.def()
     }
 }
 

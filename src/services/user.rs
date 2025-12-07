@@ -11,7 +11,7 @@ use crate::entities::{ssh_key, user};
 
 pub async fn get_user_by_name(db: &DatabaseConnection, name: String) -> Option<user::Model> {
     user::Entity::find()
-        .filter(user::Column::Name.eq(name))
+        .filter(user::Column::Slug.eq(name))
         .one(db)
         .await
         .ok()
