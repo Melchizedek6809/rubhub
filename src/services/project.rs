@@ -31,7 +31,7 @@ pub async fn find_project_by_path(
     let query = project::Entity::find()
         .find_also_related(user::Entity)
         .filter(project::Column::Slug.eq(slug))
-        .filter(user::Column::Name.eq(username));
+        .filter(user::Column::Slug.eq(username));
 
     let (project, owner) = (query.one(&state.db).await.ok()?)?;
 
