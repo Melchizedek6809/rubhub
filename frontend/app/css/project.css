@@ -10,10 +10,11 @@
 
 .project-header a {
 	text-decoration: none;
+	color: var(--text-color);
 }
 
-.project-header a:first-of-type {
-	color: var(--text-color);
+.project-header a:last-of-type {
+	color: var(--primary-color);
 }
 
 .commit-bar {

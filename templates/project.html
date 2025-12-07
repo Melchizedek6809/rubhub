@@ -2,13 +2,13 @@
 <html>
 
 <head>
-    <title>Project</title>
+    <title>{{ owner.name }}/{{ project.name }}</title>
 </head>
 
 <body>
     <section>
         <div class="page-header">
-            <h1 class="project-header"><a href="/{{ owner.slug }}">{{ owner.name }}</a>/<a
+            <h1 class="project-header"><a href="/{{ owner.slug }}">{{ owner.name }}</a> / <a
                     href="/{{ owner.slug }}/{{ project.slug }}">{{ project.name }}</a></h1>
             {% if access_level == AccessType::Admin %}
             <a class="btn" href="/{{ owner.slug }}/{{ project.slug }}/settings">Edit project</a>

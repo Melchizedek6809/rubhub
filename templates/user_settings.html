@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Settings</title>
+    <title>{{ user.name }}/settings</title>
 </head>
 <body>
     <section>
-        <h1>User settings</h1>
+        <div class="page-header">
+            <h1 class="project-header"><a href="/{{ user.slug }}">{{ user.name }}</a> / <a
+                    href="/{{ user.slug }}/settings">settings</a></h1>
+        </div>
+
         {% match message %}
             {% when Some with (msg) %}
                 <div class="message" role="status">{{ msg }}</div>

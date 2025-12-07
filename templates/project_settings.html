@@ -2,13 +2,15 @@
 <html>
 
 <head>
-    <title>Project settings</title>
+    <title>{{ owner.name }}/{{ project.name }}/settings</title>
 </head>
 
 <body>
     <section>
         <div class="page-header">
-            <h1>Project settings</h1>
+            <h1 class="project-header"><a href="/{{ owner.slug }}">{{ owner.name }}</a> /
+                <a href="/{{ owner.slug }}/{{ project.slug }}">{{ project.name }}</a> /
+            <a href="/{{ owner.slug }}/{{ project.slug }}/settings">settings</a></h1>
         </div>
         {% if let Some(msg) = message %}
         <div class="message" role="status">{{ msg }}</div>
