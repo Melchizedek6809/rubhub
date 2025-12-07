@@ -26,12 +26,29 @@ fn main() {
             .await
             .expect("Couldn't create GlobalState");
 
+            #[cfg(unix)]
+            let terminate = async {
+                tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+                    .expect("failed to install signal handler")
+                    .recv()
+                    .await;
+            };
+
+            #[cfg(not(unix))]
+            let terminate = std::future::pending::<()>();
+
         tokio::select! {
             http_res = http::start_http_server(state.clone()) => {
                 eprintln!("HTTP server stopped: {:?}", http_res);
             }
             ssh_res = ssh::start_ssh_server(state.clone()) => {
                 eprintln!("SSH server stopped: {:?}", ssh_res);
+            }
+            signal_res = tokio::signal::ctrl_c() => {
+                eprintln!("Received Signal: {:?}", signal_res);
+            }
+            term_res = terminate => {
+                eprintln!("Received Terminate Signal: {:?}", term_res);
             }
         }
     });
