@@ -7,7 +7,7 @@
     <section>
         <div class="page-header">
             <h1 class="project-header"><a href="/{{ user.slug }}">{{ user.name }}</a> / <a
-                    href="/{{ user.slug }}/settings">settings</a></h1>
+                    href="/settings">settings</a></h1>
         </div>
 
         {% match message %}
@@ -16,44 +16,29 @@
             {% when None %}
         {% endmatch %}
         <form method="post" action="/settings" class="stack card simple-form">
-            <label>
-                ID (used in URIs, can't be changed)
-                <input name="slug" type="text" value="{{ user.slug }}" readonly>
-            </label>
+            <div class="form-row">
+                <label>
+                    ID (can't be changed)
+                    <input name="slug" type="text" value="{{ user.slug }}" readonly>
+                </label>
 
-            <label>
-                Name
-                <input name="name" type="text" value="{{ user.name }}">
-            </label>
+                <label>
+                    Name
+                    <input name="name" type="text" value="{{ user.name }}">
+                </label>
+            </div>
 
-            <label>
-                Email
-                <input name="email" type="email" value="{{ user.email }}">
-            </label>
+            <div class="form-row">
+                <label>
+                    Email
+                    <input name="email" type="email" value="{{ user.email }}">
+                </label>
 
-            <br/>
-            <hr/>
-            <br/>
-
-            <label>
-                Pronouns
-                <input name="pronouns" type="text" value="{{ user.pronouns }}">
-            </label>
-
-            <label>
-                Organization
-                <input name="organization" type="text" value="{{ user.organization }}">
-            </label>
-
-            <label>
-                Location
-                <input name="location" type="text" value="{{ user.location }}">
-            </label>
-
-            <label>
-                Website
-                <input name="website" type="text" value="{{ user.website }}">
-            </label>
+                <label>
+                    Website
+                    <input name="website" type="text" value="{{ user.website }}">
+                </label>
+            </div>
 
             <label>
                 Bio

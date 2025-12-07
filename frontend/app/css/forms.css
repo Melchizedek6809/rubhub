@@ -7,6 +7,7 @@ button {
 	border-radius: var(--space-s);
 	cursor: pointer;
 	text-decoration: none;
+	appearance: none;
 }
 
 select,
@@ -20,6 +21,22 @@ input {
 	margin-bottom: var(--space-m);
 	width: 100%;
 	line-height: 1.35em;
+	outline: none;
+	transition: border-color 150ms ease-in-out;
+}
+
+select:focus,
+textarea:focus,
+input:focus {
+	border-color: var(--text-color);
+}
+
+select[readonly],
+textarea[readonly],
+input[readonly] {
+	color: var(--text-color-subdued);
+	border-color: var(--text-color-subdued);
+	outline: none;
 }
 
 .auth-grid {
@@ -71,4 +88,15 @@ textarea {
 
 .simple-form button {
 	align-self: flex-end;
+}
+
+@media screen and (min-width: 700px) {
+	.form-row {
+		display: flex;
+		gap: var(--space-l);
+	}
+
+	.form-row > * {
+		flex: 1;
+	}
 }

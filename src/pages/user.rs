@@ -22,13 +22,10 @@ use crate::{
 };
 
 #[derive(Debug, Deserialize)]
-pub struct SettingsForm {
+pub struct UserSettingsForm {
     pub slug: String,
     pub name: String,
     pub email: String,
-    pub pronouns: String,
-    pub organization: String,
-    pub location: String,
     pub website: String,
     pub description: String,
     pub default_main_branch: String,
@@ -80,7 +77,7 @@ async fn internal_error(
 pub async fn handle_settings(
     State(state): State<GlobalState>,
     cookies: Cookies,
-    Form(form): Form<SettingsForm>,
+    Form(form): Form<UserSettingsForm>,
 ) -> Result<Response, (axum::http::StatusCode, Html<String>)> {
     let current_user = match session_service::current_user(&state, &cookies).await {
         Ok(user) => user,
@@ -174,9 +171,6 @@ pub async fn handle_settings(
     let mut user_active: user::ActiveModel = current_user.clone().into();
     user_active.name = Set(name.to_owned());
     user_active.email = Set(email.to_owned());
-    user_active.pronouns = Set(form.pronouns.trim().to_owned());
-    user_active.organization = Set(form.organization.trim().to_owned());
-    user_active.location = Set(form.location.trim().to_owned());
     user_active.website = Set(website.to_owned());
     user_active.description = Set(form.description.trim().to_owned());
     user_active.default_main_branch = Set(form.default_main_branch.trim().to_owned());

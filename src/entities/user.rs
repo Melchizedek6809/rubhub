@@ -17,9 +17,6 @@ pub struct Model {
     #[sea_orm(unique)]
     pub email: String,
     pub description: String,
-    pub pronouns: String,
-    pub organization: String,
-    pub location: String,
     pub website: String,
 
     pub default_main_branch: String,

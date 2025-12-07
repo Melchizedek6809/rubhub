@@ -21,41 +21,43 @@
                 <input name="slug" type="text" value="{{ project.slug }}" readonly>
             </label>
 
-            <label>
-                Name
-                <input name="name" type="text" value="{{ project.name }}">
-            </label>
+            <div class="form-row">
+                <label>
+                    Name
+                    <input name="name" type="text" value="{{ project.name }}">
+                </label>
 
-            <label>
-                Public access
-                <select name="public_access">
-                    <option value="none" {% if project.public_access==AccessType::None %}selected{% endif %}>None
-                    </option>
-                    <option value="read" {% if project.public_access==AccessType::Read %}selected{% endif %}>Read
-                    </option>
-                    <option value="write" {% if project.public_access==AccessType::Write %}selected{% endif %}>Write
-                    </option>
-                </select>
-            </label>
+                <label>
+                    Website
+                    <input name="website" type="text" value="{{ project.website }}">
+                </label>
+            </div>
 
-            <label>
-                Default branch name (main / master)
-                <input name="main_branch" type="text" value="{{ project.main_branch }}">
-            </label>
+            <div class="form-row">
+                <label>
+                    Public access
+                    <select name="public_access">
+                        <option value="none" {% if project.public_access==AccessType::None %}selected{% endif %}>None
+                        </option>
+                        <option value="read" {% if project.public_access==AccessType::Read %}selected{% endif %}>Read
+                        </option>
+                        <option value="write" {% if project.public_access==AccessType::Write %}selected{% endif %}>Write
+                        </option>
+                    </select>
+                </label>
 
-            <label>
-                Website
-                <input name="website" type="text" value="{{ project.website }}">
-            </label>
+                <label>
+                    Default branch name (main / master)
+                    <input name="main_branch" type="text" value="{{ project.main_branch }}">
+                </label>
+            </div>
 
             <label>
                 Description
                 <textarea name="description">{{ project.description }}</textarea>
             </label>
 
-            <div class="actions">
-                <button type="submit">Save</button>
-            </div>
+            <button type="submit">Save</button>
         </form>
     </section>
 </body>

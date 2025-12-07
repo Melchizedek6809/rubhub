@@ -20,21 +20,6 @@
 				<dt>E-Mail</dt>
 				<dd><a href="mailto:{{ user.email }}">{{ user.email }}</a></dd>
 
-				{% if !user.pronouns.is_empty() %}
-				<dt>Pronouns</dt>
-				<dd>{{ user.pronouns }}</dd>
-				{% endif %}
-
-				{% if !user.organization.is_empty() %}
-				<dt>Organization</dt>
-				<dd>{{ user.organization }}</dd>
-				{% endif %}
-
-				{% if !user.location.is_empty() %}
-				<dt>Location</dt>
-				<dd>{{ user.location }}</dd>
-				{% endif %}
-
 				{% if !user.website.is_empty() %}
 				<dt>Website</dt>
 				<dd><a href="{{ user.website }}">{{ user.website }}</a></dd>
