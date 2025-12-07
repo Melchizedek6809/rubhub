@@ -1,10 +1,20 @@
-import { html, LitElement } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
 
 @customElement("user-badge")
 export class UserBadge extends LitElement {
 	@state()
 	private user: { id: string; username: string } | null = null;
+
+	static styles = css`
+			:host {
+				display: flex;
+				flex-direction: row;
+				gap: var(--space-m);
+				align-items: center;
+				justify-content: center;
+			}
+		`;
 
 	connectedCallback() {
 		super.connectedCallback();

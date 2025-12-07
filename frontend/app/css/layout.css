@@ -14,11 +14,17 @@ body {
 /* Header sticks to the top naturally */
 header {
 	display: flex;
-	justify-content: space-between;
 	/* left on one side, right on the other */
 	align-items: center;
+	flex-direction: row;
+	gap: var(--space-m);
+	justify-content: center;
 	padding: var(--space-m) var(--space-l);
 	background: var(--background-color-bright);
+}
+
+header .header-center {
+	flex: 1;
 }
 
 /* The growy middle */
