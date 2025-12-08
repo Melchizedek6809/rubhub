@@ -2,14 +2,15 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use super::common::UserType;
+use time::OffsetDateTime;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "users")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
-    pub created_at: Option<DateTimeWithTimeZone>,
-    pub last_login: Option<DateTimeWithTimeZone>,
+    pub created_at: Option<OffsetDateTime>,
+    pub last_login: Option<OffsetDateTime>,
     pub user_type: UserType,
     #[sea_orm(unique)]
     pub slug: String,

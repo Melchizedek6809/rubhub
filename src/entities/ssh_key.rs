@@ -1,4 +1,5 @@
 use sea_orm::entity::prelude::*;
+use time::OffsetDateTime;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "ssh_keys")]
@@ -14,7 +15,7 @@ pub struct Model {
     pub user_id: Uuid,
 
     pub hostname: String,
-    pub created_at: Option<DateTimeWithTimeZone>,
+    pub created_at: Option<OffsetDateTime>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

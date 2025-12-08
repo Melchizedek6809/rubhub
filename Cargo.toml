@@ -16,21 +16,19 @@ path = "dummy.rs"
 [dependencies]
 anyhow = "1"
 axum = { version = "0.8", features = ["ws", "multipart"] }
-dotenvy = "0.15"
-futures = "0.3"
-chrono = { version = "0.4", default-features = false, features = ["clock"] }
 askama = "0.12"
-gix = { version = "0.75", default-features = false, features = ["basic", "extras"] }
+dotenvy = "0.15"
+gix = { version = "0.75", default-features = false, features = ["basic"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 russh = "0.55"
 pulldown-cmark = "0.13"
-argon2 = { version = "0.5", features = ["password-hash", "std"] }
-time = { version = "0.3", features = ["serde"] }
-tokio = { version = "1.47", features = ["rt-multi-thread", "macros", "process", "signal"] }
+argon2 = { version = "0.5", features = ["password-hash"] }
+time = { version = "0.3", features = ["serde", "macros", "formatting", "parsing"] }
+tokio = { version = "1.48", features = ["macros", "process", "signal"] }
 tower = "0.5"
 tower-cookies = "0.11"
 tower-http = { version = "0.6", features = ["fs"] }
 urlencoding = "2.1"
 uuid = { version = "1", features = ["serde", "v4", "v7"] }
-sea-orm = { version = "1.1.19", features = [ "sqlx-postgres", "runtime-tokio-rustls", "macros" ] }
+sea-orm = { version = "1.1.19", features = [ "sqlx-postgres", "runtime-tokio-rustls", "macros", "with-time" ] }

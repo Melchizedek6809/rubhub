@@ -107,7 +107,8 @@ pub fn verify_password_hash(password: &str, stored: &str) -> PasswordVerificatio
     // If algorithm, version, or params differ, request a rehash for forward upgrades.
     let needs_rehash = match Params::try_from(&parsed) {
         Ok(params) => {
-            let ident = argon2::password_hash::Ident::new("argon2id").unwrap();
+            let ident = argon2::password_hash::Ident::new("argon2id")
+                .expect("Couldn't initialize argon2id hasher");
             let desired_version: u32 = Version::V0x13.into();
 
             parsed.algorithm != ident

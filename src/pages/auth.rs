@@ -108,7 +108,7 @@ async fn handle_login_action(
     match verification {
         PasswordVerification::Valid => {}
         PasswordVerification::ValidNeedsRehash { new_hash } => {
-            let now = chrono::Utc::now().fixed_offset();
+            let now = time::OffsetDateTime::now_utc();
             let mut user_active: user::ActiveModel = user.clone().into();
             user_active.password_hash = Set(Some(new_hash));
             user_active.last_login = Set(Some(now));
@@ -126,7 +126,7 @@ async fn handle_login_action(
         }
     }
 
-    let now = chrono::Utc::now().fixed_offset();
+    let now = time::OffsetDateTime::now_utc();
     let mut user_active: user::ActiveModel = user.into();
     user_active.last_login = Set(Some(now));
     let _ = user_active.update(&state.db).await;

@@ -73,6 +73,7 @@ pub async fn start_ssh_server(state: GlobalState) -> Result<(), std::io::Error> 
         ..Default::default()
     };
     let config = Arc::new(config);
+    let process_start = state.process_start;
     let mut sh = Server { state };
 
     let bind_addr = sh.state.config.ssh_bind_addr;
@@ -92,7 +93,7 @@ pub async fn start_ssh_server(state: GlobalState) -> Result<(), std::io::Error> 
     let server = sh.run_on_socket(config, &socket);
     let _handle = server.handle();
 
-    println!("Started rubhub SSH server on {bind_addr}");
+    println!("[{:?}] - Started rubhub SSH server on {bind_addr}", process_start.elapsed());
 
     server.await
 }
@@ -147,8 +148,8 @@ impl Connection {
     ) -> Result<(), russh::Error> {
         let path = self.state.config.git_root.join(path);
 
-        let handle = self.handle.clone().unwrap();
-        let id = self.channel_id.unwrap();
+        let handle = self.handle.clone().ok_or(russh::Error::SendError)?;
+        let id = self.channel_id.ok_or(russh::Error::SendError)?;
 
         let mut child = Command::new(command)
             .arg(path)
@@ -156,7 +157,7 @@ impl Connection {
             .stdout(Stdio::piped())
             .spawn()?;
 
-        let mut git_stdin = child.stdin.take().unwrap();
+        let mut git_stdin = child.stdin.take().ok_or(russh::Error::SendError)?;
         // task: SSH → git stdin
         tokio::spawn(async move {
             while let Some(data) = rx_from_ssh.recv().await {
@@ -169,7 +170,7 @@ impl Connection {
         });
 
         // task: git stdout → SSH
-        let mut git_stdout = child.stdout.take().unwrap();
+        let mut git_stdout = child.stdout.take().ok_or(russh::Error::SendError)?;
         tokio::spawn(async move {
             let mut buf = [0u8; 8192];
             loop {
@@ -226,9 +227,10 @@ impl server::Handler for Connection {
         if let Some(user_id) = self.user_id {
             let user = crate::entities::user::Entity::find_by_id(user_id)
                 .one(&self.state.db)
-                .await;
+                .await
+                .map_err(|_| russh::Error::NoAuthMethod)?;
 
-            if user.is_err() || user.unwrap().is_none() {
+            if user.is_none() {
                 return Err(russh::Error::NoAuthMethod);
             }
         }

@@ -84,10 +84,23 @@ struct ProjectSettingsTemplate<'a> {
 const APP_THEME: &str = include_str!("../dist/app.html");
 
 pub fn extract_html_parts(html: &str) -> (&str, &str) {
-    let first_split = html.split_once("</head>").unwrap();
-    let head = first_split.0.split_once("<head>").unwrap().1;
-    let rest = first_split.1.split_once("<body>").unwrap().1;
-    let body = rest.split_once("</body>").unwrap().0;
+    let first_split = html
+        .split_once("</head>")
+        .expect("extract_html_parts first_split");
+    let head = first_split
+        .0
+        .split_once("<head>")
+        .expect("extract_html_parts head")
+        .1;
+    let rest = first_split
+        .1
+        .split_once("<body>")
+        .expect("extract_html_parts rest")
+        .1;
+    let body = rest
+        .split_once("</body>")
+        .expect("extract_html_parts body")
+        .0;
 
     (head, body)
 }

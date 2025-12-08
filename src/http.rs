@@ -8,6 +8,7 @@ use crate::{app, pages, state::GlobalState};
 pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
     let public_assets_dir = state.config.asset_root.join("public");
     let bind_addr = state.config.http_bind_addr;
+    let process_start = state.process_start;
 
     // build our application with a single route
     let app = Router::new()
@@ -60,7 +61,7 @@ pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
 
     let listener = socket.listen(1024)?;
 
-    println!("rubhub ready on {bind_addr}");
+    println!("[{:?}] - RubHub HTTP ready on {bind_addr}", process_start.elapsed());
     axum::serve(listener, app).await?;
 
     Ok(())

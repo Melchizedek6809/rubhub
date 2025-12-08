@@ -1,5 +1,4 @@
 use axum::response::Redirect;
-use chrono::Utc;
 use sea_orm::{ActiveModelTrait, EntityTrait, Set};
 use time::Duration as CookieDuration;
 use tower_cookies::{Cookie, Cookies, cookie::SameSite};
@@ -53,7 +52,7 @@ pub async fn current_user(state: &GlobalState, cookies: &Cookies) -> Result<user
         .ok_or(())?;
 
     if let Some(expires) = session.expires_at
-        && expires < Utc::now().fixed_offset()
+        && expires < time::OffsetDateTime::now_utc()
     {
         return Err(());
     }
@@ -94,7 +93,7 @@ pub async fn create_session(
     username: &str,
 ) -> Result<(), sea_orm::DbErr> {
     let session_id = Uuid::new_v4();
-    let expires_at = Utc::now().fixed_offset() + chrono::Duration::days(30);
+    let expires_at = time::OffsetDateTime::now_utc() + time::Duration::days(30);
 
     let new_session = session::ActiveModel {
         id: Set(session_id),

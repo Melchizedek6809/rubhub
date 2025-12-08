@@ -1,5 +1,6 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 
 use super::common::AccessType;
 
@@ -8,7 +9,7 @@ use super::common::AccessType;
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
-    pub created_at: Option<DateTimeWithTimeZone>,
+    pub created_at: Option<OffsetDateTime>,
     pub owner: Uuid,
     pub public_access: AccessType,
     pub slug: String,
@@ -17,7 +18,7 @@ pub struct Model {
     pub website: String,
 
     pub main_branch: String,
-    pub newest_commit_time: Option<DateTimeWithTimeZone>,
+    pub newest_commit_time: Option<OffsetDateTime>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

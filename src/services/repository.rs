@@ -171,7 +171,7 @@ impl GitCommitInfo {
     pub fn relative_time(&self) -> String {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .expect("Couldn't get relative time")
             .as_secs() as i64;
 
         let diff = now - self.commit_time.seconds;
