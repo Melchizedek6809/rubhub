@@ -93,7 +93,10 @@ pub async fn start_ssh_server(state: GlobalState) -> Result<(), std::io::Error> 
     let server = sh.run_on_socket(config, &socket);
     let _handle = server.handle();
 
-    println!("[{:?}] - Started rubhub SSH server on {bind_addr}", process_start.elapsed());
+    println!(
+        "[{:?}] - Started rubhub SSH server on {bind_addr}",
+        process_start.elapsed()
+    );
 
     server.await
 }

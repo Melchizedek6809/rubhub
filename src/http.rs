@@ -61,7 +61,10 @@ pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
 
     let listener = socket.listen(1024)?;
 
-    println!("[{:?}] - RubHub HTTP ready on {bind_addr}", process_start.elapsed());
+    println!(
+        "[{:?}] - RubHub HTTP ready on {bind_addr}",
+        process_start.elapsed()
+    );
     axum::serve(listener, app).await?;
 
     Ok(())

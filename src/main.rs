@@ -32,6 +32,7 @@ fn main() {
         .expect("Couldn't start tokio runtime");
 
     runtime.block_on(async {
+        println!("[{:?}] - Tokio started", start.elapsed());
         let state = state::GlobalState::new(start)
             .await
             .expect("Couldn't create GlobalState");
@@ -46,6 +47,8 @@ fn main() {
 
         #[cfg(not(unix))]
         let terminate = std::future::pending::<()>();
+
+        println!("[{:?}] - State initialized", start.elapsed());
 
         tokio::select! {
             http_res = http::start_http_server(state.clone()) => {

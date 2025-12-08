@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use gix::{ObjectDetached, Repository, date::Time};
 use std::{
     io,
@@ -98,12 +98,8 @@ pub fn get_git_info(
     branch: &str,
 ) -> Option<GitCommitInfo> {
     let repo = get_git_repo(state, user_name, project_slug)?;
-    let Ok(mut reference) = repo.find_reference(branch) else {
-        return None;
-    };
-    let Ok(commit) = reference.peel_to_commit() else {
-        return None;
-    };
+    let mut reference = repo.find_reference(branch).ok()?;
+    let commit = reference.peel_to_commit().ok()?;
     let commit_id = commit.id().shorten_or_id().to_string();
     let commit_author = commit
         .author()
@@ -130,28 +126,19 @@ pub fn get_git_file(
     project_slug: &str,
     branch: &str,
     path: &str,
-) -> Option<ObjectDetached> {
-    let repo = get_git_repo(state, user_name, project_slug)?;
-    let Ok(mut reference) = repo.find_reference(branch) else {
-        return None;
-    };
-    let Ok(commit) = reference.peel_to_commit() else {
-        return None;
-    };
-    let Ok(tree) = commit.tree() else {
-        return None;
-    };
-    let Ok(Some(entry)) = tree.lookup_entry_by_path(path) else {
-        return None;
-    };
-    let Ok(object) = entry.object() else {
-        return None;
-    };
-    let Ok(blob) = object.try_into_blob() else {
-        return None;
-    };
+) -> Result<ObjectDetached> {
+    let repo =
+        get_git_repo(state, user_name, project_slug).ok_or(anyhow!("Couldn't get Repository"))?;
+    let mut reference = repo.find_reference(branch)?;
 
-    Some(blob.detach())
+    let commit = reference.peel_to_commit()?;
+    let entry = commit
+        .tree()?
+        .lookup_entry_by_path(path)?
+        .ok_or(anyhow!("Can't lookup entry"))?;
+    let blob = entry.object()?.try_into_blob()?;
+
+    Ok(blob.detach())
 }
 
 pub struct GitSummary {
