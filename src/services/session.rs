@@ -1,24 +1,33 @@
+use anyhow::{Result, anyhow};
 use axum::response::Redirect;
-use sea_orm::{ActiveModelTrait, EntityTrait, Set};
-use time::Duration as CookieDuration;
+use sea_orm::EntityTrait;
+use serde::{Deserialize, Serialize};
+use time::{Duration as CookieDuration, OffsetDateTime};
 use tower_cookies::{Cookie, Cookies, cookie::SameSite};
 use urlencoding;
 use uuid::Uuid;
 
-use crate::{
-    entities::{session, user},
-    state::GlobalState,
-};
+use crate::{entities::user, state::GlobalState};
 
 pub const SESSION_COOKIE: &str = "session_id";
 pub const SESSION_USER_COOKIE: &str = "session_user";
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Session {
+    pub session_id: Uuid,
+    pub expires_at: OffsetDateTime,
+    pub user_id: Uuid,
+    pub user_slug: String,
+}
+
 pub async fn logout(state: &GlobalState, cookies: Cookies) -> Redirect {
     if let Some(existing) = cookies.get(SESSION_COOKIE) {
         if let Ok(session_id) = Uuid::parse_str(existing.value()) {
-            let _ = session::Entity::delete_by_id(session_id)
-                .exec(&state.db)
-                .await;
+            let path = session_id.to_string();
+            let path = state.config.session_root.join(&path);
+            if let Err(e) = tokio::fs::remove_file(path).await {
+                eprintln!("Logout error: {:?}", e);
+            };
         }
 
         cookies.remove(
@@ -41,27 +50,33 @@ pub async fn logout(state: &GlobalState, cookies: Cookies) -> Redirect {
     Redirect::to("/")
 }
 
-pub async fn current_user(state: &GlobalState, cookies: &Cookies) -> Result<user::Model, ()> {
-    let cookie = cookies.get(SESSION_COOKIE).ok_or(())?;
-    let session_id = Uuid::parse_str(cookie.value()).map_err(|_| ())?;
+pub async fn current_user(state: &GlobalState, cookies: &Cookies) -> Result<user::Model> {
+    let cookie = cookies
+        .get(SESSION_COOKIE)
+        .ok_or(anyhow!("No Session Cookie"))?;
+    let session_id = Uuid::parse_str(cookie.value())?;
 
-    let session = session::Entity::find_by_id(session_id)
-        .one(&state.db)
-        .await
-        .map_err(|_| ())?
-        .ok_or(())?;
+    let path = session_id.to_string();
+    let path = state.config.session_root.join(&path);
+    let data = tokio::fs::read(&path).await?;
+    let data = String::from_utf8_lossy(&data);
+    let session: Session = match serde_json::from_str(&data) {
+        Ok(ses) => ses,
+        Err(_) => {
+            tokio::fs::remove_file(&path).await?;
+            return Err(anyhow!("Invalid session"));
+        }
+    };
 
-    if let Some(expires) = session.expires_at
-        && expires < time::OffsetDateTime::now_utc()
-    {
-        return Err(());
+    if session.expires_at < time::OffsetDateTime::now_utc() {
+        tokio::fs::remove_file(&path).await?;
+        return Err(anyhow!("Expired session"));
     }
 
-    let user = user::Entity::find_by_id(session.owner)
+    let user = user::Entity::find_by_id(session.user_id)
         .one(&state.db)
-        .await
-        .map_err(|_| ())?
-        .ok_or(())?;
+        .await?
+        .ok_or(anyhow!("Can't select user"))?;
 
     Ok(user)
 }
@@ -90,30 +105,31 @@ pub async fn create_session(
     state: &GlobalState,
     cookies: &Cookies,
     user_id: Uuid,
-    username: &str,
-) -> Result<(), sea_orm::DbErr> {
+    user_slug: &str,
+) -> Result<()> {
     let session_id = Uuid::new_v4();
     let expires_at = time::OffsetDateTime::now_utc() + time::Duration::days(30);
 
-    let new_session = session::ActiveModel {
-        id: Set(session_id),
-        expires_at: Set(Some(expires_at)),
-        owner: Set(user_id),
+    let new_session = Session {
+        session_id,
+        expires_at,
+        user_id,
+        user_slug: user_slug.to_string(),
     };
-
-    new_session.insert(&state.db).await?;
+    let json = serde_json::to_string(&new_session)?;
+    let path = session_id.to_string();
+    let path = state.config.session_root.join(&path);
+    tokio::fs::write(path, json).await?;
 
     let cookie = Cookie::build((SESSION_COOKIE, session_id.to_string()))
         .path("/")
         .http_only(true)
         .same_site(SameSite::Lax)
         .secure(true)
-        .max_age(CookieDuration::days(90))
+        .max_age(CookieDuration::days(30))
         .build();
 
     cookies.add(cookie);
-
-    set_user_cookie(cookies, user_id, username);
-
+    set_user_cookie(cookies, user_id, user_slug);
     Ok(())
 }

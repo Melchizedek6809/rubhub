@@ -1,8 +1,12 @@
-use axum::{Router, extract::Path, http::{StatusCode, header}, response::{Html, IntoResponse}, routing::get};
+use axum::{
+    Router,
+    extract::Path,
+    http::{StatusCode, header},
+    response::{Html, IntoResponse},
+    routing::get,
+};
 use rust_embed::Embed;
-use tower::ServiceBuilder;
 use tower_cookies::CookieManagerLayer;
-use tower_http::services::ServeDir;
 
 use crate::{app, pages, state::GlobalState};
 
@@ -10,9 +14,7 @@ use crate::{app, pages, state::GlobalState};
 #[folder = "dist/"]
 struct EmbeddedDist;
 
-
 pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
-    let public_assets_dir = state.config.asset_root.join("public");
     let bind_addr = state.config.http_bind_addr;
     let process_start = state.process_start;
 
@@ -40,21 +42,21 @@ pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
             get(pages::project::project_settings_page)
                 .post(pages::project::handle_project_settings),
         )
-        .route("/dist/{*path}", get(|Path(path): Path<String>| async move {
-            match EmbeddedDist::get(path.as_str()) {
-                Some(asset) => {
-                    let mime = mime_guess::from_path(&path).first_or_octet_stream();
-                    (
-                        [(header::CONTENT_TYPE, mime.as_ref())],
-                        asset.data.into_owned(),
-                    ).into_response()
+        .route(
+            "/dist/{*path}",
+            get(|Path(path): Path<String>| async move {
+                match EmbeddedDist::get(path.as_str()) {
+                    Some(asset) => {
+                        let mime = mime_guess::from_path(&path).first_or_octet_stream();
+                        (
+                            [(header::CONTENT_TYPE, mime.as_ref())],
+                            asset.data.into_owned(),
+                        )
+                            .into_response()
+                    }
+                    None => (StatusCode::NOT_FOUND, Html(app::not_found().await)).into_response(),
                 }
-                None => (StatusCode::NOT_FOUND, Html(app::not_found().await)).into_response(),
-            }
-        }))
-        .nest_service(
-            "/assets",
-            ServiceBuilder::new().service(ServeDir::new(public_assets_dir)),
+            }),
         )
         .fallback(|| async { (StatusCode::NOT_FOUND, Html(app::not_found().await)) })
         .layer(CookieManagerLayer::new())

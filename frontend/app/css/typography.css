@@ -69,58 +69,55 @@ a {
 	color: var(--primary-color);
 }
 
-
-
 ul,
 ol {
-  margin: 0 0 var(--space-xl);
-  padding-left: 1.5rem;
-  line-height: 1.5;
+	margin: 0 0 var(--space-xl);
+	padding-left: 1.5rem;
+	line-height: 1.5;
 }
 
 li {
-  margin: 0 0 var(--space-l);
+	margin: 0 0 var(--space-l);
 }
 
 ul ul,
 ul ol,
 ol ul,
 ol ol {
-  margin-bottom: var(--space-l) ;
+	margin-bottom: var(--space-l);
 }
-
 
 ul {
-  list-style-type: disc;
-  list-style-position: outside;
+	list-style-type: disc;
+	list-style-position: outside;
 }
 ul ul {
-  list-style-type: circle;
+	list-style-type: circle;
 }
 ul ul ul {
-  list-style-type: square;
+	list-style-type: square;
 }
 
 /* --- Numbering hierarchy for OLs --- */
 ol {
-  list-style-type: decimal;
-  list-style-position: outside;
+	list-style-type: decimal;
+	list-style-position: outside;
 }
 ol ol {
-  list-style-type: lower-alpha;
+	list-style-type: lower-alpha;
 }
 ol ol ol {
-  list-style-type: lower-roman;
+	list-style-type: lower-roman;
 }
 
 ul li::marker,
 ol li::marker {
-  color: var(--text-color-subdued);
+	color: var(--text-color-subdued);
 }
 
 li > *:first-child {
-  margin-top: 0;
+	margin-top: 0;
 }
 li > *:last-child {
-  margin-bottom: 0;
+	margin-bottom: 0;
 }

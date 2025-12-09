@@ -6,7 +6,7 @@ use tokio::fs;
 #[derive(Debug, Clone)]
 pub struct AppConfig {
     pub git_root: PathBuf,
-    pub asset_root: PathBuf,
+    pub session_root: PathBuf,
     pub http_bind_addr: SocketAddr,
     pub ssh_bind_addr: SocketAddr,
     pub ssh_public_host: String,
@@ -24,11 +24,11 @@ impl GlobalState {
         let db_url = env::var("DATABASE_URL")
             .unwrap_or_else(|_| "postgresql://postgres:postgres@localhost:5432/rubhub".to_owned());
 
-        let git_root = env::var("GIT_ROOT").unwrap_or_else(|_| "./data/git".to_owned());
-        let git_root = PathBuf::from(git_root);
+        let dir_root = env::var("DIR_ROOT").unwrap_or_else(|_| "./data/".to_owned());
+        let dir_root = PathBuf::from(dir_root);
 
-        let asset_root = env::var("ASSET_ROOT").unwrap_or_else(|_| "./data/assets".to_owned());
-        let asset_root = PathBuf::from(asset_root);
+        let git_root = dir_root.join("git");
+        let session_root = dir_root.join("sessions");
 
         let bind_addr = env::var("BIND_ADDR").ok();
         let http_bind_addr = if let Some(addr) = bind_addr {
@@ -59,16 +59,21 @@ impl GlobalState {
                 }
             });
 
-        let (fs, db) = tokio::join!(fs::create_dir_all(&git_root), Database::connect(&db_url),);
+        let (fsa, fsb, db) = tokio::join!(
+            fs::create_dir_all(&git_root),
+            fs::create_dir_all(&session_root),
+            Database::connect(&db_url),
+        );
         let db = db?;
-        fs?;
+        fsa?;
+        fsb?;
 
         let state = Self {
             db,
             process_start,
             config: AppConfig {
                 git_root,
-                asset_root,
+                session_root,
                 http_bind_addr,
                 ssh_bind_addr,
                 ssh_public_host,

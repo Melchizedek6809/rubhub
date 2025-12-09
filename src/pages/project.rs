@@ -212,10 +212,8 @@ pub async fn project_page(
     let readme = readme
         .map(|b| {
             let str = String::from_utf8_lossy(&b.data);
-            let html = markdown::to_html_with_options(
-                &str,
-                &markdown::Options::gfm()
-            ).unwrap_or_default();
+            let html =
+                markdown::to_html_with_options(&str, &markdown::Options::gfm()).unwrap_or_default();
 
             ammonia::clean(&html)
         })

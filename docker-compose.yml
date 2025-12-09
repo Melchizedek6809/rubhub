@@ -12,8 +12,7 @@ services:
       SSH_BIND_ADDRESS: 0.0.0.0
       SSH_PORT: 22
       SSH_PUBLIC_HOST: rubhub.net # optional host:port for clone URLs
-      GIT_ROOT: /app/data/git
-      ASSET_ROOT: /app/data/assets
+      DIR_ROOT: /app/data/
     volumes:
       - ./data:/app/data
     deploy:
