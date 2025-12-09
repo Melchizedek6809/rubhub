@@ -52,7 +52,7 @@
 
             {% if let Some(readme_html) = readme_html %}
             <br/>
-            <div class="markdown">{{ readme_html|safe }}</div>
+            <div class="markdown">{{- readme_html|safe -}}</div>
             {% endif %}
         </div>
     </section>

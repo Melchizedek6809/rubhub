@@ -8,20 +8,20 @@ h1,
 h2,
 h3 {
 	font-family: var(--header-font);
-	font-size: 3.2rem;
+	font-size: 2.8rem;
 	margin-bottom: var(--space-l);
 }
 
 h1 {
-	font-size: 3.2rem;
-}
-
-h2 {
 	font-size: 2.8rem;
 }
 
+h2 {
+	font-size: 2rem;
+}
+
 h3 {
-	font-size: 2.4rem;
+	font-size: 1.6rem;
 }
 
 h4,
@@ -32,22 +32,22 @@ h6 {
 }
 
 h4 {
-	font-size: 2rem;
+	font-size: 1.4rem;
 }
 
 h5 {
-	font-size: 1.8rem;
+	font-size: 1.3rem;
 }
 
 h6 {
-	font-size: 1.6rem;
+	font-size: 1.25rem;
 }
 
 p {
 	font-family: var(--body-font);
 	font-size: 1em;
 	line-height: 1.3em;
-	margin-bottom: var(--space-m);
+	margin-bottom: var(--space-l);
 }
 
 .muted {
@@ -73,20 +73,26 @@ a {
 
 ul,
 ol {
-  margin: 0 0 1rem 1.5rem;
-  padding: 0;
+  margin: 0 0 var(--space-xl);
+  padding-left: 1.5rem;
   line-height: 1.5;
+}
+
+li {
+  margin: 0 0 var(--space-l);
 }
 
 ul ul,
 ul ol,
 ol ul,
 ol ol {
-  margin-bottom: 0.25rem;
+  margin-bottom: var(--space-l) ;
 }
+
 
 ul {
   list-style-type: disc;
+  list-style-position: outside;
 }
 ul ul {
   list-style-type: circle;
@@ -95,8 +101,10 @@ ul ul ul {
   list-style-type: square;
 }
 
+/* --- Numbering hierarchy for OLs --- */
 ol {
   list-style-type: decimal;
+  list-style-position: outside;
 }
 ol ol {
   list-style-type: lower-alpha;
@@ -105,17 +113,14 @@ ol ol ol {
   list-style-type: lower-roman;
 }
 
-/* Consistent spacing for list items */
-li {
-  margin: 0 0 0.25rem;
+ul li::marker,
+ol li::marker {
+  color: var(--text-color-subdued);
 }
 
-/* If list items contain paragraphs or block-level elements */
-li > p {
-  margin: 0 0 0.25rem;
+li > *:first-child {
+  margin-top: 0;
 }
-
-/* Optional: make checklists (GitHub-style) aligned neatly */
-.markdown-body input[type="checkbox"] {
-  margin-right: 0.5rem;
+li > *:last-child {
+  margin-bottom: 0;
 }

@@ -212,12 +212,12 @@ pub async fn project_page(
     let readme = readme
         .map(|b| {
             let str = String::from_utf8_lossy(&b.data);
-            let parser = pulldown_cmark::Parser::new(&str);
+            let html = markdown::to_html_with_options(
+                &str,
+                &markdown::Options::gfm()
+            ).unwrap_or_default();
 
-            // Write to a new String buffer.
-            let mut html_output = String::new();
-            pulldown_cmark::html::push_html(&mut html_output, parser);
-            html_output
+            ammonia::clean(&html)
         })
         .ok();
 

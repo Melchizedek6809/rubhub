@@ -61,7 +61,7 @@ impl GlobalState {
 
         let (fs, db) = tokio::join!(fs::create_dir_all(&git_root), Database::connect(&db_url),);
         let db = db?;
-        let _fs = fs?;
+        fs?;
 
         let state = Self {
             db,

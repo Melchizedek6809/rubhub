@@ -2,6 +2,7 @@
 name = "rubhub"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.89"
 license = "EUPL-1.2"
 default-run = "rubhub"
 
@@ -22,7 +23,6 @@ gix = { version = "0.75", default-features = false, features = ["basic"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 russh = "0.55"
-pulldown-cmark = "0.13"
 argon2 = { version = "0.5", features = ["password-hash"] }
 time = { version = "0.3", features = ["serde", "macros", "formatting", "parsing"] }
 tokio = { version = "1.48", features = ["macros", "process", "signal"] }
@@ -32,3 +32,5 @@ tower-http = { version = "0.6", features = ["fs"] }
 urlencoding = "2.1"
 uuid = { version = "1", features = ["serde", "v4", "v7"] }
 sea-orm = { version = "1.1.19", features = [ "sqlx-postgres", "runtime-tokio-rustls", "macros", "with-time" ] }
+markdown = "1"
+ammonia = "4.1.2"
