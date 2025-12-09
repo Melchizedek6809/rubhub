@@ -9,8 +9,11 @@
         {% if let Some(msg) = message %}
             <div class="message" role="status">{{ msg }}</div>
         {% endif %}
-        <form method="post" action="/projects/new" class="stack card simple-form">
-            <rubhub-slug-input autofocus label="Project name" name="name" autocomplete="off"></rubhub-slug-input>
+            <form method="post" action="/projects/new" class="stack card simple-form">
+              <label>
+                Name
+                <input type="text" autofocus label="Project name" name="name" autocomplete="off"></input>
+              </label>
             <label>
                 Public access
                 <select name="public_access">

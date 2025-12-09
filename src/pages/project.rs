@@ -130,7 +130,17 @@ pub async fn handle_new_project(
     let user_slug = current_user.slug.clone();
 
     match Project::new(&current_user, name, selected_public_access) {
-        Ok(project) => match project.save(&state).await {
+        Ok(project) => {
+            if let Ok(_) = Project::load(&state, &project.owner, &project.slug).await {
+                return Ok(render_new_project_page(
+                    &cookies,
+                    Some("Project already exists"),
+                    selected_public_access,
+                )
+                   .await
+                   .into_response())
+            };
+            match project.save(&state).await {
             Ok(_) => {
                 match create_bare_repo(&state, user_slug.clone(), project.slug.clone()).await {
                     Ok(_) => Ok(Redirect::to(&project.uri()).into_response()),
@@ -150,7 +160,7 @@ pub async fn handle_new_project(
             )
             .await
             .into_response()),
-        },
+        }},
         Err(msg) => {
             Ok(
                 render_new_project_page(&cookies, Some(&msg.to_string()), selected_public_access)
