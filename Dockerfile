@@ -26,8 +26,6 @@ WORKDIR /app
 RUN apk add --no-cache git curl openssh
 
 COPY --from=rust-builder /app/target/release/rubhub /usr/local/bin/rubhub
-COPY --from=rust-builder /app/dist ./dist
-COPY --from=rust-builder /app/templates ./templates
 
 RUN mkdir -p /app/data/git /app/data/assets
 VOLUME ["/app/data"]

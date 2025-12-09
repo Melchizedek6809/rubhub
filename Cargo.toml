@@ -2,7 +2,6 @@
 name = "rubhub"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.89"
 license = "EUPL-1.2"
 default-run = "rubhub"
 
@@ -31,6 +30,8 @@ tower-cookies = "0.11"
 tower-http = { version = "0.6", features = ["fs"] }
 urlencoding = "2.1"
 uuid = { version = "1", features = ["serde", "v4", "v7"] }
-sea-orm = { version = "1.1.19", features = [ "sqlx-postgres", "runtime-tokio-rustls", "macros", "with-time" ] }
+sea-orm = { version = "1.1", features = [ "sqlx-postgres", "runtime-tokio-rustls", "macros", "with-time" ] }
 markdown = "1"
-ammonia = "4.1.2"
+ammonia = "4.1"
+rust-embed = "8.9"
+mime_guess = "2.0"

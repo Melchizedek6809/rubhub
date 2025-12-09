@@ -1,9 +1,15 @@
-use axum::{Router, http::StatusCode, response::Html, routing::get};
+use axum::{Router, extract::Path, http::{StatusCode, header}, response::{Html, IntoResponse}, routing::get};
+use rust_embed::Embed;
 use tower::ServiceBuilder;
 use tower_cookies::CookieManagerLayer;
 use tower_http::services::ServeDir;
 
 use crate::{app, pages, state::GlobalState};
+
+#[derive(Embed)]
+#[folder = "dist/"]
+struct EmbeddedDist;
+
 
 pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
     let public_assets_dir = state.config.asset_root.join("public");
@@ -34,14 +40,18 @@ pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
             get(pages::project::project_settings_page)
                 .post(pages::project::handle_project_settings),
         )
-        .nest_service(
-            "/public",
-            ServiceBuilder::new().service(ServeDir::new("public")),
-        )
-        .nest_service(
-            "/dist",
-            ServiceBuilder::new().service(ServeDir::new("dist")),
-        )
+        .route("/dist/{*path}", get(|Path(path): Path<String>| async move {
+            match EmbeddedDist::get(path.as_str()) {
+                Some(asset) => {
+                    let mime = mime_guess::from_path(&path).first_or_octet_stream();
+                    (
+                        [(header::CONTENT_TYPE, mime.as_ref())],
+                        asset.data.into_owned(),
+                    ).into_response()
+                }
+                None => (StatusCode::NOT_FOUND, Html(app::not_found().await)).into_response(),
+            }
+        }))
         .nest_service(
             "/assets",
             ServiceBuilder::new().service(ServeDir::new(public_assets_dir)),
