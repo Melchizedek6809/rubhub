@@ -245,22 +245,20 @@ impl server::Handler for Connection {
         let openssh = key.to_openssh()?;
 
         match User::load(&self.state, user).await {
-            Ok(user) => {
-                match user.validate_ssh_key(key) {
-                    Ok(_) => {
-                        println!("Auth: {} - PK {openssh}", user.slug);
-                        self.user_slug = Some(user.slug);
-                    },
-                    Err(_e) => {
-                        self.user_slug = None;
-                        println!("Anon Auth - PK {openssh}");
-                    }
+            Ok(user) => match user.validate_ssh_key(key) {
+                Ok(_) => {
+                    println!("Auth: {} - PK {openssh}", user.slug);
+                    self.user_slug = Some(user.slug);
+                }
+                Err(_e) => {
+                    self.user_slug = None;
+                    println!("Anon Auth - PK {openssh}");
                 }
             },
             Err(_) => {
                 self.user_slug = None;
                 println!("Anon Auth - PK {openssh}");
-            },
+            }
         }
 
         Ok(server::Auth::Accept)

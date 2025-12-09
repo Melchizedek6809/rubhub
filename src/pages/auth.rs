@@ -8,10 +8,13 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    app, entities::user::User, services::{
+    app,
+    entities::user::User,
+    services::{
         session,
         validation::{slugify, validate_password, validate_username},
-    }, state::GlobalState
+    },
+    state::GlobalState,
 };
 
 #[derive(Debug, Deserialize)]
@@ -87,10 +90,8 @@ async fn handle_login_action(
                 return Err(internal_error(&cookies, err).await);
             }
             Ok(Redirect::to(&user.uri()))
-        },
-        Err(err) => {
-            Err(internal_error(&cookies, err).await)
-        },
+        }
+        Err(err) => Err(internal_error(&cookies, err).await),
     }
 }
 
@@ -126,21 +127,17 @@ async fn handle_register_action(
     };
 
     match User::new(username, email, password) {
-        Ok(user) => {
-            match user.save(state).await {
-                Ok(_) => {
-                    if let Err(err) = session::create_session(state, &cookies, user.id, &user.slug).await {
-                        return Err(internal_error(&cookies, err).await);
-                    };
-                    Ok(Redirect::to(&user.uri()))
-                },
-                Err(err) => {
-                    Err(internal_error(&cookies, err).await)
-                },
+        Ok(user) => match user.save(state).await {
+            Ok(_) => {
+                if let Err(err) =
+                    session::create_session(state, &cookies, user.id, &user.slug).await
+                {
+                    return Err(internal_error(&cookies, err).await);
+                };
+                Ok(Redirect::to(&user.uri()))
             }
+            Err(err) => Err(internal_error(&cookies, err).await),
         },
-        Err(err) => {
-            Err(internal_error(&cookies, err).await)
-        }
+        Err(err) => Err(internal_error(&cookies, err).await),
     }
 }

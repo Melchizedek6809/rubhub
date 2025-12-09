@@ -155,11 +155,7 @@ pub async fn settings(user: User, ssh_keys: &[String], message: Option<&str>) ->
     theme(parts.0, parts.1).await
 }
 
-pub async fn projects(
-    user: &User,
-    projects: &[ProjectSummary<'_>],
-    is_owner: bool,
-) -> String {
+pub async fn projects(user: &User, projects: &[ProjectSummary<'_>], is_owner: bool) -> String {
     let contents = UserTemplate {
         user,
         projects,
@@ -218,11 +214,7 @@ pub async fn project_with_access(
     theme(parts.0, parts.1).await
 }
 
-pub async fn project_settings(
-    owner: User,
-    project: Project,
-    message: Option<&str>,
-) -> String {
+pub async fn project_settings(owner: User, project: Project, message: Option<&str>) -> String {
     let contents = ProjectSettingsTemplate {
         owner: &owner,
         project: &project,

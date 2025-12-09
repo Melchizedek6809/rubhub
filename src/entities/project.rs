@@ -2,7 +2,11 @@ use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
-use crate::{entities::{AccessType, user::User}, services::validation::{slugify, validate_slug}, state::GlobalState};
+use crate::{
+    entities::{AccessType, user::User},
+    services::validation::{slugify, validate_slug},
+    state::GlobalState,
+};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Project {
@@ -17,7 +21,6 @@ pub struct Project {
 
     pub main_branch: String,
 }
-
 
 impl Project {
     pub async fn load(state: &GlobalState, user_slug: &str, project_slug: &str) -> Result<Self> {
@@ -78,7 +81,9 @@ impl Project {
     }
 
     pub async fn access_level(&self, user_slug: Option<String>) -> AccessType {
-        if let Some(user_slug) = user_slug && user_slug == self.owner {
+        if let Some(user_slug) = user_slug
+            && user_slug == self.owner
+        {
             AccessType::Admin
         } else {
             self.public_access
@@ -92,7 +97,7 @@ impl Project {
     pub async fn load_by_path(state: &GlobalState, path: String) -> Result<(User, Project)> {
         let parts = path.split("/").collect::<Vec<&str>>();
         if parts.len() != 2 {
-            return Err(anyhow!("Invalid path"))
+            return Err(anyhow!("Invalid path"));
         };
         let user_slug = parts[0];
         let project_slug = parts[1];

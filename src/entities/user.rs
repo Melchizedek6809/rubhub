@@ -5,7 +5,14 @@ use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::{entities::project::Project, services::{password::{PasswordVerification, hash_password, verify_password_hash}, validation::{slugify, validate_username}}, state::GlobalState};
+use crate::{
+    entities::project::Project,
+    services::{
+        password::{PasswordVerification, hash_password, verify_password_hash},
+        validation::{slugify, validate_username},
+    },
+    state::GlobalState,
+};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct User {
@@ -25,22 +32,20 @@ pub struct User {
     pub ssh_keys: Vec<String>,
 }
 
-
 impl User {
     pub async fn login(state: &GlobalState, slug: &str, password: &str) -> Result<Self> {
         let mut user = Self::load(state, slug).await?;
 
         match verify_password_hash(password, &user.password_hash) {
-            PasswordVerification::Invalid |
-            PasswordVerification::Error => {
+            PasswordVerification::Invalid | PasswordVerification::Error => {
                 Err(anyhow!("Invalid Password"))
-            },
+            }
             PasswordVerification::ValidNeedsRehash { new_hash } => {
                 user.password_hash = new_hash;
                 user.last_login = Some(time::OffsetDateTime::now_utc());
                 user.save(state).await?;
                 Ok(user)
-            },
+            }
             PasswordVerification::Valid => {
                 user.last_login = Some(time::OffsetDateTime::now_utc());
                 user.save(state).await?;
@@ -59,7 +64,9 @@ impl User {
                 continue;
             };
             key.set_comment("");
-            if let Ok(key) = key.to_openssh() && key == ssh_key {
+            if let Ok(key) = key.to_openssh()
+                && key == ssh_key
+            {
                 return Ok(());
             }
         }
@@ -131,7 +138,7 @@ impl User {
                     ret.push(project);
                 }
             };
-        };
+        }
         Ok(ret)
     }
 
