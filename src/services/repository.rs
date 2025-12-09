@@ -1,5 +1,5 @@
 use anyhow::{Result, anyhow};
-use gix::{ObjectDetached, Repository, date::Time, revision::walk::Sorting};
+use gix::{ObjectDetached, Repository, date::Time};
 use std::{
     io,
     time::{SystemTime, UNIX_EPOCH},
@@ -50,11 +50,7 @@ pub async fn create_bare_repo(
     }
 }
 
-fn get_git_repo(
-    state: &GlobalState,
-    user_name: &str,
-    project_slug: &str,
-) -> Option<Repository> {
+fn get_git_repo(state: &GlobalState, user_name: &str, project_slug: &str) -> Option<Repository> {
     let path = state.config.git_root.join(user_name).join(project_slug);
     match gix::open(path) {
         Ok(repo) => Some(repo),
@@ -94,11 +90,12 @@ pub async fn get_git_summary(
         }
 
         Some(GitSummary { branches, tags })
-    }).await else {
+    })
+    .await
+    else {
         return None;
     };
     res
-
 }
 
 pub async fn get_git_info(
@@ -127,10 +124,7 @@ pub async fn get_git_info(
             .unwrap_or_default();
         let commit_time = commit.time().unwrap_or_default();
 
-        let commit_count = commit.ancestors()
-            .all()
-            .ok()?
-            .count();
+        let commit_count = commit.ancestors().all().ok()?.count();
 
         Some(GitCommitInfo {
             branch_name: reference.name().shorten().to_string(),
@@ -140,7 +134,9 @@ pub async fn get_git_info(
             commit_time,
             commit_count,
         })
-    }).await else {
+    })
+    .await
+    else {
         return None;
     };
     res
@@ -160,8 +156,8 @@ pub async fn get_git_file(
     let path = path.to_string();
 
     let Ok(res) = tokio::task::spawn_blocking(move || {
-        let repo =
-            get_git_repo(&state, &user_name, &project_slug).ok_or(anyhow!("Couldn't get Repository"))?;
+        let repo = get_git_repo(&state, &user_name, &project_slug)
+            .ok_or(anyhow!("Couldn't get Repository"))?;
         let mut reference = repo.find_reference(&branch)?;
 
         let commit = reference.peel_to_commit()?;
@@ -172,7 +168,9 @@ pub async fn get_git_file(
         let blob = entry.object()?.try_into_blob()?;
 
         Ok(blob.detach())
-    }).await else {
+    })
+    .await
+    else {
         return Err(anyhow!("Error when getting git file"));
     };
     res

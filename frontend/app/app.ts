@@ -30,20 +30,27 @@ if (browseLink) {
 }
 
 const initBranchSwitcher = () => {
-    for (const ele of document.querySelectorAll<HTMLSelectElement>("select.branch-switcher")) {
-        const base = ele.getAttribute("data-base-href");
-        if (!base) {
-            continue;
-        }
-        const oldValue = ele.value;
-        ele.onchange = e => {
-            const newValue = ele.value;
-            if (newValue == oldValue) {
-                return;
-            }
-            const url = `${base}${newValue}`;
-            document.location = url;
-        };
-    }
+	for (const ele of document.querySelectorAll<HTMLSelectElement>(
+		"select.branch-switcher",
+	)) {
+		const base = ele.getAttribute("data-base-href");
+		const mainBranch = ele.getAttribute("data-main-branch");
+		if (!base) {
+			continue;
+		}
+		const oldValue = ele.value;
+		ele.onchange = () => {
+			const newValue = ele.value;
+			if (newValue === oldValue) {
+				return;
+			}
+
+			if (newValue === mainBranch) {
+				document.location = `${base}`;
+			} else {
+				document.location = `${base}/tree/${newValue}`;
+			}
+		};
+	}
 };
 setTimeout(initBranchSwitcher, 0);

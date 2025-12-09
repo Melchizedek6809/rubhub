@@ -36,7 +36,7 @@ async fn not_found() -> (StatusCode, Html<String>) {
     (StatusCode::NOT_FOUND, Html(app::not_found().await))
 }
 
-pub async fn projects_page(
+pub async fn project_list_page(
     State(state): State<GlobalState>,
     cookies: Cookies,
     Path(username): Path<String>,
@@ -137,30 +137,31 @@ pub async fn handle_new_project(
                     Some("Project already exists"),
                     selected_public_access,
                 )
-                   .await
-                   .into_response())
+                .await
+                .into_response());
             };
             match project.save(&state).await {
-            Ok(_) => {
-                match create_bare_repo(&state, user_slug.clone(), project.slug.clone()).await {
-                    Ok(_) => Ok(Redirect::to(&project.uri()).into_response()),
-                    Err(_) => Ok(render_new_project_page(
-                        &cookies,
-                        Some("Could not create project."),
-                        selected_public_access,
-                    )
-                    .await
-                    .into_response()),
+                Ok(_) => {
+                    match create_bare_repo(&state, user_slug.clone(), project.slug.clone()).await {
+                        Ok(_) => Ok(Redirect::to(&project.uri()).into_response()),
+                        Err(_) => Ok(render_new_project_page(
+                            &cookies,
+                            Some("Could not create project."),
+                            selected_public_access,
+                        )
+                        .await
+                        .into_response()),
+                    }
                 }
+                Err(msg) => Ok(render_new_project_page(
+                    &cookies,
+                    Some(&msg.to_string()),
+                    selected_public_access,
+                )
+                .await
+                .into_response()),
             }
-            Err(msg) => Ok(render_new_project_page(
-                &cookies,
-                Some(&msg.to_string()),
-                selected_public_access,
-            )
-            .await
-            .into_response()),
-        }},
+        }
         Err(msg) => {
             Ok(
                 render_new_project_page(&cookies, Some(&msg.to_string()), selected_public_access)
@@ -171,10 +172,12 @@ pub async fn handle_new_project(
     }
 }
 
-pub async fn project_page(
-    State(state): State<GlobalState>,
+pub async fn render_project_page(
+    state: &GlobalState,
     cookies: Cookies,
-    Path((username, slug)): Path<(String, String)>,
+    username: String,
+    slug: String,
+    branch: Option<String>,
 ) -> Result<Html<String>, (StatusCode, Html<String>)> {
     let Ok(owner) = User::load(&state, &username).await else {
         return Err(not_found().await);
@@ -188,7 +191,10 @@ pub async fn project_page(
         return Err(not_found().await);
     };
 
-    let current = project.main_branch.clone();
+    let current = match branch {
+        Some(branch) => branch,
+        None => project.main_branch.clone(),
+    };
     let info = get_git_info(&state, &username, &slug, &current).await;
 
     let session_user = session::current_user(&state, &cookies).await.ok();
@@ -225,6 +231,22 @@ pub async fn project_page(
         )
         .await,
     ))
+}
+
+pub async fn project_page_tree(
+    State(state): State<GlobalState>,
+    cookies: Cookies,
+    Path((username, slug, branch)): Path<(String, String, String)>,
+) -> Result<Html<String>, (StatusCode, Html<String>)> {
+    render_project_page(&state, cookies, username, slug, Some(branch)).await
+}
+
+pub async fn project_page(
+    State(state): State<GlobalState>,
+    cookies: Cookies,
+    Path((username, slug)): Path<(String, String)>,
+) -> Result<Html<String>, (StatusCode, Html<String>)> {
+    render_project_page(&state, cookies, username, slug, None).await
 }
 
 pub async fn project_settings_page(
