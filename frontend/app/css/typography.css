@@ -68,3 +68,54 @@ p:last-child {
 a {
 	color: var(--primary-color);
 }
+
+
+
+ul,
+ol {
+  margin: 0 0 1rem 1.5rem;
+  padding: 0;
+  line-height: 1.5;
+}
+
+ul ul,
+ul ol,
+ol ul,
+ol ol {
+  margin-bottom: 0.25rem;
+}
+
+ul {
+  list-style-type: disc;
+}
+ul ul {
+  list-style-type: circle;
+}
+ul ul ul {
+  list-style-type: square;
+}
+
+ol {
+  list-style-type: decimal;
+}
+ol ol {
+  list-style-type: lower-alpha;
+}
+ol ol ol {
+  list-style-type: lower-roman;
+}
+
+/* Consistent spacing for list items */
+li {
+  margin: 0 0 0.25rem;
+}
+
+/* If list items contain paragraphs or block-level elements */
+li > p {
+  margin: 0 0 0.25rem;
+}
+
+/* Optional: make checklists (GitHub-style) aligned neatly */
+.markdown-body input[type="checkbox"] {
+  margin-right: 0.5rem;
+}
