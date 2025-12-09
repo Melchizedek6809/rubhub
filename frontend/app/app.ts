@@ -28,3 +28,22 @@ if (browseLink) {
 	const user = readSessionUser();
 	browseLink.href = user ? `/${user.username}` : "/login";
 }
+
+const initBranchSwitcher = () => {
+    for (const ele of document.querySelectorAll<HTMLSelectElement>("select.branch-switcher")) {
+        const base = ele.getAttribute("data-base-href");
+        if (!base) {
+            continue;
+        }
+        const oldValue = ele.value;
+        ele.onchange = e => {
+            const newValue = ele.value;
+            if (newValue == oldValue) {
+                return;
+            }
+            const url = `${base}${newValue}`;
+            document.location = url;
+        };
+    }
+};
+setTimeout(initBranchSwitcher, 0);

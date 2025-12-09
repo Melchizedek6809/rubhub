@@ -18,7 +18,7 @@
         <div class="card">
             <div class="repo-bar">
                 {% if summary.branches.len() > 0 %}
-                <select name="branch-name">
+                <select name="branch-name" class="branch-switcher" data-base-href="/{{ owner.slug }}/{{ project.slug }}/tree/">
                     {% for branch in summary.branches %}
                     <option value="{{ branch }}" {% if branch==selected_branch.as_str() %}selected{% endif %}>{{ branch
                         }}</option>
