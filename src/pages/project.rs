@@ -174,12 +174,12 @@ pub async fn project_page(
         return Err(not_found().await);
     };
 
-    let Some(summary) = get_git_summary(&state, &username, &slug) else {
+    let Some(summary) = get_git_summary(&state, &username, &slug).await else {
         return Err(not_found().await);
     };
 
     let current = project.main_branch.clone();
-    let info = get_git_info(&state, &username, &slug, &current);
+    let info = get_git_info(&state, &username, &slug, &current).await;
 
     let session_user = session::current_user(&state, &cookies).await.ok();
     let access_level = project
@@ -192,7 +192,7 @@ pub async fn project_page(
         git_user, state.config.ssh_public_host, owner.slug, project.slug
     );
 
-    let readme = get_git_file(&state, &username, &slug, &current, "README.md");
+    let readme = get_git_file(&state, &username, &slug, &current, "README.md").await;
     let readme = readme
         .map(|b| {
             let str = String::from_utf8_lossy(&b.data);

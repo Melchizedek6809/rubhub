@@ -50,7 +50,7 @@ pub async fn create_bare_repo(
     }
 }
 
-pub fn get_git_repo(
+fn get_git_repo(
     state: &GlobalState,
     user_name: &str,
     project_slug: &str,
@@ -65,80 +65,111 @@ pub fn get_git_repo(
     }
 }
 
-pub fn get_git_summary(
+pub async fn get_git_summary(
     state: &GlobalState,
     user_name: &str,
     project_slug: &str,
 ) -> Option<GitSummary> {
-    let repo = get_git_repo(state, user_name, project_slug)?;
-    let mut tags = vec![];
-    let mut branches = vec![];
+    let state = state.clone();
+    let user_name = user_name.to_string();
+    let project_slug = project_slug.to_string();
 
-    if let Ok(refs) = repo.references() {
-        if let Ok(iter) = refs.prefixed("refs/tags/") {
-            for r in iter.flatten() {
-                tags.push(r.name().shorten().to_string());
+    let Ok(res) = tokio::task::spawn_blocking(move || {
+        let repo = get_git_repo(&state, &user_name, &project_slug)?;
+        let mut tags = vec![];
+        let mut branches = vec![];
+
+        if let Ok(refs) = repo.references() {
+            if let Ok(iter) = refs.prefixed("refs/tags/") {
+                for r in iter.flatten() {
+                    tags.push(r.name().shorten().to_string());
+                }
+            }
+
+            if let Ok(iter) = refs.prefixed("refs/heads/") {
+                for r in iter.flatten() {
+                    branches.push(r.name().shorten().to_string());
+                }
             }
         }
 
-        if let Ok(iter) = refs.prefixed("refs/heads/") {
-            for r in iter.flatten() {
-                branches.push(r.name().shorten().to_string());
-            }
-        }
-    }
+        Some(GitSummary { branches, tags })
+    }).await else {
+        return None;
+    };
+    res
 
-    Some(GitSummary { branches, tags })
 }
 
-pub fn get_git_info(
+pub async fn get_git_info(
     state: &GlobalState,
     user_name: &str,
     project_slug: &str,
     branch: &str,
 ) -> Option<GitCommitInfo> {
-    let repo = get_git_repo(state, user_name, project_slug)?;
-    let mut reference = repo.find_reference(branch).ok()?;
-    let commit = reference.peel_to_commit().ok()?;
-    let commit_id = commit.id().shorten_or_id().to_string();
-    let commit_author = commit
-        .author()
-        .map(|a| format!("{}", a.name))
-        .unwrap_or_default();
-    let commit_message = commit
-        .message()
-        .map(|m| m.summary().to_string())
-        .unwrap_or_default();
-    let commit_time = commit.time().unwrap_or_default();
+    let state = state.clone();
+    let user_name = user_name.to_string();
+    let project_slug = project_slug.to_string();
+    let branch = branch.to_string();
 
-    Some(GitCommitInfo {
-        branch_name: reference.name().shorten().to_string(),
-        commit_id: commit_id.to_string(),
-        commit_author,
-        commit_message,
-        commit_time,
-    })
+    let Ok(res) = tokio::task::spawn_blocking(move || {
+        let repo = get_git_repo(&state, &user_name, &project_slug)?;
+        let mut reference = repo.find_reference(&branch).ok()?;
+        let commit = reference.peel_to_commit().ok()?;
+        let commit_id = commit.id().shorten_or_id().to_string();
+        let commit_author = commit
+            .author()
+            .map(|a| format!("{}", a.name))
+            .unwrap_or_default();
+        let commit_message = commit
+            .message()
+            .map(|m| m.summary().to_string())
+            .unwrap_or_default();
+        let commit_time = commit.time().unwrap_or_default();
+
+        Some(GitCommitInfo {
+            branch_name: reference.name().shorten().to_string(),
+            commit_id: commit_id.to_string(),
+            commit_author,
+            commit_message,
+            commit_time,
+        })
+    }).await else {
+        return None;
+    };
+    res
 }
 
-pub fn get_git_file(
+pub async fn get_git_file(
     state: &GlobalState,
     user_name: &str,
     project_slug: &str,
     branch: &str,
     path: &str,
 ) -> Result<ObjectDetached> {
-    let repo =
-        get_git_repo(state, user_name, project_slug).ok_or(anyhow!("Couldn't get Repository"))?;
-    let mut reference = repo.find_reference(branch)?;
+    let state = state.clone();
+    let user_name = user_name.to_string();
+    let project_slug = project_slug.to_string();
+    let branch = branch.to_string();
+    let path = path.to_string();
 
-    let commit = reference.peel_to_commit()?;
-    let entry = commit
-        .tree()?
-        .lookup_entry_by_path(path)?
-        .ok_or(anyhow!("Can't lookup entry"))?;
-    let blob = entry.object()?.try_into_blob()?;
+    let Ok(res) = tokio::task::spawn_blocking(move || {
+        let repo =
+            get_git_repo(&state, &user_name, &project_slug).ok_or(anyhow!("Couldn't get Repository"))?;
+        let mut reference = repo.find_reference(&branch)?;
 
-    Ok(blob.detach())
+        let commit = reference.peel_to_commit()?;
+        let entry = commit
+            .tree()?
+            .lookup_entry_by_path(path)?
+            .ok_or(anyhow!("Can't lookup entry"))?;
+        let blob = entry.object()?.try_into_blob()?;
+
+        Ok(blob.detach())
+    }).await else {
+        return Err(anyhow!("Error when getting git file"));
+    };
+    res
 }
 
 pub struct GitSummary {
