@@ -1,5 +1,5 @@
 use anyhow::{Result, anyhow};
-use gix::{ObjectDetached, Repository, date::Time};
+use gix::{ObjectDetached, Repository, date::Time, revision::walk::Sorting};
 use std::{
     io,
     time::{SystemTime, UNIX_EPOCH},
@@ -127,12 +127,18 @@ pub async fn get_git_info(
             .unwrap_or_default();
         let commit_time = commit.time().unwrap_or_default();
 
+        let commit_count = commit.ancestors()
+            .all()
+            .ok()?
+            .count();
+
         Some(GitCommitInfo {
             branch_name: reference.name().shorten().to_string(),
             commit_id: commit_id.to_string(),
             commit_author,
             commit_message,
             commit_time,
+            commit_count,
         })
     }).await else {
         return None;
@@ -183,6 +189,7 @@ pub struct GitCommitInfo {
     pub commit_author: String,
     pub commit_message: String,
     pub commit_time: Time,
+    pub commit_count: usize,
 }
 
 impl GitCommitInfo {

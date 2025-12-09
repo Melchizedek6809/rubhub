@@ -47,6 +47,7 @@
                 <span class="commit-message" title="{{ info.commit_message }}">{{ info.commit_message }}</span>
                 <span class="commit-id">{{ info.commit_id }}</span>
                 <span class="commit-time">{{ info.relative_time() }}</span>
+                <a href="/{{ owner.slug }}/{{ project.slug }}/commits/{{ selected_branch }}" class="commit-count">{{ info.commit_count }} Commit{% if info.commit_count != 1 %}s{% endif %}</a>
             </div>
             {% endif %}
 
