@@ -4,18 +4,14 @@ use axum::{
     http::StatusCode,
     response::{Html, IntoResponse, Redirect, Response},
 };
-use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set, TransactionTrait,
-};
 use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
     app,
-    entities::{ssh_key, user},
+    entities::user::User,
     services::{
         session as session_service,
-        user::replace_ssh_keys,
         validation::{validate_uri, validate_username},
     },
     state::GlobalState,
@@ -40,30 +36,14 @@ pub async fn settings_page(
         Ok(user) => user,
         Err(_) => return Err(Redirect::to("/login")),
     };
-
-    let keys = ssh_key::Entity::find()
-        .filter(ssh_key::Column::UserId.eq(current_user.id))
-        .all(&state.db)
-        .await
-        .unwrap_or_default();
-
-    let ssh_keys: Vec<String> = keys
-        .into_iter()
-        .map(|k| {
-            if k.hostname.is_empty() {
-                k.public_key
-            } else {
-                format!("{} {}", k.public_key, k.hostname)
-            }
-        })
-        .collect();
+    let ssh_keys = current_user.ssh_keys.clone();
 
     Ok(render_settings_page(&cookies, current_user, &ssh_keys, None).await)
 }
 
 async fn internal_error(
     cookies: &tower_cookies::Cookies,
-    user: user::Model,
+    user: User,
     ssh_keys: &[String],
     err: &str,
 ) -> (axum::http::StatusCode, Html<String>) {
@@ -79,7 +59,7 @@ pub async fn handle_settings(
     cookies: Cookies,
     Form(form): Form<UserSettingsForm>,
 ) -> Result<Response, (axum::http::StatusCode, Html<String>)> {
-    let current_user = match session_service::current_user(&state, &cookies).await {
+    let mut current_user = match session_service::current_user(&state, &cookies).await {
         Ok(user) => user,
         Err(_) => return Ok(Redirect::to("/login").into_response()),
     };
@@ -140,50 +120,14 @@ pub async fn handle_settings(
         ));
     }
 
-    if let Ok(Some(_)) = user::Entity::find()
-        .filter(
-            Condition::all()
-                .add(user::Column::Slug.eq(slug))
-                .add(user::Column::Id.ne(current_user.id)),
-        )
-        .one(&state.db)
-        .await
-    {
-        return Err((
-            StatusCode::CONFLICT,
-            render_settings_page(
-                &cookies,
-                current_user,
-                &ssh_keys,
-                Some("That username is already taken."),
-            )
-            .await,
-        ));
-    }
+    current_user.name = name.to_owned();
+    current_user.email = email.to_owned();
+    current_user.website = website.to_owned();
+    current_user.description = form.description.trim().to_owned();
+    current_user.default_main_branch = form.default_main_branch.trim().to_owned();
+    current_user.ssh_keys = ssh_keys.clone();
 
-    let txn = match state.db.begin().await {
-        Ok(txn) => txn,
-        Err(err) => {
-            return Err(internal_error(&cookies, current_user, &ssh_keys, &err.to_string()).await);
-        }
-    };
-
-    let mut user_active: user::ActiveModel = current_user.clone().into();
-    user_active.name = Set(name.to_owned());
-    user_active.email = Set(email.to_owned());
-    user_active.website = Set(website.to_owned());
-    user_active.description = Set(form.description.trim().to_owned());
-    user_active.default_main_branch = Set(form.default_main_branch.trim().to_owned());
-
-    if let Err(err) = user_active.update(&txn).await {
-        return Err(internal_error(&cookies, current_user, &ssh_keys, &err.to_string()).await);
-    }
-
-    if let Err(err) = replace_ssh_keys(&txn, current_user.id, &ssh_keys).await {
-        return Err(internal_error(&cookies, current_user, &ssh_keys, &err.to_string()).await);
-    }
-
-    if let Err(err) = txn.commit().await {
+    if let Err(err) = current_user.save(&state).await {
         return Err(internal_error(&cookies, current_user, &ssh_keys, &err.to_string()).await);
     }
 
@@ -198,7 +142,7 @@ pub async fn handle_settings(
 
 async fn render_settings_page(
     _cookies: &tower_cookies::Cookies,
-    user: user::Model,
+    user: User,
     ssh_keys: &[String],
     message: Option<&str>,
 ) -> Html<String> {

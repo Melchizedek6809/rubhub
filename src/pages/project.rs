@@ -3,19 +3,15 @@ use axum::{
     http::StatusCode,
     response::{Html, IntoResponse, Redirect, Response},
 };
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
 use tower_cookies::Cookies;
-use uuid::Uuid;
 
 use crate::{
     app::{self, ProjectSummary},
-    entities::{AccessType, project, user},
+    entities::{AccessType, project::Project, user::User},
     services::{
-        project::{generate_unique_slug, get_project, parse_public_access, project_access_level},
         repository::{create_bare_repo, get_git_file, get_git_info, get_git_summary},
         session,
-        user::get_user_by_name,
         validation::{validate_project_name, validate_uri},
     },
     state::GlobalState,
@@ -45,7 +41,7 @@ pub async fn projects_page(
     cookies: Cookies,
     Path(username): Path<String>,
 ) -> Result<Html<String>, (StatusCode, Html<String>)> {
-    let Some(owner) = get_user_by_name(&state.db, username).await else {
+    let Ok(owner) = User::load(&state, &username).await else {
         return Err(not_found().await);
     };
 
@@ -54,13 +50,13 @@ pub async fn projects_page(
         .map(|user| user.id == owner.id)
         .unwrap_or(false);
 
-    let projects = project::Entity::find()
-        .filter(project::Column::Owner.eq(owner.id))
-        .all(&state.db)
-        .await
-        .unwrap_or_default();
-
-    let user = owner.clone();
+    let projects = match owner.projects(&state).await {
+        Ok(projects) => projects,
+        Err(e) => {
+            eprintln!("{:?}", e);
+            return Err(not_found().await);
+        }
+    };
 
     let summaries: Vec<_> = projects
         .iter()
@@ -73,7 +69,7 @@ pub async fn projects_page(
         })
         .collect();
 
-    Ok(Html(app::projects(user, &summaries, is_owner).await))
+    Ok(Html(app::projects(&owner, &summaries, is_owner).await))
 }
 
 pub async fn new_project_page(
@@ -83,6 +79,16 @@ pub async fn new_project_page(
     match session::current_user(&state, &cookies).await {
         Ok(_) => Ok(render_new_project_page(&cookies, None, AccessType::Read).await),
         Err(_) => Err(Redirect::to("/login")),
+    }
+}
+
+fn parse_public_access(value: &str) -> Result<AccessType, &'static str> {
+    match value.to_ascii_lowercase().as_str() {
+        "none" => Ok(AccessType::None),
+        "read" => Ok(AccessType::Read),
+        "write" => Ok(AccessType::Write),
+        "admin" => Err("Public admin access is not allowed."),
+        _ => Err("Invalid access level."),
     }
 }
 
@@ -100,22 +106,6 @@ pub async fn handle_new_project(
     let current_user = match session::current_user(&state, &cookies).await {
         Ok(user) => user,
         Err(_) => return Err(Redirect::to("/login")),
-    };
-
-    let public_access = match form
-        .public_access
-        .as_deref()
-        .map(parse_public_access)
-        .unwrap_or(Ok(AccessType::Read))
-    {
-        Ok(level) => level,
-        Err(msg) => {
-            return Ok(
-                render_new_project_page(&cookies, Some(msg), selected_public_access)
-                    .await
-                    .into_response(),
-            );
-        }
     };
 
     let name = form.name.trim();
@@ -137,41 +127,43 @@ pub async fn handle_new_project(
         );
     }
 
-    let project_slug = generate_unique_slug(&state, name, current_user.id).await;
     let user_slug = current_user.slug.clone();
 
-    let new_project = project::ActiveModel {
-        id: Set(Uuid::new_v4()),
-        owner: Set(current_user.id),
-        slug: Set(project_slug.clone()),
-        name: Set(name.to_owned()),
-        description: Set(String::new()),
-        public_access: Set(public_access),
-        ..Default::default()
-    };
-
-    match new_project.insert(&state.db).await {
-        Ok(_) => {
-            let res = create_bare_repo(&state, user_slug.clone(), project_slug.clone()).await;
-            if res.is_err() {
-                Ok(render_new_project_page(
-                    &cookies,
-                    Some("Could not create project."),
-                    selected_public_access,
-                )
-                .await
-                .into_response())
-            } else {
-                Ok(Redirect::to(&format!("/{user_slug}")).into_response())
+    match Project::new(&current_user, name, selected_public_access) {
+        Ok(project) => {
+            match project.save(&state).await {
+                Ok(_) => {
+                    match create_bare_repo(&state, user_slug.clone(), project.slug.clone()).await {
+                        Ok(_) => {
+                            Ok(Redirect::to(&project.uri()).into_response())
+                        },
+                        Err(_) => {
+                            Ok(render_new_project_page(
+                                &cookies,
+                                Some("Could not create project."),
+                                selected_public_access,
+                            )
+                            .await
+                            .into_response())
+                        }
+                    }
+                },
+                Err(msg) => {
+                    Ok(
+                        render_new_project_page(&cookies, Some(&msg.to_string()), selected_public_access)
+                            .await
+                            .into_response(),
+                    )
+                }
             }
-        }
-        Err(_) => Ok(render_new_project_page(
-            &cookies,
-            Some("Could not create project."),
-            selected_public_access,
-        )
-        .await
-        .into_response()),
+        },
+        Err(msg) => {
+            Ok(
+                render_new_project_page(&cookies, Some(&msg.to_string()), selected_public_access)
+                    .await
+                    .into_response(),
+            )
+        },
     }
 }
 
@@ -180,11 +172,11 @@ pub async fn project_page(
     cookies: Cookies,
     Path((username, slug)): Path<(String, String)>,
 ) -> Result<Html<String>, (StatusCode, Html<String>)> {
-    let Some(owner) = get_user_by_name(&state.db, username.clone()).await else {
+    let Ok(owner) = User::load(&state, &username).await else {
         return Err(not_found().await);
     };
 
-    let Some(project) = get_project(&state.db, owner.id, slug.clone()).await else {
+    let Ok(project) = Project::load(&state, &username, &slug).await else {
         return Err(not_found().await);
     };
 
@@ -196,16 +188,12 @@ pub async fn project_page(
     let info = get_git_info(&state, &username, &slug, &current);
 
     let session_user = session::current_user(&state, &cookies).await.ok();
-    let access_level = project_access_level(
-        &state,
-        session_user.as_ref().map(|user| user.id),
-        project.id,
-    )
-    .await;
+    let access_level = project.access_level(session_user.as_ref().map(|user| user.slug.clone())).await;
+    let git_user = session_user.map(|u| u.slug).unwrap_or("anon".to_string());
 
     let ssh_clone_url = format!(
-        "ssh://git@{}/{}/{}",
-        state.config.ssh_public_host, owner.slug, project.slug
+        "ssh://{}@{}/{}/{}",
+        git_user, state.config.ssh_public_host, owner.slug, project.slug
     );
 
     let readme = get_git_file(&state, &username, &slug, &current, "README.md");
@@ -238,12 +226,12 @@ pub async fn project_settings_page(
     cookies: Cookies,
     Path((username, slug)): Path<(String, String)>,
 ) -> Result<Html<String>, Redirect> {
-    let Some(owner) = get_user_by_name(&state.db, username.clone()).await else {
+    let Ok(owner) = User::load(&state, &username).await else {
         return Err(Redirect::to("/"));
     };
 
-    let Some(project) = get_project(&state.db, owner.id, slug.clone()).await else {
-        return Err(Redirect::to(&format!("/{username}")));
+    let Ok(project) = Project::load(&state, &username, &slug).await else {
+        return Err(Redirect::to(&owner.uri()));
     };
 
     let current_user = match session::current_user(&state, &cookies).await {
@@ -251,9 +239,9 @@ pub async fn project_settings_page(
         Err(_) => return Err(Redirect::to("/login")),
     };
 
-    let access_level = project_access_level(&state, Some(current_user.id), project.id).await;
+    let access_level = project.access_level(Some(current_user.slug.clone())).await;
     if access_level != AccessType::Admin {
-        return Err(Redirect::to(&format!("/{username}/{slug}")));
+        return Err(Redirect::to(&project.uri()));
     }
 
     Ok(render_project_settings_page(&cookies, owner, project, None).await)
@@ -265,11 +253,11 @@ pub async fn handle_project_settings(
     Path((username, slug)): Path<(String, String)>,
     Form(form): Form<ProjectSettingsForm>,
 ) -> Result<Response, Redirect> {
-    let Some(owner) = get_user_by_name(&state.db, username.clone()).await else {
+    let Ok(owner) = User::load(&state, &username).await else {
         return Err(Redirect::to("/"));
     };
 
-    let Some(mut project) = get_project(&state.db, owner.id, slug.clone()).await else {
+    let Ok(mut project) = Project::load(&state, &username, &slug).await else {
         return Err(Redirect::to(&format!("/{username}")));
     };
 
@@ -278,7 +266,7 @@ pub async fn handle_project_settings(
         Err(_) => return Err(Redirect::to("/login")),
     };
 
-    let access_level = project_access_level(&state, Some(current_user.id), project.id).await;
+    let access_level = project.access_level(Some(current_user.slug.clone())).await;
     if access_level != AccessType::Admin {
         return Err(Redirect::to(&format!("/{username}/{slug}")));
     }
@@ -340,14 +328,11 @@ pub async fn handle_project_settings(
 
     project.name = name.to_owned();
     project.public_access = public_access;
-    let mut active: project::ActiveModel = project.into();
-    active.name = Set(name.to_owned());
-    active.public_access = Set(public_access);
-    active.description = Set(description.to_owned());
-    active.main_branch = Set(main_branch.to_owned());
-    active.website = Set(website.to_owned());
+    project.description = description.to_owned();
+    project.main_branch = main_branch.to_owned();
+    project.website = website.to_owned();
 
-    if active.update(&state.db).await.is_err() {
+    if project.save(&state).await.is_err() {
         // A proper error message would be nicer here
         return Err(Redirect::to(&format!("/{username}/{slug}")));
     }
@@ -365,8 +350,8 @@ async fn render_new_project_page(
 
 async fn render_project_settings_page(
     _cookies: &tower_cookies::Cookies,
-    owner: user::Model,
-    project: project::Model,
+    owner: User,
+    project: Project,
     message: Option<&str>,
 ) -> Html<String> {
     Html(app::project_settings(owner, project, message).await)

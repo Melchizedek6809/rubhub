@@ -3,18 +3,15 @@ use std::{fs, io, path::Path, process::Stdio, sync::Arc};
 use russh::keys::*;
 use russh::server::{Msg, Server as _, Session};
 use russh::*;
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use tokio::fs as tokio_fs;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpSocket;
 use tokio::process::Command;
-use uuid::Uuid;
 
 use crate::entities::AccessType;
-use crate::services::project::{find_project_by_path, project_access_level};
+use crate::entities::project::Project;
+use crate::entities::user::User;
 use crate::state::GlobalState;
-
-use crate::entities::ssh_key as db_ssh_key;
 
 async fn ensure_host_key(path: &str, key_type: &str) -> Result<(), io::Error> {
     if Path::new(path).exists() {
@@ -112,7 +109,7 @@ struct Connection {
     sender_to_git: Option<tokio::sync::mpsc::Sender<Vec<u8>>>,
 
     state: GlobalState,
-    user_id: Option<Uuid>,
+    user_slug: Option<String>,
 }
 
 impl Connection {
@@ -207,7 +204,7 @@ impl server::Server for Server {
     fn new_client(&mut self, _: Option<std::net::SocketAddr>) -> Connection {
         Connection {
             state: self.state.clone(),
-            user_id: None,
+            user_slug: None,
             channel_id: None,
             handle: None,
             sender_to_git: None,
@@ -227,13 +224,10 @@ impl server::Handler for Connection {
         channel: Channel<Msg>,
         session: &mut Session,
     ) -> Result<bool, Self::Error> {
-        if let Some(user_id) = self.user_id {
-            let user = crate::entities::user::Entity::find_by_id(user_id)
-                .one(&self.state.db)
-                .await
-                .map_err(|_| russh::Error::NoAuthMethod)?;
+        if let Some(user_slug) = &self.user_slug {
+            let user = User::load(&self.state, user_slug).await;
 
-            if user.is_none() {
+            if user.is_err() {
                 return Err(russh::Error::NoAuthMethod);
             }
         }
@@ -245,26 +239,28 @@ impl server::Handler for Connection {
 
     async fn auth_publickey(
         &mut self,
-        _user: &str,
+        user: &str,
         key: &ssh_key::PublicKey,
     ) -> Result<server::Auth, Self::Error> {
         let openssh = key.to_openssh()?;
 
-        let row = db_ssh_key::Entity::find()
-            .filter(db_ssh_key::Column::PublicKey.eq(&openssh))
-            .one(&self.state.db)
-            .await;
-
-        match row {
-            Ok(Some(row)) => {
-                self.user_id = Some(row.user_id);
-                println!("Auth: {} - PK {openssh}", row.user_id);
-            }
-            // Allow anonymous access, without a user_id this session only has access to public repos
-            _ => {
-                self.user_id = None;
+        match User::load(&self.state, user).await {
+            Ok(user) => {
+                match user.validate_ssh_key(key) {
+                    Ok(_) => {
+                        println!("Auth: {} - PK {openssh}", user.slug);
+                        self.user_slug = Some(user.slug);
+                    },
+                    Err(_e) => {
+                        self.user_slug = None;
+                        println!("Anon Auth - PK {openssh}");
+                    }
+                }
+            },
+            Err(_) => {
+                self.user_slug = None;
                 println!("Anon Auth - PK {openssh}");
-            }
+            },
         }
 
         Ok(server::Auth::Accept)
@@ -299,16 +295,16 @@ impl server::Handler for Connection {
         let path = path.trim_start_matches('/').trim_end_matches('/');
         let path = path.to_string();
 
-        let Some((project, owner)) = find_project_by_path(&self.state, &path).await else {
+        let Ok((owner, project)) = Project::load_by_path(&self.state, path).await else {
             return Err(russh::Error::RequestDenied);
         };
 
-        let access_level = project_access_level(&self.state, self.user_id, project.id).await;
+        let access_level = project.access_level(self.user_slug.clone()).await;
 
         if !has_required_access(access_level, required_access) {
             eprintln!(
                 "SSH access denied: user {:?} requested {command} on {}/{} (has {access_level:?}, needs {required_access:?})",
-                self.user_id, owner.slug, project.slug
+                self.user_slug, owner.slug, project.slug
             );
             return Err(russh::Error::RequestDenied);
         }

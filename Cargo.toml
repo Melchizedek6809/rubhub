@@ -30,7 +30,6 @@ tower-cookies = "0.11"
 tower-http = { version = "0.6", features = ["fs"] }
 urlencoding = "2.1"
 uuid = { version = "1", features = ["serde", "v4", "v7"] }
-sea-orm = { version = "1.1", features = [ "sqlx-postgres", "runtime-tokio-rustls", "macros", "with-time" ] }
 markdown = "1"
 ammonia = "4.1"
 rust-embed = "8.9"

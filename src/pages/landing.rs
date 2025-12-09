@@ -1,33 +1,12 @@
 use axum::{extract::State, response::Html};
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
 
 use crate::{
     app::{self, ProjectSummary},
-    entities::{AccessType, project, user},
     state::GlobalState,
 };
 
-pub async fn index(State(state): State<GlobalState>) -> Html<String> {
-    let projects = project::Entity::find()
-        .filter(project::Column::PublicAccess.ne(AccessType::None))
-        .order_by_desc(project::Column::CreatedAt)
-        .find_also_related(user::Entity)
-        .all(&state.db)
-        .await
-        .unwrap_or_default();
-
-    let featured: Vec<ProjectSummary<'_>> = projects
-        .iter()
-        .filter_map(|(project, owner)| {
-            owner.as_ref().map(|owner| ProjectSummary {
-                name: project.name.as_str(),
-                slug: project.slug.as_str(),
-                owner_slug: owner.slug.as_str(),
-                owner_name: owner.name.as_str(),
-                description: project.description.as_str(),
-            })
-        })
-        .collect();
+pub async fn index(State(_state): State<GlobalState>) -> Html<String> {
+    let featured: Vec<ProjectSummary<'_>> = vec![];
 
     Html(app::index(&featured).await)
 }

@@ -6,7 +6,6 @@
 		"build": "bun run scripts/build.ts",
 		"check": "bun run scripts/check.ts",
 		"dev": "NODE_ENV=development bun run --watch scripts/dev.ts",
-		"migrate": "bun run scripts/migrate.ts",
 		"format": "bunx @biomejs/biome check --write",
 		"format:unsafe": "bunx @biomejs/biome check --write --unsafe",
 		"prepare": "husky",

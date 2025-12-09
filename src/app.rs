@@ -3,7 +3,7 @@ use askama::Template;
 use tokio::fs;
 
 use crate::{
-    entities::{AccessType, project, user},
+    entities::{AccessType, project::Project, user::User},
     services::repository::{GitCommitInfo, GitSummary},
 };
 
@@ -30,7 +30,7 @@ struct LoginTemplate<'a> {
 #[derive(Template)]
 #[template(path = "user_settings.html")]
 struct UserSettingsTemplate<'a> {
-    user: &'a user::Model,
+    user: &'a User,
     ssh_keys: &'a [String],
     message: Option<&'a str>,
 }
@@ -38,7 +38,7 @@ struct UserSettingsTemplate<'a> {
 #[derive(Template)]
 #[template(path = "user.html")]
 struct UserTemplate<'a> {
-    user: &'a user::Model,
+    user: &'a User,
     projects: &'a [ProjectSummary<'a>],
     is_owner: bool,
 }
@@ -62,8 +62,8 @@ struct NewProjectTemplate<'a> {
 #[derive(Template)]
 #[template(path = "project.html")]
 struct ProjectTemplate<'a> {
-    owner: &'a user::Model,
-    project: &'a project::Model,
+    owner: &'a User,
+    project: &'a Project,
     access_level: AccessType,
     ssh_clone_url: String,
     selected_branch: String,
@@ -75,8 +75,8 @@ struct ProjectTemplate<'a> {
 #[derive(Template)]
 #[template(path = "project_settings.html")]
 struct ProjectSettingsTemplate<'a> {
-    owner: &'a user::Model,
-    project: &'a project::Model,
+    owner: &'a User,
+    project: &'a Project,
     message: Option<&'a str>,
 }
 
@@ -141,7 +141,7 @@ pub async fn login(message: Option<&str>) -> String {
     theme(parts.0, parts.1).await
 }
 
-pub async fn settings(user: user::Model, ssh_keys: &[String], message: Option<&str>) -> String {
+pub async fn settings(user: User, ssh_keys: &[String], message: Option<&str>) -> String {
     let contents = UserSettingsTemplate {
         user: &user,
         ssh_keys,
@@ -156,12 +156,12 @@ pub async fn settings(user: user::Model, ssh_keys: &[String], message: Option<&s
 }
 
 pub async fn projects(
-    user: user::Model,
+    user: &User,
     projects: &[ProjectSummary<'_>],
     is_owner: bool,
 ) -> String {
     let contents = UserTemplate {
-        user: &user,
+        user,
         projects,
         is_owner,
     }
@@ -187,8 +187,8 @@ pub async fn new_project(message: Option<&str>, public_access: AccessType) -> St
 }
 
 pub async fn project_with_access(
-    owner: user::Model,
-    project: project::Model,
+    owner: User,
+    project: Project,
     access_level: AccessType,
     ssh_clone_url: String,
     summary: GitSummary,
@@ -219,8 +219,8 @@ pub async fn project_with_access(
 }
 
 pub async fn project_settings(
-    owner: user::Model,
-    project: project::Model,
+    owner: User,
+    project: Project,
     message: Option<&str>,
 ) -> String {
     let contents = ProjectSettingsTemplate {

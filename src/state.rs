@@ -1,6 +1,4 @@
 use std::{env, net::SocketAddr, path::PathBuf, time::Instant};
-
-use sea_orm::{Database, DatabaseConnection};
 use tokio::fs;
 
 #[derive(Debug, Clone)]
@@ -14,16 +12,12 @@ pub struct AppConfig {
 
 #[derive(Debug, Clone)]
 pub struct GlobalState {
-    pub db: DatabaseConnection,
     pub config: AppConfig,
     pub process_start: Instant,
 }
 
 impl GlobalState {
     pub async fn new(process_start: Instant) -> anyhow::Result<Self> {
-        let db_url = env::var("DATABASE_URL")
-            .unwrap_or_else(|_| "postgresql://postgres:postgres@localhost:5432/rubhub".to_owned());
-
         let dir_root = env::var("DIR_ROOT").unwrap_or_else(|_| "./data/".to_owned());
         let dir_root = PathBuf::from(dir_root);
 
@@ -59,17 +53,14 @@ impl GlobalState {
                 }
             });
 
-        let (fsa, fsb, db) = tokio::join!(
+        let (fsa, fsb) = tokio::join!(
             fs::create_dir_all(&git_root),
             fs::create_dir_all(&session_root),
-            Database::connect(&db_url),
         );
-        let db = db?;
         fsa?;
         fsb?;
 
         let state = Self {
-            db,
             process_start,
             config: AppConfig {
                 git_root,

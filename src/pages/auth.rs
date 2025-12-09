@@ -6,19 +6,13 @@ use axum::{
 };
 use serde::Deserialize;
 use tower_cookies::Cookies;
-use uuid::Uuid;
 
 use crate::{
-    app,
-    entities::{UserType, user},
-    services::{
+    app, entities::user::User, services::{
         session,
-        user::{PasswordVerification, hash_password, verify_password_hash},
         validation::{slugify, validate_password, validate_username},
-    },
-    state::GlobalState,
+    }, state::GlobalState
 };
-use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
 
 #[derive(Debug, Deserialize)]
 pub struct LoginForm {
@@ -87,55 +81,17 @@ async fn handle_login_action(
     username: &str,
     password: &str,
 ) -> Result<Redirect, (axum::http::StatusCode, Html<String>)> {
-    let user = match user::Entity::find()
-        .filter(user::Column::Slug.eq(username))
-        .one(&state.db)
-        .await
-    {
-        Ok(Some(u)) => u,
-        Ok(None) => {
-            return Err((
-                StatusCode::UNAUTHORIZED,
-                render_login_page(&cookies, Some("Invalid username or password.")).await,
-            ));
-        }
-        Err(err) => return Err(internal_error(&cookies, err).await),
-    };
-
-    let user_id = user.id;
-    let stored_hash = user.password_hash.as_deref().unwrap_or("");
-    let verification = verify_password_hash(password, stored_hash);
-    match verification {
-        PasswordVerification::Valid => {}
-        PasswordVerification::ValidNeedsRehash { new_hash } => {
-            let now = time::OffsetDateTime::now_utc();
-            let mut user_active: user::ActiveModel = user.clone().into();
-            user_active.password_hash = Set(Some(new_hash));
-            user_active.last_login = Set(Some(now));
-            let _ = user_active.update(&state.db).await;
-            if let Err(err) = session::create_session(state, &cookies, user_id, username).await {
+    match User::login(state, username, password).await {
+        Ok(user) => {
+            if let Err(err) = session::create_session(state, &cookies, user.id, &user.slug).await {
                 return Err(internal_error(&cookies, err).await);
             }
-            return Ok(Redirect::to("/"));
-        }
-        PasswordVerification::Invalid | PasswordVerification::Error => {
-            return Err((
-                StatusCode::UNAUTHORIZED,
-                render_login_page(&cookies, Some("Invalid username or password.")).await,
-            ));
-        }
+            Ok(Redirect::to(&user.uri()))
+        },
+        Err(err) => {
+            Err(internal_error(&cookies, err).await)
+        },
     }
-
-    let now = time::OffsetDateTime::now_utc();
-    let mut user_active: user::ActiveModel = user.into();
-    user_active.last_login = Set(Some(now));
-    let _ = user_active.update(&state.db).await;
-
-    if let Err(err) = session::create_session(state, &cookies, user_id, username).await {
-        return Err(internal_error(&cookies, err).await);
-    }
-
-    Ok(Redirect::to("/"))
 }
 
 async fn handle_register_action(
@@ -161,48 +117,30 @@ async fn handle_register_action(
 
     let slug = slugify(username);
 
-    let existing = match user::Entity::find()
-        .filter(
-            Condition::any()
-                .add(user::Column::Slug.eq(slug.clone()))
-                .add(user::Column::Email.eq(email)),
-        )
-        .one(&state.db)
-        .await
-    {
-        Ok(result) => result,
-        Err(err) => return Err(internal_error(&cookies, err).await),
-    };
-
-    if existing.is_some() {
+    let user = User::load(state, &slug).await;
+    if user.is_ok() {
         return Err((
             StatusCode::CONFLICT,
             render_login_page(&cookies, Some("That username is already taken.")).await,
         ));
+    };
+
+    match User::new(username, email, password) {
+        Ok(user) => {
+            match user.save(state).await {
+                Ok(_) => {
+                    if let Err(err) = session::create_session(state, &cookies, user.id, &user.slug).await {
+                        return Err(internal_error(&cookies, err).await);
+                    };
+                    Ok(Redirect::to(&user.uri()))
+                },
+                Err(err) => {
+                    Err(internal_error(&cookies, err).await)
+                },
+            }
+        },
+        Err(err) => {
+            Err(internal_error(&cookies, err).await)
+        }
     }
-
-    let password_hash = match hash_password(password) {
-        Ok(hash) => hash,
-        Err(err) => return Err(internal_error(&cookies, err).await),
-    };
-
-    let new_user = user::ActiveModel {
-        id: Set(Uuid::new_v4()),
-        user_type: Set(UserType::Normal),
-        name: Set(username.to_owned()),
-        slug: Set(slug.to_owned()),
-        email: Set(email.to_owned()),
-        password_hash: Set(Some(password_hash)),
-        ..Default::default()
-    };
-
-    let inserted = match new_user.insert(&state.db).await {
-        Ok(user) => user,
-        Err(err) => return Err(internal_error(&cookies, err).await),
-    };
-    if let Err(err) = session::create_session(state, &cookies, inserted.id, username).await {
-        return Err(internal_error(&cookies, err).await);
-    }
-
-    Ok(Redirect::to("/"))
 }

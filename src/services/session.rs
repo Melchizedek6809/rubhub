@@ -1,13 +1,12 @@
 use anyhow::{Result, anyhow};
 use axum::response::Redirect;
-use sea_orm::EntityTrait;
 use serde::{Deserialize, Serialize};
 use time::{Duration as CookieDuration, OffsetDateTime};
 use tower_cookies::{Cookie, Cookies, cookie::SameSite};
 use urlencoding;
 use uuid::Uuid;
 
-use crate::{entities::user, state::GlobalState};
+use crate::{entities::user::User, state::GlobalState};
 
 pub const SESSION_COOKIE: &str = "session_id";
 pub const SESSION_USER_COOKIE: &str = "session_user";
@@ -50,7 +49,7 @@ pub async fn logout(state: &GlobalState, cookies: Cookies) -> Redirect {
     Redirect::to("/")
 }
 
-pub async fn current_user(state: &GlobalState, cookies: &Cookies) -> Result<user::Model> {
+pub async fn current_user(state: &GlobalState, cookies: &Cookies) -> Result<User> {
     let cookie = cookies
         .get(SESSION_COOKIE)
         .ok_or(anyhow!("No Session Cookie"))?;
@@ -73,10 +72,12 @@ pub async fn current_user(state: &GlobalState, cookies: &Cookies) -> Result<user
         return Err(anyhow!("Expired session"));
     }
 
-    let user = user::Entity::find_by_id(session.user_id)
-        .one(&state.db)
-        .await?
-        .ok_or(anyhow!("Can't select user"))?;
+    let Ok(user) = User::load(state, &session.user_slug).await else {
+        return Err(anyhow!("Invalid session"));
+    };
+    if user.id != session.user_id {
+        return Err(anyhow!("Invalid session"));
+    }
 
     Ok(user)
 }
