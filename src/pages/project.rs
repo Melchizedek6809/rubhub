@@ -249,6 +249,14 @@ pub async fn project_page(
     render_project_page(&state, cookies, username, slug, None).await
 }
 
+pub async fn project_page_commits(
+    State(state): State<GlobalState>,
+    cookies: Cookies,
+    Path((username, slug, branch)): Path<(String, String, String)>,
+) -> Result<Html<String>, (StatusCode, Html<String>)> {
+    render_project_page(&state, cookies, username, slug, Some(branch)).await
+}
+
 pub async fn project_settings_page(
     State(state): State<GlobalState>,
     cookies: Cookies,
