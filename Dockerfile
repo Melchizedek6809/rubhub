@@ -1,5 +1,9 @@
 # syntax=docker/dockerfile:1.6
 
+##################
+# 1. Bun build
+##################
+
 FROM oven/bun:1.3-alpine AS bun
 WORKDIR /app
 
@@ -7,7 +11,12 @@ COPY package.json bun.lock tsconfig.json biome.json ./
 RUN bun install --frozen-lockfile
 COPY scripts ./scripts
 COPY frontend ./frontend
-RUN bun run scripts/build.ts
+RUN bun run ./scripts/build.ts
+
+
+##################
+# 2. Rust builder
+##################
 
 FROM rust:1.91-alpine3.22 AS rust-builder
 WORKDIR /app
@@ -20,14 +29,17 @@ COPY templates ./templates
 COPY --from=bun /app/dist ./dist
 RUN cargo build --release --locked
 
+
+##################
+# 3. Final image
+##################
+
 FROM alpine:3.22
 WORKDIR /app
 
 RUN apk add --no-cache git curl openssh
 
 COPY --from=rust-builder /app/target/release/rubhub /usr/local/bin/rubhub
-
-RUN mkdir -p /app/data/git /app/data/assets
 VOLUME ["/app/data"]
 
 ENV HTTP_BIND_ADDRESS=0.0.0.0 \
