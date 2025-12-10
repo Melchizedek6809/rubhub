@@ -19,7 +19,6 @@ use crate::{
 
 #[derive(Debug, Deserialize)]
 pub struct UserSettingsForm {
-    pub slug: String,
     pub name: String,
     pub email: String,
     pub website: String,
@@ -65,8 +64,7 @@ pub async fn handle_settings(
     };
 
     let name = form.name.trim();
-    let slug = form.slug.trim();
-    let default_main_branch = form.slug.trim();
+    let default_main_branch = form.default_main_branch.trim();
     let email = form.email.trim().to_owned();
     let website = form.website.trim();
     let ssh_keys: Vec<String> = form
@@ -77,19 +75,6 @@ pub async fn handle_settings(
         .filter(|line| !line.is_empty())
         .map(ToOwned::to_owned)
         .collect();
-
-    if slug.is_empty() {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            render_settings_page(
-                &cookies,
-                current_user,
-                &ssh_keys,
-                Some("Username is required."),
-            )
-            .await,
-        ));
-    }
 
     if default_main_branch.is_empty() {
         return Err((
@@ -104,7 +89,7 @@ pub async fn handle_settings(
         ));
     }
 
-    if let Err(msg) = validate_username(slug) {
+    if let Err(msg) = validate_username(name) {
         return Err((
             StatusCode::BAD_REQUEST,
             render_settings_page(&cookies, current_user, &ssh_keys, Some(msg)).await,
@@ -124,14 +109,14 @@ pub async fn handle_settings(
     current_user.email = email.to_owned();
     current_user.website = website.to_owned();
     current_user.description = form.description.trim().to_owned();
-    current_user.default_main_branch = form.default_main_branch.trim().to_owned();
+    current_user.default_main_branch = default_main_branch.to_owned();
     current_user.ssh_keys = ssh_keys.clone();
 
     if let Err(err) = current_user.save(&state).await {
         return Err(internal_error(&cookies, current_user, &ssh_keys, &err.to_string()).await);
     }
 
-    session_service::set_user_cookie(&cookies, current_user.id, slug);
+    session_service::set_user_cookie(&cookies, current_user.id, &current_user.slug);
 
     Ok(
         render_settings_page(&cookies, current_user, &ssh_keys, Some("Settings updated."))

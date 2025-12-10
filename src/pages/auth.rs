@@ -32,24 +32,18 @@ pub async fn logout(
     Ok(session::logout(&state, cookies).await)
 }
 
-pub async fn login_page(cookies: tower_cookies::Cookies) -> Html<String> {
-    render_login_page(&cookies, None).await
+pub async fn login_page() -> Html<String> {
+    render_login_page(None).await
 }
 
-async fn render_login_page(
-    _cookies: &tower_cookies::Cookies,
-    message: Option<&str>,
-) -> Html<String> {
+async fn render_login_page(message: Option<&str>) -> Html<String> {
     Html(app::login(message).await)
 }
 
-async fn internal_error<E: std::fmt::Display>(
-    cookies: &tower_cookies::Cookies,
-    err: E,
-) -> (axum::http::StatusCode, Html<String>) {
+async fn internal_error<E: std::fmt::Display>(err: E) -> (axum::http::StatusCode, Html<String>) {
     (
         axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-        render_login_page(cookies, Some(&format!("{err}"))).await,
+        render_login_page(Some(&format!("{err}"))).await,
     )
 }
 
@@ -73,7 +67,7 @@ pub async fn handle_login(
             .map(IntoResponse::into_response),
         _ => Err((
             StatusCode::BAD_REQUEST,
-            render_login_page(&cookies, Some("Unsupported action.")).await,
+            render_login_page(Some("Unsupported action.")).await,
         )),
     }
 }
@@ -87,11 +81,14 @@ async fn handle_login_action(
     match User::login(state, username, password).await {
         Ok(user) => {
             if let Err(err) = session::create_session(state, &cookies, user.id, &user.slug).await {
-                return Err(internal_error(&cookies, err).await);
+                return Err(internal_error(err).await);
             }
             Ok(Redirect::to(&user.uri()))
         }
-        Err(err) => Err(internal_error(&cookies, err).await),
+        Err(err) => Err((
+            axum::http::StatusCode::UNAUTHORIZED,
+            render_login_page(Some(&format!("{err}"))).await,
+        )),
     }
 }
 
@@ -103,17 +100,11 @@ async fn handle_register_action(
     password: &str,
 ) -> Result<Redirect, (axum::http::StatusCode, Html<String>)> {
     if let Err(msg) = validate_username(username) {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            render_login_page(&cookies, Some(msg)).await,
-        ));
+        return Err((StatusCode::BAD_REQUEST, render_login_page(Some(msg)).await));
     }
 
     if let Err(msg) = validate_password(password) {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            render_login_page(&cookies, Some(msg)).await,
-        ));
+        return Err((StatusCode::BAD_REQUEST, render_login_page(Some(msg)).await));
     }
 
     let slug = slugify(username);
@@ -122,7 +113,7 @@ async fn handle_register_action(
     if user.is_ok() {
         return Err((
             StatusCode::CONFLICT,
-            render_login_page(&cookies, Some("That username is already taken.")).await,
+            render_login_page(Some("That username is already taken.")).await,
         ));
     };
 
@@ -132,12 +123,12 @@ async fn handle_register_action(
                 if let Err(err) =
                     session::create_session(state, &cookies, user.id, &user.slug).await
                 {
-                    return Err(internal_error(&cookies, err).await);
+                    return Err(internal_error(err).await);
                 };
                 Ok(Redirect::to(&user.uri()))
             }
-            Err(err) => Err(internal_error(&cookies, err).await),
+            Err(err) => Err(internal_error(err).await),
         },
-        Err(err) => Err(internal_error(&cookies, err).await),
+        Err(err) => Err(internal_error(err).await),
     }
 }

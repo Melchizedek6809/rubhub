@@ -15,15 +15,16 @@ where
     type Rejection = (StatusCode, &'static str);
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let Path((username, slug)): Path<(String, String)> = Path::from_request_parts(parts, state)
-            .await
-            .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid path parameter"))?;
+        let Path((user_slug, project_slug)): Path<(String, String)> =
+            Path::from_request_parts(parts, state)
+                .await
+                .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid path parameter"))?;
 
         let state = GlobalState::from_ref(state);
 
-        if let Some(user_slug) = username.strip_prefix("~") {
+        if let Some(user_slug) = user_slug.strip_prefix("~") {
             if let Ok(user) = User::load(&state, user_slug).await {
-                if let Ok(project) = Project::load(&state, user_slug, &slug).await {
+                if let Ok(project) = Project::load(&state, user_slug, &project_slug).await {
                     return Ok(PathUserProject(user, project));
                 };
             }

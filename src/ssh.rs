@@ -265,8 +265,11 @@ impl server::Handler for Connection {
                 self.user_slug = None;
                 println!("Anon Auth - PK {openssh}");
             }
-        } 
-        Ok(server::Auth::Reject { partial_success: false, proceed_with_methods: None } )
+        }
+        Ok(server::Auth::Reject {
+            partial_success: false,
+            proceed_with_methods: None,
+        })
     }
 
     async fn exec_request(
