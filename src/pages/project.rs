@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Form, State},
+    extract::{Form, Query, State},
     http::StatusCode,
     response::{Html, IntoResponse, Redirect, Response},
 };
@@ -183,7 +183,7 @@ pub async fn render_project_page(
         Some(branch) => branch,
         None => project.main_branch.clone(),
     };
-    let info = get_git_info(&state, &owner.slug, &project.slug, &current).await;
+    let info = get_git_info(&state, &owner.slug, &project.slug, &current, 1, 0).await;
 
     let session_user = session::current_user(&state, &cookies).await.ok();
     let access_level = project
@@ -237,12 +237,60 @@ pub async fn project_page(
     render_project_page(&state, cookies, owner, project, None).await
 }
 
+#[derive(Debug, Deserialize)]
+pub struct Pagination {
+    pub page: Option<usize>,
+}
+
 pub async fn project_page_commits(
     State(state): State<GlobalState>,
     cookies: Cookies,
-    PathUserProjectBranch(owner, project, branch): PathUserProjectBranch,
+    Query(q): Query<Pagination>,
+    PathUserProjectBranch(owner, project, current): PathUserProjectBranch,
 ) -> Result<Html<String>, (StatusCode, Html<String>)> {
-    render_project_page(&state, cookies, owner, project, Some(branch)).await
+    let Some(summary) = get_git_summary(&state, &owner.slug, &project.slug).await else {
+        return Err(not_found().await);
+    };
+
+    let page_size: usize = 20;
+    let current_page = q.page.unwrap_or(0);
+    let offset = current_page * page_size;
+    let info = get_git_info(
+        &state,
+        &owner.slug,
+        &project.slug,
+        &current,
+        page_size,
+        offset,
+    )
+    .await;
+    let commit_count = info.as_ref().map(|i| i.commit_count).unwrap_or(0);
+    let page_count = commit_count / page_size;
+
+    let session_user = session::current_user(&state, &cookies).await.ok();
+    let access_level = project
+        .access_level(session_user.as_ref().map(|user| user.slug.clone()))
+        .await;
+    let git_user = session_user.map(|u| u.slug).unwrap_or("anon".to_string());
+
+    let ssh_clone_url = format!(
+        "ssh://{}@{}/{}/{}",
+        git_user, state.config.ssh_public_host, owner.slug, project.slug
+    );
+
+    Ok(Html(
+        app::project_commits(
+            owner,
+            project,
+            access_level,
+            ssh_clone_url,
+            summary,
+            info,
+            current_page,
+            page_count,
+        )
+        .await,
+    ))
 }
 
 pub async fn project_settings_page(

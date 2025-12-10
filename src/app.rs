@@ -4,7 +4,7 @@ use tokio::fs;
 
 use crate::{
     entities::{AccessType, Project, User},
-    services::repository::{GitCommitInfo, GitSummary},
+    services::repository::{GitRefInfo, GitSummary},
 };
 
 #[derive(Template)]
@@ -78,8 +78,22 @@ struct ProjectTemplate<'a> {
     ssh_clone_url: String,
     selected_branch: String,
     summary: GitSummary,
-    info: Option<GitCommitInfo>,
+    info: Option<GitRefInfo>,
     readme_html: Option<String>,
+}
+
+#[derive(Template)]
+#[template(path = "project_commits.html")]
+struct ProjectCommitsTemplate<'a> {
+    owner: &'a User,
+    project: &'a Project,
+    selected_branch: String,
+    access_level: AccessType,
+    ssh_clone_url: String,
+    summary: GitSummary,
+    info: Option<GitRefInfo>,
+    current_page: usize,
+    page_count: usize,
 }
 
 #[derive(Template)]
@@ -198,7 +212,7 @@ pub async fn project_with_access(
     access_level: AccessType,
     ssh_clone_url: String,
     summary: GitSummary,
-    info: Option<GitCommitInfo>,
+    info: Option<GitRefInfo>,
     readme_html: Option<String>,
 ) -> String {
     let selected_branch = info
@@ -215,6 +229,40 @@ pub async fn project_with_access(
         info,
         selected_branch,
         readme_html,
+    }
+    .render()
+    .unwrap();
+
+    let parts = extract_html_parts(&contents);
+
+    theme(parts.0, parts.1).await
+}
+
+pub async fn project_commits(
+    owner: User,
+    project: Project,
+    access_level: AccessType,
+    ssh_clone_url: String,
+    summary: GitSummary,
+    info: Option<GitRefInfo>,
+    current_page: usize,
+    page_count: usize,
+) -> String {
+    let selected_branch = info
+        .as_ref()
+        .map(|i| i.branch_name.to_string())
+        .unwrap_or_default();
+
+    let contents = ProjectCommitsTemplate {
+        owner: &owner,
+        project: &project,
+        access_level,
+        ssh_clone_url,
+        summary,
+        info,
+        selected_branch,
+        current_page,
+        page_count,
     }
     .render()
     .unwrap();

@@ -35,6 +35,7 @@ const initBranchSwitcher = () => {
 	)) {
 		const base = ele.getAttribute("data-base-href");
 		const mainBranch = ele.getAttribute("data-main-branch");
+		const baseSuffix = ele.getAttribute("data-base-suffix") || "tree";
 		if (!base) {
 			continue;
 		}
@@ -48,7 +49,7 @@ const initBranchSwitcher = () => {
 			if (newValue === mainBranch) {
 				document.location = `${base}`;
 			} else {
-				document.location = `${base}/tree/${newValue}`;
+				document.location = `${base}/${baseSuffix}/${newValue}`;
 			}
 		};
 	}

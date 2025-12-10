@@ -19,7 +19,7 @@
         <div class="card">
             <div class="repo-bar">
                 {% if summary.branches.len() > 0 %}
-                <select name="branch-name" class="branch-switcher" data-main-branch="{{ project.main_branch }}" data-base-href="{{ project.uri() }}">
+                <select name="branch-name" class="branch-switcher" data-base-suffix="commits" data-base-href="{{ project.uri() }}">
                     {% for branch in summary.branches %}
                     <option value="{{ branch }}" {% if branch==selected_branch.as_str() %}selected{% endif %}>{{ branch
                         }}</option>
@@ -44,21 +44,25 @@
 
             {% if let Some(info) = info %}
             <div class="commit-bar">
-              {% if let Some(commit) = info.commits.first() %}
+              {% if info.commits.is_empty() %}
+              <p>No commits available</p>
+              {% else %}
+              {% for commit in info.commits %}
               <div class="commit">
                 <span class="commit-author" title="{{ commit.author }}">{{ commit.author }}</span>
                 <span class="commit-message" title="{{ commit.message }}">{{ commit.message }}</span>
                 <span class="commit-id">{{ commit.id }}</span>
                 <span class="commit-time">{{ commit.relative_time() }}</span>
-                <a href="{{ project.uri_commits(selected_branch) }}" class="commit-count">{{ info.commit_count }} Commit{% if info.commit_count != 1 %}s{% endif %}</a>
               </div>
+              {% endfor %}
               {% endif %}
-            </div>
-            {% endif %}
 
-            {% if let Some(readme_html) = readme_html %}
-            <br/>
-            <div class="markdown">{{- readme_html|safe -}}</div>
+              <nav class="pagination">
+              {% for page in 0..=page_count %}
+              <a href="{{ project.uri() }}/commits/{{ selected_branch }}?page={{ page }}" class="{% if page == current_page %}active{% endif %}">{{ page }}</a>
+              {% endfor %}
+              </nav>
+            </div>
             {% endif %}
         </div>
     </section>

@@ -1,5 +1,5 @@
 use anyhow::{Result, anyhow};
-use gix::{ObjectDetached, Repository, date::Time};
+use gix::{Commit, ObjectDetached, Repository, date::Time};
 use std::{
     io,
     time::{SystemTime, UNIX_EPOCH},
@@ -103,16 +103,50 @@ pub async fn get_git_info(
     user_name: &str,
     project_slug: &str,
     branch: &str,
-) -> Option<GitCommitInfo> {
+    max_commits: usize,
+    offset: usize,
+) -> Option<GitRefInfo> {
+    if max_commits < 1 {
+        return None;
+    }
+
     let state = state.clone();
     let user_name = user_name.to_string();
     let project_slug = project_slug.to_string();
     let branch = branch.to_string();
 
     let Ok(res) = tokio::task::spawn_blocking(move || {
-        let repo = get_git_repo(&state, &user_name, &project_slug)?;
+        let mut repo = get_git_repo(&state, &user_name, &project_slug)?;
+        // Makes this a little slower
+        repo.object_cache_size(Some(4096 * 4096));
         let mut reference = repo.find_reference(&branch).ok()?;
         let commit = reference.peel_to_commit().ok()?;
+
+        let commit_count = commit.ancestors().all().ok()?.count();
+
+        let walk = commit.ancestors().all().ok()?;
+        let commits: Vec<GitCommitInfo> = walk
+            .skip(offset)
+            .take(max_commits)
+            .flatten()
+            .flat_map(|c| c.object().map(|o| o.into()))
+            .collect();
+
+        Some(GitRefInfo {
+            branch_name: reference.name().shorten().to_string(),
+            commit_count,
+            commits,
+        })
+    })
+    .await
+    else {
+        return None;
+    };
+    res
+}
+
+impl From<Commit<'_>> for GitCommitInfo {
+    fn from(commit: Commit) -> Self {
         let commit_id = commit.id().shorten_or_id().to_string();
         let commit_author = commit
             .author()
@@ -124,22 +158,13 @@ pub async fn get_git_info(
             .unwrap_or_default();
         let commit_time = commit.time().unwrap_or_default();
 
-        let commit_count = commit.ancestors().all().ok()?.count();
-
-        Some(GitCommitInfo {
-            branch_name: reference.name().shorten().to_string(),
-            commit_id: commit_id.to_string(),
-            commit_author,
-            commit_message,
-            commit_time,
-            commit_count,
-        })
-    })
-    .await
-    else {
-        return None;
-    };
-    res
+        Self {
+            id: commit_id.to_string(),
+            author: commit_author,
+            message: commit_message,
+            time: commit_time,
+        }
+    }
 }
 
 pub async fn get_git_file(
@@ -182,12 +207,16 @@ pub struct GitSummary {
 }
 
 pub struct GitCommitInfo {
+    pub id: String,
+    pub author: String,
+    pub message: String,
+    pub time: Time,
+}
+
+pub struct GitRefInfo {
     pub branch_name: String,
-    pub commit_id: String,
-    pub commit_author: String,
-    pub commit_message: String,
-    pub commit_time: Time,
     pub commit_count: usize,
+    pub commits: Vec<GitCommitInfo>,
 }
 
 impl GitCommitInfo {
@@ -197,7 +226,7 @@ impl GitCommitInfo {
             .expect("Couldn't get relative time")
             .as_secs() as i64;
 
-        let diff = now - self.commit_time.seconds;
+        let diff = now - self.time.seconds;
         if diff < 60 {
             return format!("{} second{} ago", diff, if diff != 1 { "s" } else { "" });
         }
