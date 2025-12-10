@@ -244,24 +244,29 @@ impl server::Handler for Connection {
     ) -> Result<server::Auth, Self::Error> {
         let openssh = key.to_openssh()?;
 
+        if user == "anon" {
+            self.user_slug = None;
+            return Ok(server::Auth::Accept);
+        }
+
         match User::load(&self.state, user).await {
             Ok(user) => match user.validate_ssh_key(key) {
                 Ok(_) => {
-                    println!("Auth: {} - PK {openssh}", user.slug);
+                    println!("SSH Accept: {} - {openssh}", user.slug);
                     self.user_slug = Some(user.slug);
+                    return Ok(server::Auth::Accept);
                 }
                 Err(_e) => {
                     self.user_slug = None;
-                    println!("Anon Auth - PK {openssh}");
+                    println!("SSH Reject: {} - {openssh}", user.slug);
                 }
             },
             Err(_) => {
                 self.user_slug = None;
                 println!("Anon Auth - PK {openssh}");
             }
-        }
-
-        Ok(server::Auth::Accept)
+        } 
+        Ok(server::Auth::Reject { partial_success: false, proceed_with_methods: None } )
     }
 
     async fn exec_request(
@@ -272,8 +277,6 @@ impl server::Handler for Connection {
     ) -> Result<(), Self::Error> {
         let cmdline = String::from_utf8_lossy(data);
         let parts = cmdline.split_ascii_whitespace().collect::<Vec<&str>>();
-
-        println!("Exec: {parts:?}\r\n",);
 
         if parts.len() < 2 {
             return Err(russh::Error::RequestDenied);
