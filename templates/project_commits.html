@@ -58,9 +58,23 @@
               {% endif %}
 
               <nav class="pagination">
-              {% for page in 0..=page_count %}
-              <a href="{{ project.uri() }}/commits/{{ selected_branch }}?page={{ page }}" class="{% if page == current_page %}active{% endif %}">{{ page }}</a>
-              {% endfor %}
+                <a href="{{ project.uri() }}/commits/{{ selected_branch }}" class="start">⇤</a>
+                {% if current_page > 0 %}
+                <a href="{{ project.uri() }}/commits/{{ selected_branch }}?page={{ current_page - 1 }}" class="prev">⇠</a>
+                {% else %}
+                <a href="{{ project.uri() }}/commits/{{ selected_branch }}" class="prev disabled">⇠</a>
+                {% endif %}
+
+                {% for page in page_min..=page_max %}
+                <a href="{{ project.uri() }}/commits/{{ selected_branch }}?page={{ page }}" class="{% if page == current_page %}active{% endif %}">{{ page }}</a>
+                {% endfor %}
+
+                {% if current_page < page_count %}
+                <a href="{{ project.uri() }}/commits/{{ selected_branch }}?page={{ current_page + 1 }}" class="next">⇢</a>
+                {% else %}
+                <a href="{{ project.uri() }}/commits/{{ selected_branch }}?page={{ page_count }}" class="next disabled">⇢</a>
+                {% endif %}
+                <a href="{{ project.uri() }}/commits/{{ selected_branch }}?page={{ page_count }}" class="end">⇥</a>
               </nav>
             </div>
             {% endif %}

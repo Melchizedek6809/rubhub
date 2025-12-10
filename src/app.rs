@@ -92,8 +92,10 @@ struct ProjectCommitsTemplate<'a> {
     ssh_clone_url: String,
     summary: GitSummary,
     info: Option<GitRefInfo>,
-    current_page: usize,
-    page_count: usize,
+    current_page: i32,
+    page_count: i32,
+    page_min: i32,
+    page_max: i32,
 }
 
 #[derive(Template)]
@@ -245,14 +247,16 @@ pub async fn project_commits(
     ssh_clone_url: String,
     summary: GitSummary,
     info: Option<GitRefInfo>,
-    current_page: usize,
-    page_count: usize,
+    current_page: i32,
+    page_count: i32,
 ) -> String {
     let selected_branch = info
         .as_ref()
         .map(|i| i.branch_name.to_string())
         .unwrap_or_default();
 
+    let page_min = (current_page - 5).max(0);
+    let page_max = (current_page + 5).min(page_count);
     let contents = ProjectCommitsTemplate {
         owner: &owner,
         project: &project,
@@ -263,6 +267,8 @@ pub async fn project_commits(
         selected_branch,
         current_page,
         page_count,
+        page_min,
+        page_max,
     }
     .render()
     .unwrap();

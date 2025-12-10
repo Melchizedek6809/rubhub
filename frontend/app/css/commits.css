@@ -1,0 +1,75 @@
+.commit {
+	display: flex;
+	gap: var(--space-m);
+	align-content: center;
+	padding: var(--space-m) 0;
+}
+
+.flex-gap,
+.commit-message {
+	flex: 1;
+}
+
+.commit-author {
+	max-width: 16rem;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+.commit-message {
+	color: var(--text-color-subdued);
+	text-overflow: ellipsis;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+.commit-id,
+.commit-time {
+	color: var(--text-color-subdued);
+}
+
+@media screen and (max-width: 700px) {
+	.commit {
+		display: grid;
+		grid-template-columns: 1fr auto auto;
+		grid-template-rows: auto auto auto;
+		gap: var(--space-s) var(--space-m);
+		align-items: center;
+	}
+
+	.commit-message {
+		grid-row: 2;
+		grid-column: 1 / -1;
+		white-space: normal;
+	}
+
+	.commit-author {
+		grid-column: 1;
+		grid-row: 1;
+		max-width: 100%;
+	}
+
+	.commit-id {
+		grid-column: 2;
+		grid-row: 1;
+		text-align: right;
+	}
+
+	.commit-time {
+		grid-column: 3;
+		grid-row: 1;
+		text-align: right;
+	}
+
+	.flex-gap {
+		display: none;
+	}
+
+	.commit .commit-count {
+		display: block;
+		text-align: right;
+		grid-column: 1 / -1;
+		grid-row: 3;
+	}
+}

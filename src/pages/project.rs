@@ -286,8 +286,8 @@ pub async fn project_page_commits(
             ssh_clone_url,
             summary,
             info,
-            current_page,
-            page_count,
+            current_page.try_into().unwrap_or_default(),
+            page_count.try_into().unwrap_or(1),
         )
         .await,
     ))
