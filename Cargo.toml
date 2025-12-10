@@ -16,7 +16,7 @@ path = "dummy.rs"
 [dependencies]
 anyhow = "1"
 axum = { version = "0.8", features = ["ws", "multipart"] }
-askama = "0.12"
+askama = "0.14"
 dotenvy = "0.15"
 gix = { version = "0.75", default-features = false, features = ["basic"] }
 serde = { version = "1", features = ["derive"] }
