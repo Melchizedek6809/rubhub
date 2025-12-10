@@ -8,7 +8,7 @@ use axum::{
 use rust_embed::Embed;
 use tower_cookies::CookieManagerLayer;
 
-use crate::{app, pages, state::GlobalState};
+use crate::{GlobalState, app, pages};
 
 #[derive(Embed)]
 #[folder = "dist/"]

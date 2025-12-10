@@ -6,7 +6,7 @@ use std::{
 };
 use tokio::{fs, process::Command};
 
-use crate::{services::validation::validate_slug, state::GlobalState};
+use crate::{GlobalState, services::validation::validate_slug};
 
 fn ensure_safe_component(value: &str) -> io::Result<()> {
     if value.is_empty() {

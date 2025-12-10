@@ -3,9 +3,8 @@ use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
 use crate::{
-    entities::{AccessType, user::User},
+    AccessType, GlobalState, User,
     services::validation::{slugify, validate_slug},
-    state::GlobalState,
 };
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

@@ -6,12 +6,11 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::{
-    entities::project::Project,
+    GlobalState, Project,
     services::{
         password::{PasswordVerification, hash_password, verify_password_hash},
         validation::{slugify, validate_username},
     },
-    state::GlobalState,
 };
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

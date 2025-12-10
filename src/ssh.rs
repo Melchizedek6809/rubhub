@@ -8,10 +8,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpSocket;
 use tokio::process::Command;
 
-use crate::entities::AccessType;
-use crate::entities::project::Project;
-use crate::entities::user::User;
-use crate::state::GlobalState;
+use crate::{AccessType, GlobalState, Project, User};
 
 async fn ensure_host_key(path: &str, key_type: &str) -> Result<(), io::Error> {
     if Path::new(path).exists() {

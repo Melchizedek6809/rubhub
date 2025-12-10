@@ -7,15 +7,14 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
+    AccessType, GlobalState, Project, User,
     app::{self, ProjectSummary},
-    entities::{AccessType, project::Project, user::User},
     extractors::{PathUser, PathUserProject, PathUserProjectBranch},
     services::{
         repository::{create_bare_repo, get_git_file, get_git_info, get_git_summary},
         session,
         validation::{validate_project_name, validate_uri},
     },
-    state::GlobalState,
 };
 
 #[derive(Debug, Deserialize)]

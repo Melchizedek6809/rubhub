@@ -3,7 +3,7 @@ use askama::Template;
 use tokio::fs;
 
 use crate::{
-    entities::{AccessType, project::Project, user::User},
+    entities::{AccessType, Project, User},
     services::repository::{GitCommitInfo, GitSummary},
 };
 

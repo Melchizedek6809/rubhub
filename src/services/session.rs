@@ -6,7 +6,7 @@ use tower_cookies::{Cookie, Cookies, cookie::SameSite};
 use urlencoding;
 use uuid::Uuid;
 
-use crate::{entities::user::User, state::GlobalState};
+use crate::{GlobalState, User};
 
 pub const SESSION_COOKIE: &str = "session_id";
 pub const SESSION_USER_COOKIE: &str = "session_user";

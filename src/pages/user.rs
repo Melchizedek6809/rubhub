@@ -8,13 +8,11 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    app,
-    entities::user::User,
+    GlobalState, User, app,
     services::{
         session as session_service,
         validation::{validate_uri, validate_username},
     },
-    state::GlobalState,
 };
 
 #[derive(Debug, Deserialize)]

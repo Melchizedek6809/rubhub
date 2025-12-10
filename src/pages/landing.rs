@@ -1,7 +1,6 @@
 use crate::{
+    GlobalState, Project, User,
     app::{self, ProjectSummary},
-    entities::{project::Project, user::User},
-    state::GlobalState,
 };
 use axum::{extract::State, response::Html};
 
