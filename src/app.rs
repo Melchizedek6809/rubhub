@@ -52,6 +52,16 @@ pub struct ProjectSummary<'a> {
     pub description: &'a str,
 }
 
+impl<'a> ProjectSummary<'a> {
+    pub fn uri(&self) -> String {
+        format!("/~{}/{}", self.owner_slug, self.slug)
+    }
+
+    pub fn owner_uri(&self) -> String {
+        format!("/~{}", self.owner_slug)
+    }
+}
+
 #[derive(Template)]
 #[template(path = "project_new.html")]
 struct NewProjectTemplate<'a> {

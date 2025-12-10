@@ -91,7 +91,15 @@ impl Project {
     }
 
     pub fn uri(&self) -> String {
-        format!("/{}/{}", self.owner, self.slug)
+        format!("/~{}/{}", self.owner, self.slug)
+    }
+
+    pub fn uri_settings(&self) -> String {
+        format!("/~{}/{}/settings", self.owner, self.slug)
+    }
+
+    pub fn uri_commits(&self, branch: &str) -> String {
+        format!("/~{}/{}/commits/{}", self.owner, self.slug, branch)
     }
 
     pub async fn load_by_path(state: &GlobalState, path: String) -> Result<(User, Project)> {

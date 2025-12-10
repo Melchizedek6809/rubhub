@@ -143,6 +143,6 @@ impl User {
     }
 
     pub fn uri(&self) -> String {
-        format!("/{}", self.slug)
+        format!("/~{}", self.slug)
     }
 }

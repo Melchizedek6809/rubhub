@@ -6,7 +6,7 @@
 <body>
 	<section>
 		<div class="page-header">
-			<h1 class="project-header"><a href="/{{ user.slug }}">{{ user.name }}</a></h1>
+			<h1 class="project-header"><a href="{{ user.uri() }}">{{ user.name }}</a></h1>
 			{% if is_owner %}
 				<a class="btn" href="/settings">Edit</a>
 			{% endif %}

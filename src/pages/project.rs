@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Form, Path, State},
+    extract::{Form, State},
     http::StatusCode,
     response::{Html, IntoResponse, Redirect, Response},
 };
@@ -9,6 +9,7 @@ use tower_cookies::Cookies;
 use crate::{
     app::{self, ProjectSummary},
     entities::{AccessType, project::Project, user::User},
+    extractors::{PathUser, PathUserProject, PathUserProjectBranch},
     services::{
         repository::{create_bare_repo, get_git_file, get_git_info, get_git_summary},
         session,
@@ -39,12 +40,8 @@ async fn not_found() -> (StatusCode, Html<String>) {
 pub async fn project_list_page(
     State(state): State<GlobalState>,
     cookies: Cookies,
-    Path(username): Path<String>,
+    PathUser(owner): PathUser,
 ) -> Result<Html<String>, (StatusCode, Html<String>)> {
-    let Ok(owner) = User::load(&state, &username).await else {
-        return Err(not_found().await);
-    };
-
     let is_owner = session::current_user(&state, &cookies)
         .await
         .map(|user| user.id == owner.id)
@@ -175,19 +172,11 @@ pub async fn handle_new_project(
 pub async fn render_project_page(
     state: &GlobalState,
     cookies: Cookies,
-    username: String,
-    slug: String,
+    owner: User,
+    project: Project,
     branch: Option<String>,
 ) -> Result<Html<String>, (StatusCode, Html<String>)> {
-    let Ok(owner) = User::load(&state, &username).await else {
-        return Err(not_found().await);
-    };
-
-    let Ok(project) = Project::load(&state, &username, &slug).await else {
-        return Err(not_found().await);
-    };
-
-    let Some(summary) = get_git_summary(&state, &username, &slug).await else {
+    let Some(summary) = get_git_summary(&state, &owner.slug, &project.slug).await else {
         return Err(not_found().await);
     };
 
@@ -195,7 +184,7 @@ pub async fn render_project_page(
         Some(branch) => branch,
         None => project.main_branch.clone(),
     };
-    let info = get_git_info(&state, &username, &slug, &current).await;
+    let info = get_git_info(&state, &owner.slug, &project.slug, &current).await;
 
     let session_user = session::current_user(&state, &cookies).await.ok();
     let access_level = project
@@ -208,7 +197,7 @@ pub async fn render_project_page(
         git_user, state.config.ssh_public_host, owner.slug, project.slug
     );
 
-    let readme = get_git_file(&state, &username, &slug, &current, "README.md").await;
+    let readme = get_git_file(&state, &owner.slug, &project.slug, &current, "README.md").await;
     let readme = readme
         .map(|b| {
             let str = String::from_utf8_lossy(&b.data);
@@ -236,40 +225,32 @@ pub async fn render_project_page(
 pub async fn project_page_tree(
     State(state): State<GlobalState>,
     cookies: Cookies,
-    Path((username, slug, branch)): Path<(String, String, String)>,
+    PathUserProjectBranch(owner, project, branch): PathUserProjectBranch,
 ) -> Result<Html<String>, (StatusCode, Html<String>)> {
-    render_project_page(&state, cookies, username, slug, Some(branch)).await
+    render_project_page(&state, cookies, owner, project, Some(branch)).await
 }
 
 pub async fn project_page(
     State(state): State<GlobalState>,
     cookies: Cookies,
-    Path((username, slug)): Path<(String, String)>,
+    PathUserProject(owner, project): PathUserProject,
 ) -> Result<Html<String>, (StatusCode, Html<String>)> {
-    render_project_page(&state, cookies, username, slug, None).await
+    render_project_page(&state, cookies, owner, project, None).await
 }
 
 pub async fn project_page_commits(
     State(state): State<GlobalState>,
     cookies: Cookies,
-    Path((username, slug, branch)): Path<(String, String, String)>,
+    PathUserProjectBranch(owner, project, branch): PathUserProjectBranch,
 ) -> Result<Html<String>, (StatusCode, Html<String>)> {
-    render_project_page(&state, cookies, username, slug, Some(branch)).await
+    render_project_page(&state, cookies, owner, project, Some(branch)).await
 }
 
 pub async fn project_settings_page(
     State(state): State<GlobalState>,
     cookies: Cookies,
-    Path((username, slug)): Path<(String, String)>,
+    PathUserProject(owner, project): PathUserProject,
 ) -> Result<Html<String>, Redirect> {
-    let Ok(owner) = User::load(&state, &username).await else {
-        return Err(Redirect::to("/"));
-    };
-
-    let Ok(project) = Project::load(&state, &username, &slug).await else {
-        return Err(Redirect::to(&owner.uri()));
-    };
-
     let current_user = match session::current_user(&state, &cookies).await {
         Ok(user) => user,
         Err(_) => return Err(Redirect::to("/login")),
@@ -286,17 +267,9 @@ pub async fn project_settings_page(
 pub async fn handle_project_settings(
     State(state): State<GlobalState>,
     cookies: Cookies,
-    Path((username, slug)): Path<(String, String)>,
+    PathUserProject(owner, mut project): PathUserProject,
     Form(form): Form<ProjectSettingsForm>,
 ) -> Result<Response, Redirect> {
-    let Ok(owner) = User::load(&state, &username).await else {
-        return Err(Redirect::to("/"));
-    };
-
-    let Ok(mut project) = Project::load(&state, &username, &slug).await else {
-        return Err(Redirect::to(&format!("/{username}")));
-    };
-
     let current_user = match session::current_user(&state, &cookies).await {
         Ok(user) => user,
         Err(_) => return Err(Redirect::to("/login")),
@@ -304,7 +277,7 @@ pub async fn handle_project_settings(
 
     let access_level = project.access_level(Some(current_user.slug.clone())).await;
     if access_level != AccessType::Admin {
-        return Err(Redirect::to(&format!("/{username}/{slug}")));
+        return Err(Redirect::to(&project.uri()));
     }
 
     let name = form.name.trim();
@@ -370,10 +343,10 @@ pub async fn handle_project_settings(
 
     if project.save(&state).await.is_err() {
         // A proper error message would be nicer here
-        return Err(Redirect::to(&format!("/{username}/{slug}")));
+        return Err(Redirect::to(&project.uri()));
     }
 
-    Ok(Redirect::to(&format!("/{username}/{slug}/settings")).into_response())
+    Ok(Redirect::to(&project.uri_settings()).into_response())
 }
 
 async fn render_new_project_page(

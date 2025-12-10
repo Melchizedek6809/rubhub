@@ -1,4 +1,6 @@
 <div class="card project-card">
-    <h3 class="project-header"><a href="/{{ project.owner_slug }}">{{ project.owner_name }}</a>/<a href="/{{ project.owner_slug }}/{{ project.slug }}">{{ project.name }}</a></h3>
-    <p>{{ project.description }}</p>
+  <h3 class="project-header">
+    <a href="{{ project.owner_uri() }}">{{ project.owner_name }}</a>/<a href="{{ project.uri() }}">{{ project.name }}</a>
+  </h3>
+  <p>{{ project.description }}</p>
 </div>
