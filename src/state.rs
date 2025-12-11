@@ -1,4 +1,4 @@
-use std::{env, net::SocketAddr, path::PathBuf, time::Instant};
+use std::{env, net::SocketAddr, path::PathBuf, sync::Arc, time::Instant};
 use tokio::fs;
 
 #[derive(Debug, Clone)]
@@ -8,15 +8,21 @@ pub struct AppConfig {
     pub http_bind_addr: SocketAddr,
     pub ssh_bind_addr: SocketAddr,
     pub ssh_public_host: String,
+    pub base_url: String,
 }
 
 #[derive(Debug, Clone)]
 pub struct GlobalState {
-    pub config: AppConfig,
+    pub config: Arc<AppConfig>,
     pub process_start: Instant,
 }
 
 impl GlobalState {
+
+    pub fn uri(&self, path: &str) -> String {
+        format!("{}{}", self.config.base_url, path)
+    }
+
     pub async fn new(process_start: Instant) -> anyhow::Result<Self> {
         let dir_root = env::var("DIR_ROOT").unwrap_or_else(|_| "./data/".to_owned());
         let dir_root = PathBuf::from(dir_root);
@@ -36,6 +42,8 @@ impl GlobalState {
                 .unwrap_or(3000);
             format!("{http_addr}:{http_port}").parse::<SocketAddr>()?
         };
+
+        let base_url = env::var("BASE_URL").unwrap_or_else(|_| format!("http://{http_bind_addr}"));
 
         let ssh_port: u16 = env::var("SSH_PORT")
             .ok()
@@ -62,13 +70,14 @@ impl GlobalState {
 
         let state = Self {
             process_start,
-            config: AppConfig {
+            config: Arc::new(AppConfig {
+                base_url,
                 git_root,
                 session_root,
                 http_bind_addr,
                 ssh_bind_addr,
                 ssh_public_host,
-            },
+            }),
         };
 
         Ok(state)
