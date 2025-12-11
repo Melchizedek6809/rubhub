@@ -38,6 +38,14 @@ pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
         .route("/{username}", get(pages::project::project_list_page))
         .route("/{username}/{slug}", get(pages::project::project_page))
         .route(
+            "/{username}/{slug}/branches",
+            get(pages::project::project_page_branches),
+        )
+        .route(
+            "/{username}/{slug}/tags",
+            get(pages::project::project_page_tags),
+        )
+        .route(
             "/{username}/{slug}/tree/{branch}",
             get(pages::project::project_page_tree),
         )

@@ -99,6 +99,24 @@ struct ProjectCommitsTemplate<'a> {
 }
 
 #[derive(Template)]
+#[template(path = "project_branches.html")]
+struct ProjectBranchesTemplate<'a> {
+    owner: &'a User,
+    project: &'a Project,
+    access_level: AccessType,
+    branches: Vec<GitRefInfo>,
+}
+
+#[derive(Template)]
+#[template(path = "project_tags.html")]
+struct ProjectTagsTemplate<'a> {
+    owner: &'a User,
+    project: &'a Project,
+    access_level: AccessType,
+    tags: Vec<GitRefInfo>,
+}
+
+#[derive(Template)]
 #[template(path = "project_settings.html")]
 struct ProjectSettingsTemplate<'a> {
     owner: &'a User,
@@ -231,6 +249,46 @@ pub async fn project_with_access(
         info,
         selected_branch,
         readme_html,
+    }
+    .render()
+    .unwrap();
+
+    let parts = extract_html_parts(&contents);
+
+    theme(parts.0, parts.1).await
+}
+
+pub async fn project_branches(
+    owner: User,
+    project: Project,
+    access_level: AccessType,
+    branches: Vec<GitRefInfo>,
+) -> String {
+    let contents = ProjectBranchesTemplate {
+        owner: &owner,
+        project: &project,
+        access_level,
+        branches,
+    }
+    .render()
+    .unwrap();
+
+    let parts = extract_html_parts(&contents);
+
+    theme(parts.0, parts.1).await
+}
+
+pub async fn project_tags(
+    owner: User,
+    project: Project,
+    access_level: AccessType,
+    tags: Vec<GitRefInfo>,
+) -> String {
+    let contents = ProjectTagsTemplate {
+        owner: &owner,
+        project: &project,
+        access_level,
+        tags,
     }
     .render()
     .unwrap();

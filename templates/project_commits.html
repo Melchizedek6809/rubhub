@@ -9,7 +9,9 @@
     <section>
         <div class="page-header">
           <h1 class="project-header">
-            <a href="{{ owner.uri() }}">{{ owner.name }}</a>/<a href="{{ project.uri() }}">{{ project.name }}</a>
+            <a href="{{ owner.uri() }}">{{ owner.name }}</a> /
+            <a href="{{ project.uri() }}">{{ project.name }}</a> /
+            <a href="{{ project.uri_log(selected_branch, 0) }}">log {{ selected_branch }}</a>
           </h1>
           {% if access_level == AccessType::Admin %}
           <a class="btn" href="{{ project.uri_settings() }}">Edit project</a>
@@ -31,11 +33,11 @@
                 </select>
                 {% endif %}
 
-                <span class="repo-branches">{{ summary.branches.len() }} Branch{% if summary.branches.len() != 1
-                    %}es{% endif %}</span>
+                <span class="repo-branches"><a href="{{ project.uri_branches() }}">{{ summary.branches.len() }} Branch{% if summary.branches.len() != 1
+                    %}es{% endif %}</a></span>
 
-                <span class="repo-tags">{{ summary.tags.len() }} Tag{% if summary.tags.len() != 1
-                    %}s{% endif %}</span>
+                <span class="repo-tags"><a href="{{ project.uri_tags() }}">{{ summary.tags.len() }} Tag{% if summary.tags.len() != 1
+                    %}s{% endif %}</a></span>
 
                 <div class="flex-gap"> </div>
 

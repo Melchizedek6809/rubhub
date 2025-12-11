@@ -11,7 +11,7 @@ use crate::{
     app::{self, ProjectSummary},
     extractors::{PathUser, PathUserProject, PathUserProjectBranch},
     services::{
-        repository::{create_bare_repo, get_git_file, get_git_info, get_git_summary},
+        repository::{GitRefInfo, create_bare_repo, get_git_file, get_git_info, get_git_summary},
         session,
         validation::{validate_project_name, validate_uri},
     },
@@ -235,6 +235,58 @@ pub async fn project_page(
     PathUserProject(owner, project): PathUserProject,
 ) -> Result<Html<String>, (StatusCode, Html<String>)> {
     render_project_page(&state, cookies, owner, project, None).await
+}
+
+pub async fn project_page_branches(
+    State(state): State<GlobalState>,
+    cookies: Cookies,
+    PathUserProject(owner, project): PathUserProject,
+) -> Result<Html<String>, (StatusCode, Html<String>)> {
+    let Some(summary) = get_git_summary(&state, &owner.slug, &project.slug).await else {
+        return Err(not_found().await);
+    };
+
+    let mut branches: Vec<GitRefInfo> = vec![];
+    for b in &summary.branches {
+        if let Some(info) = get_git_info(&state, &owner.slug, &project.slug, b, 1, 0).await {
+            branches.push(info);
+        }
+    }
+
+    let session_user = session::current_user(&state, &cookies).await.ok();
+    let access_level = project
+        .access_level(session_user.as_ref().map(|user| user.slug.clone()))
+        .await;
+
+    Ok(Html(
+        app::project_branches(owner, project, access_level, branches).await,
+    ))
+}
+
+pub async fn project_page_tags(
+    State(state): State<GlobalState>,
+    cookies: Cookies,
+    PathUserProject(owner, project): PathUserProject,
+) -> Result<Html<String>, (StatusCode, Html<String>)> {
+    let Some(summary) = get_git_summary(&state, &owner.slug, &project.slug).await else {
+        return Err(not_found().await);
+    };
+
+    let mut tags: Vec<GitRefInfo> = vec![];
+    for b in &summary.tags {
+        if let Some(info) = get_git_info(&state, &owner.slug, &project.slug, b, 1, 0).await {
+            tags.push(info);
+        }
+    }
+
+    let session_user = session::current_user(&state, &cookies).await.ok();
+    let access_level = project
+        .access_level(session_user.as_ref().map(|user| user.slug.clone()))
+        .await;
+
+    Ok(Html(
+        app::project_tags(owner, project, access_level, tags).await,
+    ))
 }
 
 #[derive(Debug, Deserialize)]

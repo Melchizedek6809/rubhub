@@ -97,6 +97,14 @@ impl Project {
         format!("/~{}/{}/settings", self.owner, self.slug)
     }
 
+    pub fn uri_branches(&self) -> String {
+        format!("/~{}/{}/branches", self.owner, self.slug)
+    }
+
+    pub fn uri_tags(&self) -> String {
+        format!("/~{}/{}/tags", self.owner, self.slug)
+    }
+
     pub fn uri_log(&self, branch: &str, page: i32) -> String {
         if page > 0 {
             format!(
