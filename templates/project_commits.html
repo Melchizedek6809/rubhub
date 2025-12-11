@@ -19,7 +19,7 @@
         <div class="card">
             <div class="repo-bar">
                 {% if summary.branches.len() > 0 %}
-                <select name="branch-name" class="branch-switcher" data-base-suffix="commits" data-base-href="{{ project.uri() }}">
+                <select name="branch-name" class="branch-switcher" data-base-suffix="log" data-base-href="{{ project.uri() }}">
                     {% for branch in summary.branches %}
                     <option value="{{ branch }}" {% if branch==selected_branch.as_str() %}selected{% endif %}>{{ branch
                         }}</option>
@@ -58,23 +58,23 @@
               {% endif %}
 
               <nav class="pagination">
-                <a href="{{ project.uri() }}/commits/{{ selected_branch }}" class="start">⇤</a>
+                <a href="{{ project.uri_log(selected_branch, 0) }}" class="start">⇤</a>
                 {% if current_page > 0 %}
-                <a href="{{ project.uri() }}/commits/{{ selected_branch }}?page={{ current_page - 1 }}" class="prev">⇠</a>
+                <a href="{{ project.uri_log(selected_branch, current_page - 1) }}" class="prev">⇠</a>
                 {% else %}
-                <a href="{{ project.uri() }}/commits/{{ selected_branch }}" class="prev disabled">⇠</a>
+                <a href="{{ project.uri_log(selected_branch, 0) }}" class="prev disabled">⇠</a>
                 {% endif %}
 
                 {% for page in page_min..=page_max %}
-                <a href="{{ project.uri() }}/commits/{{ selected_branch }}?page={{ page }}" class="{% if page == current_page %}active{% endif %}">{{ page }}</a>
+                <a href="{{ project.uri_log(selected_branch, *page) }}" class="{% if page == current_page %}active{% endif %}">{{ page }}</a>
                 {% endfor %}
 
                 {% if current_page < page_count %}
-                <a href="{{ project.uri() }}/commits/{{ selected_branch }}?page={{ current_page + 1 }}" class="next">⇢</a>
+                <a href="{{ project.uri_log(selected_branch, current_page + 1) }}" class="next">⇢</a>
                 {% else %}
-                <a href="{{ project.uri() }}/commits/{{ selected_branch }}?page={{ page_count }}" class="next disabled">⇢</a>
+                <a href="{{ project.uri_log(selected_branch, *page_count) }}?page={{ page_count }}" class="next disabled">⇢</a>
                 {% endif %}
-                <a href="{{ project.uri() }}/commits/{{ selected_branch }}?page={{ page_count }}" class="end">⇥</a>
+                <a href="{{ project.uri_log(selected_branch, *page_count) }}" class="end">⇥</a>
               </nav>
             </div>
             {% endif %}

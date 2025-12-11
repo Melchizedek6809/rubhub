@@ -42,7 +42,7 @@ pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
             get(pages::project::project_page_tree),
         )
         .route(
-            "/{username}/{slug}/commits/{branch}",
+            "/{username}/{slug}/log/{branch}",
             get(pages::project::project_page_commits),
         )
         .route(
