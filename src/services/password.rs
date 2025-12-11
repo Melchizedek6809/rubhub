@@ -4,8 +4,8 @@ use argon2::{
 };
 
 fn desired_params() -> Params {
-    // 32 MiB memory, 2 iterations, 1 lane keeps CPU modest while resisting GPU attacks.
-    Params::new(32 * 1024, 2, 1, None).expect("argon2 params are valid")
+    // 64 MiB memory, 4 iterations, 1 lane keeps CPU modest while resisting GPU attacks.
+    Params::new(64 * 1024, 4, 1, None).expect("argon2 params are valid")
 }
 
 fn password_hasher() -> Argon2<'static> {
