@@ -34,7 +34,18 @@ pub fn validate_username(username: &str) -> Result<(), &'static str> {
         return Err("That username is not allowed.");
     }
 
-    validate_slug(username)
+    if username.starts_with('.') {
+        return Err("Usernames cannot start with a period.");
+    }
+
+    if username
+        .chars()
+        .all(|ch| ch.is_ascii_uppercase() || ch.is_ascii_lowercase() || ch.is_ascii_digit() || matches!(ch, '-' | '_' | '.'))
+    {
+        Ok(())
+    } else {
+        Err("Only letters, numbers, dashes, underscores, and periods are allowed.")
+    }
 }
 
 pub fn validate_password(password: &str) -> Result<(), &'static str> {
