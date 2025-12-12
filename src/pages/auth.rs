@@ -8,11 +8,12 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, User, app,
+    GlobalState, User,
     services::{
         session,
         validation::{slugify, validate_password, validate_username},
     },
+    views,
 };
 
 #[derive(Debug, Deserialize)]
@@ -35,7 +36,7 @@ pub async fn login_page() -> Html<String> {
 }
 
 async fn render_login_page(message: Option<&str>) -> Html<String> {
-    Html(app::login(message).await)
+    Html(views::login::login(message).await)
 }
 
 async fn internal_error<E: std::fmt::Display>(err: E) -> (axum::http::StatusCode, Html<String>) {

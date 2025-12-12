@@ -1,6 +1,5 @@
 use tokio::runtime::Builder;
 
-mod app;
 mod entities;
 mod extractors;
 mod http;
@@ -8,8 +7,9 @@ mod pages;
 mod services;
 mod ssh;
 mod state;
+mod views;
 
-pub use entities::{AccessType, Project, User};
+pub use entities::{AccessType, Project, ProjectSummary, User};
 pub use state::GlobalState;
 
 fn main() {

@@ -1,34 +1,37 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>RubHub</title>
     <link rel="canonical" href="https://rubhub.net">
-</head>
+  </head>
 
-<body>
-    <section>
+  <body>
+    {% include "sidebar.html" %}
+    <main>
+      <section>
         <div>
-            <div class="card-grid">
-                <div class="card">
-                    Welcome to RubHub,<br/>
-                    <br/>
-                    a new experimental git forge that grew out of me experimenting around with Rust webdev.<br/>
-                </div>
+          <div class="card-grid">
+            <div class="card">
+              Welcome to RubHub,<br/>
+              <br/>
+              a new experimental git forge that grew out of me experimenting around with Rust webdev.<br/>
             </div>
-            <br/>
-            <br/>
-            <h2>Featured projects</h2>
-            {% if featured.len() == 0 %}
-                <p>No projects yet.</p>
-            {% else %}
-                <div class="card-grid">
-                    {% for project in featured %}
-                        {% include "project_card.html" %}
-                    {% endfor %}
-                </div>
-            {% endif %}
+          </div>
+          <br/>
+          <br/>
+          <h2>Featured projects</h2>
+          {% if featured.len() == 0 %}
+          <p>No projects yet.</p>
+          {% else %}
+          <div class="card-grid">
+            {% for project in featured %}
+            {% include "project_card.html" %}
+            {% endfor %}
+          </div>
+          {% endif %}
         </div>
-    </section>
-</body>
+      </section>
+    </main>
+  </body>
 
 </html>

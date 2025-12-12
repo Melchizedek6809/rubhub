@@ -1,29 +1,32 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>New project</title>
-</head>
-<body>
-    <section>
+  </head>
+  <body>
+    {% include "sidebar.html" %}
+    <main>
+      <section>
         <h1>Create a new project</h1>
         {% if let Some(msg) = message %}
-            <div class="message" role="status">{{ msg }}</div>
+        <div class="message" role="status">{{ msg }}</div>
         {% endif %}
-            <form method="post" action="/projects/new" class="stack card simple-form">
-              <label>
-                Name
-                <input type="text" autofocus label="Project name" name="name" autocomplete="off"></input>
-              </label>
-            <label>
-                Public access
-                <select name="public_access">
-                    <option value="none" {% if public_access == "none" %}selected{% endif %}>None</option>
-                    <option value="read" {% if public_access == "read" %}selected{% endif %}>Read</option>
-                    <option value="write" {% if public_access == "write" %}selected{% endif %}>Write</option>
-                </select>
-            </label>
-            <button type="submit">Create project</button>
+        <form method="post" action="/projects/new" class="stack card simple-form">
+          <label>
+            Name
+            <input type="text" autofocus label="Project name" name="name" autocomplete="off"></input>
+          </label>
+          <label>
+            Public access
+            <select name="public_access">
+              <option value="none" {% if public_access == "none" %}selected{% endif %}>None</option>
+              <option value="read" {% if public_access == "read" %}selected{% endif %}>Read</option>
+              <option value="write" {% if public_access == "write" %}selected{% endif %}>Write</option>
+            </select>
+          </label>
+          <button type="submit">Create project</button>
         </form>
-    </section>
-</body>
+      </section>
+    </main>
+  </body>
 </html>

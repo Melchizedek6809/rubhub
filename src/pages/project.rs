@@ -7,14 +7,14 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    AccessType, GlobalState, Project, User,
-    app::{self, ProjectSummary},
+    AccessType, GlobalState, Project, ProjectSummary, User,
     extractors::{PathUser, PathUserProject, PathUserProjectBranch},
     services::{
         repository::{GitRefInfo, create_bare_repo, get_git_file, get_git_info, get_git_summary},
         session,
         validation::{validate_project_name, validate_uri},
     },
+    views,
 };
 
 #[derive(Debug, Deserialize)]
@@ -33,7 +33,10 @@ pub struct ProjectSettingsForm {
 }
 
 async fn not_found() -> (StatusCode, Html<String>) {
-    (StatusCode::NOT_FOUND, Html(app::not_found().await))
+    (
+        StatusCode::NOT_FOUND,
+        Html(views::not_found::not_found().await),
+    )
 }
 
 pub async fn project_list_page(
@@ -65,7 +68,9 @@ pub async fn project_list_page(
         })
         .collect();
 
-    Ok(Html(app::projects(&owner, &summaries, is_owner).await))
+    Ok(Html(
+        views::user::profile(&owner, &summaries, is_owner).await,
+    ))
 }
 
 pub async fn new_project_page(
@@ -208,7 +213,7 @@ pub async fn render_project_page(
         .ok();
 
     Ok(Html(
-        app::project_with_access(
+        views::project::project_with_access(
             owner,
             project,
             access_level,
@@ -259,7 +264,7 @@ pub async fn project_page_branches(
         .await;
 
     Ok(Html(
-        app::project_branches(owner, project, access_level, branches).await,
+        views::project_branches::project_branches(owner, project, access_level, branches).await,
     ))
 }
 
@@ -285,7 +290,7 @@ pub async fn project_page_tags(
         .await;
 
     Ok(Html(
-        app::project_tags(owner, project, access_level, tags).await,
+        views::project_tags::project_tags(owner, project, access_level, tags).await,
     ))
 }
 
@@ -331,7 +336,7 @@ pub async fn project_page_commits(
     );
 
     Ok(Html(
-        app::project_commits(
+        views::project_commits::project_commits(
             owner,
             project,
             access_level,
@@ -453,7 +458,7 @@ async fn render_new_project_page(
     message: Option<&str>,
     public_access: AccessType,
 ) -> Html<String> {
-    Html(app::new_project(message, public_access).await)
+    Html(views::project_new::new_project(message, public_access).await)
 }
 
 async fn render_project_settings_page(
@@ -462,5 +467,5 @@ async fn render_project_settings_page(
     project: Project,
     message: Option<&str>,
 ) -> Html<String> {
-    Html(app::project_settings(owner, project, message).await)
+    Html(views::project_settings::project_settings(owner, project, message).await)
 }

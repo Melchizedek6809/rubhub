@@ -8,11 +8,12 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, User, app,
+    GlobalState, User,
     services::{
         session as session_service,
         validation::{validate_uri, validate_username},
     },
+    views,
 };
 
 #[derive(Debug, Deserialize)]
@@ -129,5 +130,5 @@ async fn render_settings_page(
     ssh_keys: &[String],
     message: Option<&str>,
 ) -> Html<String> {
-    Html(app::settings(user, ssh_keys, message).await)
+    Html(views::user_settings::settings(user, ssh_keys, message).await)
 }

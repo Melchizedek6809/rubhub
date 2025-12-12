@@ -1,66 +1,69 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>{{ user.name }}/settings</title>
-</head>
-<body>
-    <section>
+  </head>
+  <body>
+    {% include "sidebar.html" %}
+    <main>
+      <section>
         <div class="page-header">
-            <h1 class="project-header"><a href="{{ user.uri() }}">{{ user.name }}</a> / <a
-                    href="/settings">settings</a></h1>
+          <h1 class="project-header"><a href="{{ user.uri() }}">{{ user.name }}</a> / <a
+                                                                                        href="/settings">settings</a></h1>
         </div>
 
         {% match message %}
-            {% when Some with (msg) %}
-                <div class="message" role="status">{{ msg }}</div>
-            {% when None %}
+        {% when Some with (msg) %}
+        <div class="message" role="status">{{ msg }}</div>
+        {% when None %}
         {% endmatch %}
         <form method="post" action="/settings" class="stack card simple-form">
-            <div class="form-row">
-                <label>
-                    ID (can't be changed)
-                    <input name="slug" type="text" value="{{ user.slug }}" readonly>
-                </label>
-
-                <label>
-                    Name
-                    <input name="name" type="text" value="{{ user.name }}">
-                </label>
-            </div>
-
-            <div class="form-row">
-                <label>
-                    Email
-                    <input name="email" type="email" value="{{ user.email }}">
-                </label>
-
-                <label>
-                    Website
-                    <input name="website" type="text" value="{{ user.website }}">
-                </label>
-            </div>
+          <div class="form-row">
+            <label>
+              ID (can't be changed)
+              <input name="slug" type="text" value="{{ user.slug }}" readonly>
+            </label>
 
             <label>
-                Bio
+              Name
+              <input name="name" type="text" value="{{ user.name }}">
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label>
+              Email
+              <input name="email" type="email" value="{{ user.email }}">
+            </label>
+
+            <label>
+              Website
+              <input name="website" type="text" value="{{ user.website }}">
+            </label>
+          </div>
+
+          <label>
+            Bio
             <textarea name="description">{{ user.description }}</textarea>
-            </label>
+          </label>
 
-            <br/>
-            <hr/>
-            <br/>
+          <br/>
+          <hr/>
+          <br/>
 
-            <label>
-                Default branch name (main / master)
-                <input name="default_main_branch" type="text" value="{{ user.default_main_branch }}">
-            </label>
+          <label>
+            Default branch name (main / master)
+            <input name="default_main_branch" type="text" value="{{ user.default_main_branch }}">
+          </label>
 
-            <label>
-                SSH public keys (one per line)
-                <textarea name="ssh_keys" spellcheck="false">{% for key in ssh_keys %}{{ key }}
-{% endfor %}</textarea>
-            </label>
-            <button type="submit">Save</button>
+          <label>
+            SSH public keys (one per line)
+            <textarea name="ssh_keys" spellcheck="false">{% for key in ssh_keys %}{{ key }}
+              {% endfor %}</textarea>
+          </label>
+          <button type="submit">Save</button>
         </form>
-    </section>
-</body>
+      </section>
+    </main>
+  </body>
 </html>

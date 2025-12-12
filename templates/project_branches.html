@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html>
 
-<head>
+  <head>
     <title>{{ owner.name }}/{{ project.name }}</title>
-</head>
+  </head>
 
-<body>
-    <section>
+  <body>
+    {% include "sidebar.html" %}
+    <main>
+      <section>
         <div class="page-header">
           <h1 class="project-header">
             <a href="{{ owner.uri() }}">{{ owner.name }}</a> /
@@ -40,7 +42,8 @@
             {% endif %}
           </div>
         </div>
-    </section>
-</body>
+      </section>
+    </main>
+  </body>
 
 </html>

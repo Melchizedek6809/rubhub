@@ -1,7 +1,4 @@
-use crate::{
-    GlobalState, Project, User,
-    app::{self, ProjectSummary},
-};
+use crate::{GlobalState, Project, ProjectSummary, User, views};
 use axum::{extract::State, response::Html};
 
 pub async fn index(State(state): State<GlobalState>) -> Html<String> {
@@ -21,5 +18,5 @@ pub async fn index(State(state): State<GlobalState>) -> Html<String> {
         })
         .collect();
 
-    Html(app::index(&featured).await)
+    Html(views::index::index(&featured).await)
 }

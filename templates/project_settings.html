@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html>
 
-<head>
-  <title>{{ owner.name }}/{{ project.name }}/settings</title>
-</head>
+  <head>
+    <title>{{ owner.name }}/{{ project.name }}/settings</title>
+  </head>
 
-<body>
-    <section>
+  <body>
+    {% include "sidebar.html" %}
+    <main>
+      <section>
         <div class="page-header">
           <h1 class="project-header">
             <a href="{{ owner.uri() }}">{{ owner.name }}</a> /
@@ -18,50 +20,51 @@
         <div class="message" role="status">{{ msg }}</div>
         {% endif %}
         <form method="post" action="{{ project.uri_settings() }}" class="stack card simple-form">
+          <label>
+            ID (used in URIs, can't be changed)
+            <input name="slug" type="text" value="{{ project.slug }}" readonly>
+          </label>
+
+          <div class="form-row">
             <label>
-                ID (used in URIs, can't be changed)
-                <input name="slug" type="text" value="{{ project.slug }}" readonly>
+              Name
+              <input name="name" type="text" value="{{ project.name }}">
             </label>
 
-            <div class="form-row">
-                <label>
-                    Name
-                    <input name="name" type="text" value="{{ project.name }}">
-                </label>
-
-                <label>
-                    Website
-                    <input name="website" type="text" value="{{ project.website }}">
-                </label>
-            </div>
-
-            <div class="form-row">
-                <label>
-                    Public access
-                    <select name="public_access">
-                        <option value="none" {% if project.public_access==AccessType::None %}selected{% endif %}>None
-                        </option>
-                        <option value="read" {% if project.public_access==AccessType::Read %}selected{% endif %}>Read
-                        </option>
-                        <option value="write" {% if project.public_access==AccessType::Write %}selected{% endif %}>Write
-                        </option>
-                    </select>
-                </label>
-
-                <label>
-                    Default branch name (main / master)
-                    <input name="main_branch" type="text" value="{{ project.main_branch }}">
-                </label>
-            </div>
-
             <label>
-                Description
-                <textarea name="description">{{ project.description }}</textarea>
+              Website
+              <input name="website" type="text" value="{{ project.website }}">
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label>
+              Public access
+              <select name="public_access">
+                <option value="none" {% if project.public_access==AccessType::None %}selected{% endif %}>None
+                </option>
+                <option value="read" {% if project.public_access==AccessType::Read %}selected{% endif %}>Read
+                </option>
+                <option value="write" {% if project.public_access==AccessType::Write %}selected{% endif %}>Write
+                </option>
+              </select>
             </label>
 
-            <button type="submit">Save</button>
+            <label>
+              Default branch name (main / master)
+              <input name="main_branch" type="text" value="{{ project.main_branch }}">
+            </label>
+          </div>
+
+          <label>
+            Description
+            <textarea name="description">{{ project.description }}</textarea>
+          </label>
+
+          <button type="submit">Save</button>
         </form>
-    </section>
-</body>
+      </section>
+    </main>
+  </body>
 
 </html>

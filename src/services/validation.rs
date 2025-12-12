@@ -38,10 +38,12 @@ pub fn validate_username(username: &str) -> Result<(), &'static str> {
         return Err("Usernames cannot start with a period.");
     }
 
-    if username
-        .chars()
-        .all(|ch| ch.is_ascii_uppercase() || ch.is_ascii_lowercase() || ch.is_ascii_digit() || matches!(ch, '-' | '_' | '.'))
-    {
+    if username.chars().all(|ch| {
+        ch.is_ascii_uppercase()
+            || ch.is_ascii_lowercase()
+            || ch.is_ascii_digit()
+            || matches!(ch, '-' | '_' | '.')
+    }) {
         Ok(())
     } else {
         Err("Only letters, numbers, dashes, underscores, and periods are allowed.")

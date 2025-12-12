@@ -1,48 +1,51 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>Login</title>
-</head>
-<body>
-    <section>
+  </head>
+  <body>
+    {% include "sidebar.html" %}
+    <main>
+      <section>
         <h1>Login or register</h1>
         <p>Use a simple username and password to sign in.</p>
         {% match message %}
-            {% when Some with (msg) %}
-                <div class="message" role="alert">{{ msg }}</div>
-            {% when None %}
+        {% when Some with (msg) %}
+        <div class="message" role="alert">{{ msg }}</div>
+        {% when None %}
         {% endmatch %}
         <div class="auth-grid">
-            <div class="auth-card">
-                <h2>Login</h2>
-                <form method="post" action="/login" class="stack">
-                    <input type="hidden" name="action" value="login">
-                    <label for="login-username">Username / E-Mail</label>
-                    <input autofocus id="login-username" name="username" type="text" autocomplete="username" required>
-                    <input type="hidden" name="email" value="asd">
+          <div class="auth-card">
+            <h2>Login</h2>
+            <form method="post" action="/login" class="stack">
+              <input type="hidden" name="action" value="login">
+              <label for="login-username">Username / E-Mail</label>
+              <input autofocus id="login-username" name="username" type="text" autocomplete="username" required>
+              <input type="hidden" name="email" value="asd">
 
-                    <label for="login-password">Password</label>
-                    <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+              <label for="login-password">Password</label>
+              <input id="login-password" name="password" type="password" autocomplete="current-password" required>
 
-                    <button type="submit">Sign in</button>
-                </form>
-            </div>
-            <div class="auth-card">
-                <h2>Register</h2>
-                <form method="post" action="/login" class="stack">
-                    <input type="hidden" name="action" value="register">
-                    <rubhub-slug-input label="Username" name="username" autocomplete="username"></rubhub-slug-input>
+              <button type="submit">Sign in</button>
+            </form>
+          </div>
+          <div class="auth-card">
+            <h2>Register</h2>
+            <form method="post" action="/login" class="stack">
+              <input type="hidden" name="action" value="register">
+              <rubhub-slug-input label="Username" name="username" autocomplete="username"></rubhub-slug-input>
 
-                    <label for="register-email">E-Mail</label>
-                    <input id="register-email" name="email" type="email" autocomplete="email" required>
+              <label for="register-email">E-Mail</label>
+              <input id="register-email" name="email" type="email" autocomplete="email" required>
 
-                    <label for="register-password">Password</label>
-                    <input id="register-password" name="password" type="password" autocomplete="new-password" required>
+              <label for="register-password">Password</label>
+              <input id="register-password" name="password" type="password" autocomplete="new-password" required>
 
-                    <button type="submit">Create account</button>
-                </form>
-            </div>
+              <button type="submit">Create account</button>
+            </form>
+          </div>
         </div>
-    </section>
-</body>
+      </section>
+    </main>
+  </body>
 </html>

@@ -1,46 +1,49 @@
 <!DOCTYPE html>
 <html>
-<head>
-	<title>{{ user.name }}</title>
-</head>
-<body>
-	<section>
-		<div class="page-header">
-			<h1 class="project-header"><a href="{{ user.uri() }}">{{ user.name }}</a></h1>
-			{% if is_owner %}
-				<a class="btn" href="/settings">Edit</a>
-			{% endif %}
-		</div>
-		<div class="card">
-			{% if !user.description.is_empty() %}
-			<p>{{ user.description }}</p>
-			{% endif %}
+  <head>
+    <title>{{ user.name }}</title>
+  </head>
+  <body>
+    {% include "sidebar.html" %}
+    <main>
+      <section>
+        <div class="page-header">
+          <h1 class="project-header"><a href="{{ user.uri() }}">{{ user.name }}</a></h1>
+          {% if is_owner %}
+          <a class="btn" href="/settings">Edit</a>
+          {% endif %}
+        </div>
+        <div class="card">
+          {% if !user.description.is_empty() %}
+          <p>{{ user.description }}</p>
+          {% endif %}
 
-			<dl class="meta user-meta">
-				<dt>E-Mail</dt>
-				<dd><a href="mailto:{{ user.email }}">{{ user.email }}</a></dd>
+          <dl class="meta user-meta">
+            <dt>E-Mail</dt>
+            <dd><a href="mailto:{{ user.email }}">{{ user.email }}</a></dd>
 
-				{% if !user.website.is_empty() %}
-				<dt>Website</dt>
-				<dd><a href="{{ user.website }}">{{ user.website }}</a></dd>
-				{% endif %}
-			</dl>
-		</div>
+            {% if !user.website.is_empty() %}
+            <dt>Website</dt>
+            <dd><a href="{{ user.website }}">{{ user.website }}</a></dd>
+            {% endif %}
+          </dl>
+        </div>
 
-		<br/>
-		<div class="page-header">
-			<h2 class="project-header">Projects</h2>
-			{% if is_owner %}
-				<a class="btn" href="/projects/new">New project</a>
-			{% endif %}
-		</div>
-		{% if projects.len() > 0 %}
-			<div class="card-grid">
-			{% for project in projects %}
-				{% include "project_card.html" %}
-			{% endfor %}
-			</div>
-		{% endif %}
-	</section>
-</body>
+        <br/>
+        <div class="page-header">
+          <h2 class="project-header">Projects</h2>
+          {% if is_owner %}
+          <a class="btn" href="/projects/new">New project</a>
+          {% endif %}
+        </div>
+        {% if projects.len() > 0 %}
+        <div class="card-grid">
+          {% for project in projects %}
+          {% include "project_card.html" %}
+          {% endfor %}
+        </div>
+        {% endif %}
+      </section>
+    </main>
+  </body>
 </html>

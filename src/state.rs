@@ -18,7 +18,6 @@ pub struct GlobalState {
 }
 
 impl GlobalState {
-
     pub fn uri(&self, path: &str) -> String {
         format!("{}{}", self.config.base_url, path)
     }

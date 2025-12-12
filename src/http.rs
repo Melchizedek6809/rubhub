@@ -8,7 +8,7 @@ use axum::{
 use rust_embed::Embed;
 use tower_cookies::CookieManagerLayer;
 
-use crate::{GlobalState, app, pages};
+use crate::{GlobalState, pages, views};
 
 #[derive(Embed)]
 #[folder = "dist/"]
@@ -21,7 +21,10 @@ pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
     // build our application with a single route
     let app = Router::new()
         .route("/", get(pages::landing::index))
-        .route("/contact", get(|| async { Html(app::contact().await) }))
+        .route(
+            "/contact",
+            get(|| async { Html(views::contact::contact().await) }),
+        )
         .route(
             "/login",
             get(pages::auth::login_page).post(pages::auth::handle_login),
@@ -70,11 +73,20 @@ pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
                         )
                             .into_response()
                     }
-                    None => (StatusCode::NOT_FOUND, Html(app::not_found().await)).into_response(),
+                    None => (
+                        StatusCode::NOT_FOUND,
+                        Html(views::not_found::not_found().await),
+                    )
+                        .into_response(),
                 }
             }),
         )
-        .fallback(|| async { (StatusCode::NOT_FOUND, Html(app::not_found().await)) })
+        .fallback(|| async {
+            (
+                StatusCode::NOT_FOUND,
+                Html(views::not_found::not_found().await),
+            )
+        })
         .layer(CookieManagerLayer::new())
         .with_state(state.clone());
 

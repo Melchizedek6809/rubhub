@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html>
 
-<head>
+  <head>
     <title>{{ owner.name }}/{{ project.name }}</title>
-</head>
+  </head>
 
-<body>
-    <section>
+  <body>
+    {% include "sidebar.html" %}
+    <main>
+      <section>
         <div class="page-header">
           <h1 class="project-header">
             <a href="{{ owner.uri() }}">{{ owner.name }}</a> /
@@ -19,69 +21,70 @@
         </div>
 
         <div class="card">
-            <div class="repo-bar">
-                {% if summary.branches.len() > 0 %}
-                <select name="branch-name" class="branch-switcher" data-base-suffix="log" data-base-href="{{ project.uri() }}">
-                    {% for branch in summary.branches %}
-                    <option value="{{ branch }}" {% if branch==selected_branch.as_str() %}selected{% endif %}>{{ branch
-                        }}</option>
-                    {% endfor %}
-                </select>
-                {% else %}
-                <select name="branch-name" disabled>
-                    <option selected>Empty Repo</option>
-                </select>
-                {% endif %}
-
-                <span class="repo-branches"><a href="{{ project.uri_branches() }}">{{ summary.branches.len() }} Branch{% if summary.branches.len() != 1
-                    %}es{% endif %}</a></span>
-
-                <span class="repo-tags"><a href="{{ project.uri_tags() }}">{{ summary.tags.len() }} Tag{% if summary.tags.len() != 1
-                    %}s{% endif %}</a></span>
-
-                <div class="flex-gap"> </div>
-
-                <rubhub-clone-url value="{{ ssh_clone_url }}"></rubhub-clone-url>
-            </div>
-
-            {% if let Some(info) = info %}
-            <div class="commit-bar">
-              {% if info.commits.is_empty() %}
-              <p>No commits available</p>
-              {% else %}
-              {% for commit in info.commits %}
-              <div class="commit">
-                <span class="commit-author" title="{{ commit.author }}">{{ commit.author }}</span>
-                <span class="commit-message" title="{{ commit.message }}">{{ commit.message }}</span>
-                <span class="commit-id">{{ commit.id }}</span>
-                <span class="commit-time">{{ commit.relative_time() }}</span>
-              </div>
+          <div class="repo-bar">
+            {% if summary.branches.len() > 0 %}
+            <select name="branch-name" class="branch-switcher" data-base-suffix="log" data-base-href="{{ project.uri() }}">
+              {% for branch in summary.branches %}
+              <option value="{{ branch }}" {% if branch==selected_branch.as_str() %}selected{% endif %}>{{ branch
+                }}</option>
               {% endfor %}
+            </select>
+            {% else %}
+            <select name="branch-name" disabled>
+              <option selected>Empty Repo</option>
+            </select>
+            {% endif %}
+
+            <span class="repo-branches"><a href="{{ project.uri_branches() }}">{{ summary.branches.len() }} Branch{% if summary.branches.len() != 1
+                %}es{% endif %}</a></span>
+
+            <span class="repo-tags"><a href="{{ project.uri_tags() }}">{{ summary.tags.len() }} Tag{% if summary.tags.len() != 1
+                %}s{% endif %}</a></span>
+
+            <div class="flex-gap"> </div>
+
+            <rubhub-clone-url value="{{ ssh_clone_url }}"></rubhub-clone-url>
+          </div>
+
+          {% if let Some(info) = info %}
+          <div class="commit-bar">
+            {% if info.commits.is_empty() %}
+            <p>No commits available</p>
+            {% else %}
+            {% for commit in info.commits %}
+            <div class="commit">
+              <span class="commit-author" title="{{ commit.author }}">{{ commit.author }}</span>
+              <span class="commit-message" title="{{ commit.message }}">{{ commit.message }}</span>
+              <span class="commit-id">{{ commit.id }}</span>
+              <span class="commit-time">{{ commit.relative_time() }}</span>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            <nav class="pagination">
+              <a href="{{ project.uri_log(selected_branch, 0) }}" class="start">⇤</a>
+              {% if current_page > 0 %}
+              <a href="{{ project.uri_log(selected_branch, current_page - 1) }}" class="prev">⇠</a>
+              {% else %}
+              <a href="{{ project.uri_log(selected_branch, 0) }}" class="prev disabled">⇠</a>
               {% endif %}
 
-              <nav class="pagination">
-                <a href="{{ project.uri_log(selected_branch, 0) }}" class="start">⇤</a>
-                {% if current_page > 0 %}
-                <a href="{{ project.uri_log(selected_branch, current_page - 1) }}" class="prev">⇠</a>
-                {% else %}
-                <a href="{{ project.uri_log(selected_branch, 0) }}" class="prev disabled">⇠</a>
-                {% endif %}
+              {% for page in page_min..=page_max %}
+              <a href="{{ project.uri_log(selected_branch, *page) }}" class="{% if page == current_page %}active{% endif %}">{{ page }}</a>
+              {% endfor %}
 
-                {% for page in page_min..=page_max %}
-                <a href="{{ project.uri_log(selected_branch, *page) }}" class="{% if page == current_page %}active{% endif %}">{{ page }}</a>
-                {% endfor %}
-
-                {% if current_page < page_count %}
-                <a href="{{ project.uri_log(selected_branch, current_page + 1) }}" class="next">⇢</a>
-                {% else %}
-                <a href="{{ project.uri_log(selected_branch, *page_count) }}?page={{ page_count }}" class="next disabled">⇢</a>
-                {% endif %}
-                <a href="{{ project.uri_log(selected_branch, *page_count) }}" class="end">⇥</a>
-              </nav>
-            </div>
-            {% endif %}
+              {% if current_page < page_count %}
+                                   <a href="{{ project.uri_log(selected_branch, current_page + 1) }}" class="next">⇢</a>
+                                   {% else %}
+                                   <a href="{{ project.uri_log(selected_branch, *page_count) }}?page={{ page_count }}" class="next disabled">⇢</a>
+                                   {% endif %}
+                                   <a href="{{ project.uri_log(selected_branch, *page_count) }}" class="end">⇥</a>
+            </nav>
+          </div>
+          {% endif %}
         </div>
-    </section>
-</body>
+      </section>
+    </main>
+  </body>
 
 </html>

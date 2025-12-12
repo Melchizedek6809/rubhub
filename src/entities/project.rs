@@ -135,3 +135,22 @@ impl Project {
         Ok((user, project))
     }
 }
+
+#[derive(Clone, Debug)]
+pub struct ProjectSummary<'a> {
+    pub name: &'a str,
+    pub slug: &'a str,
+    pub owner_slug: &'a str,
+    pub owner_name: &'a str,
+    pub description: &'a str,
+}
+
+impl<'a> ProjectSummary<'a> {
+    pub fn uri(&self) -> String {
+        format!("/~{}/{}", self.owner_slug, self.slug)
+    }
+
+    pub fn owner_uri(&self) -> String {
+        format!("/~{}", self.owner_slug)
+    }
+}
