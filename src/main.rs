@@ -1,9 +1,9 @@
 use tokio::runtime::Builder;
 
+mod controllers;
 mod extractors;
 mod http;
 mod models;
-mod pages;
 mod services;
 mod ssh;
 mod state;

@@ -8,7 +8,7 @@ use axum::{
 use rust_embed::Embed;
 use tower_cookies::CookieManagerLayer;
 
-use crate::{GlobalState, pages, views};
+use crate::{GlobalState, controllers, views};
 
 #[derive(Embed)]
 #[folder = "dist/"]
@@ -20,46 +20,46 @@ pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
 
     // build our application with a single route
     let app = Router::new()
-        .route("/", get(pages::landing::index))
+        .route("/", get(controllers::landing::index))
         .route(
             "/contact",
             get(|| async { Html(views::contact::contact().await) }),
         )
         .route(
             "/login",
-            get(pages::auth::login_page).post(pages::auth::handle_login),
+            get(controllers::auth::login_page).post(controllers::auth::handle_login),
         )
-        .route("/logout", get(pages::auth::logout))
+        .route("/logout", get(controllers::auth::logout))
         .route(
             "/settings",
-            get(pages::user::settings_page).post(pages::user::handle_settings),
+            get(controllers::user::settings_page).post(controllers::user::handle_settings),
         )
         .route(
             "/projects/new",
-            get(pages::project::new_project_page).post(pages::project::handle_new_project),
+            get(controllers::project::new_project_page).post(controllers::project::handle_new_project),
         )
-        .route("/{username}", get(pages::project::project_list_page))
-        .route("/{username}/{slug}", get(pages::project::project_page))
+        .route("/{username}", get(controllers::project::project_list_page))
+        .route("/{username}/{slug}", get(controllers::project::project_page))
         .route(
             "/{username}/{slug}/branches",
-            get(pages::project::project_page_branches),
+            get(controllers::project::project_page_branches),
         )
         .route(
             "/{username}/{slug}/tags",
-            get(pages::project::project_page_tags),
+            get(controllers::project::project_page_tags),
         )
         .route(
             "/{username}/{slug}/tree/{branch}",
-            get(pages::project::project_page_tree),
+            get(controllers::project::project_page_tree),
         )
         .route(
             "/{username}/{slug}/log/{branch}",
-            get(pages::project::project_page_commits),
+            get(controllers::project::project_page_commits),
         )
         .route(
             "/{username}/{slug}/settings",
-            get(pages::project::project_settings_page)
-                .post(pages::project::handle_project_settings),
+            get(controllers::project::project_settings_page)
+                .post(controllers::project::handle_project_settings),
         )
         .route(
             "/dist/{*path}",
