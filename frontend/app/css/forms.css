@@ -1,5 +1,8 @@
 .btn,
 button {
+	display: inline-flex;
+	align-content: center;
+	justify-content: center;
 	padding: var(--space-s) var(--space-m);
 	background: var(--primary-color);
 	color: var(--white);

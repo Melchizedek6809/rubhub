@@ -36,10 +36,14 @@ pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
         )
         .route(
             "/projects/new",
-            get(controllers::project::new_project_page).post(controllers::project::handle_new_project),
+            get(controllers::project::new_project_page)
+                .post(controllers::project::handle_new_project),
         )
         .route("/{username}", get(controllers::project::project_list_page))
-        .route("/{username}/{slug}", get(controllers::project::project_page))
+        .route(
+            "/{username}/{slug}",
+            get(controllers::project::project_page),
+        )
         .route(
             "/{username}/{slug}/branches",
             get(controllers::project::project_page_branches),

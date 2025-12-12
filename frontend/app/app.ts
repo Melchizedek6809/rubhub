@@ -55,3 +55,40 @@ const initBranchSwitcher = () => {
 	}
 };
 setTimeout(initBranchSwitcher, 0);
+
+const initSidebar = () => {
+	const sidebar = document.querySelector("#sidebar");
+	if (!sidebar) {
+		return;
+	}
+
+	const main = document.querySelector("main");
+	if (!main) {
+		return;
+	}
+
+	const buttons = document.querySelectorAll("header .show-navigation");
+
+	const toggleSidebar = () => {
+		sidebar.classList.toggle("visible");
+		for (const b of buttons) {
+			if (sidebar.classList.contains("visible")) {
+				b.classList.add("active");
+			} else {
+				b.classList.remove("active");
+			}
+		}
+	};
+	main.onclick = () => {
+		if (sidebar.classList.contains("visible")) {
+			toggleSidebar();
+		}
+	};
+
+	for (const button of buttons) {
+		button.onclick = () => {
+			toggleSidebar();
+		};
+	}
+};
+setTimeout(initSidebar, 0);

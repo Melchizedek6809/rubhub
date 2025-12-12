@@ -1,0 +1,109 @@
+/* Header sticks to the top naturally */
+#mobile-header {
+	display: none;
+}
+
+#sidebar {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	max-width: var(--sidebar-width);
+	height: 100%;
+	display: flex;
+	/* left on one side, right on the other */
+	align-items: start;
+	flex-direction: column;
+	gap: var(--space-m);
+	justify-content: start;
+	padding: var(--space-m);
+	background: var(--background-color-bright);
+	transition: max-width 300ms ease-in-out;
+}
+
+.logo {
+	font-size: 1.5rem;
+	text-decoration: none;
+	line-height: 1em;
+	color: var(--secondary-color);
+}
+
+#sidebar a {
+	text-decoration: none;
+	color: var(--text-color);
+	display: block;
+	width: 100%;
+	padding: var(--space-s) var(--space-m);
+	border-radius: var(--space-s);
+	background: var(--background-color-bright);
+	transition: background-color 300ms ease-in-out;
+}
+
+#sidebar a:focus,
+#sidebar a:hover,
+#sidebar a:active {
+	background: var(--background-color);
+}
+
+#sidebar a.logo {
+	background: var(--background-color-bright);
+	color: var(--secondary-color);
+}
+
+#sidebar user-badge {
+	padding: var(--space-s) var(--space-m);
+}
+
+#sidebar-top {
+	display: flex;
+	align-content: start;
+	justify-content: center;
+	width: 100%;
+}
+
+@media screen and (min-width: 1000px) and (max-width: 1750px) {
+	main > section {
+		max-width: calc(var(--max-content-width) + var(--sidebar-width));
+		padding: 0 var(--space-l) 0 calc(var(--space-l) + var(--sidebar-width));
+	}
+}
+
+@media screen and (max-width: 1000px) {
+	#mobile-header {
+		display: flex;
+		align-items: center;
+		flex-direction: row;
+		gap: var(--space-m);
+		justify-content: center;
+		padding: var(--space-m) var(--space-l);
+		background: var(--background-color-bright);
+		z-index: 10;
+	}
+
+	#mobile-header .show-navigation {
+		background: var(--background-color-bright);
+	}
+
+	#mobile-header .show-navigation.active {
+		background: var(--primary-color-dark);
+	}
+
+	#sidebar-top,
+	#sidebar user-badge {
+		display: none;
+	}
+
+	#sidebar {
+		transform: translateX(-100%);
+		padding-top: 3rem;
+		transition: transform 300ms ease-in-out;
+	}
+
+	#sidebar.visible {
+		transform: translateX(0);
+	}
+
+	#mobile-header .show-navigation {
+		margin-left: calc(var(--space-m) * -1);
+	}
+}

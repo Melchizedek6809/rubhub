@@ -1,10 +1,29 @@
-<header>
-  <div class="header-left">
-    <a href="/" class="logo">RubHub</a>
-    <a href="/" id="browse-link">Browse</a>
-  </div>
-  <div class="header-center"></div>
-  <div class="header-right">
-    <user-badge></user-badge>
-  </div>
+<header id="mobile-header">
+  <button class="show-navigation">
+    <div class="icon hamburger">
+      <div class="hamburger-top"></div>
+      <div class="hamburger-mid"></div>
+      <div class="hamburger-bot"></div>
+    </div>
+  </button>
+  <a href="/" class="logo">RubHub</a>
+
+  <div class="flex-gap"> </div>
+
+  <user-badge></user-badge>
 </header>
+
+<aside id="sidebar">
+  <div id="sidebar-top">
+    <a href="/" class="logo">RubHub</a>
+    <div class="flex-gap"></div>
+  </div>
+  
+  
+  <a href="/" id="browse-link">Browse</a>
+
+  <div class="flex-gap"></div>
+
+  <a href="/contact">Contact</a>
+  <user-badge></user-badge>
+</aside>
