@@ -57,9 +57,9 @@ input[readonly] {
 }
 
 .auth-card {
-	border: 1px solid var(--primary-color);
 	padding: 16px;
 	border-radius: 8px;
+	background: var(--background-color-bright);
 }
 
 .auth-card form {

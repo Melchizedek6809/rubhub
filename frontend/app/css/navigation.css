@@ -62,10 +62,10 @@
 	width: 100%;
 }
 
-@media screen and (min-width: 1000px) and (max-width: 1750px) {
+@media screen and (min-width: 1000px) {
 	main > section {
 		max-width: calc(var(--max-content-width) + var(--sidebar-width));
-		padding: 0 var(--space-l) 0 calc(var(--space-l) + var(--sidebar-width));
+		padding: 0 0 0 var(--sidebar-width);
 	}
 }
 
