@@ -34,11 +34,18 @@
             </select>
             {% endif %}
 
-            <span class="repo-branches"><a href="{{ project.uri_branches() }}">{{ summary.branches.len() }} Branch{% if summary.branches.len() != 1
-                %}es{% endif %}</a></span>
+            <span class="repo-branches">
+              <a href="{{ project.uri_branches() }}">
+                ⎇ {{ summary.branches.len() }} branch{% if summary.branches.len() != 1
+                %}es{% endif %}
+              </a>
+            </span>
 
-            <span class="repo-tags"><a href="{{ project.uri_tags() }}">{{ summary.tags.len() }} Tag{% if summary.tags.len() != 1
-                %}s{% endif %}</a></span>
+            <span class="repo-tags">
+              <a href="{{ project.uri_tags() }}">
+                🏷 {{ summary.tags.len() }} tag{% if summary.tags.len() != 1 %}s{% endif %}
+              </a>
+            </span>
 
             <div class="flex-gap"> </div>
 
@@ -53,7 +60,7 @@
               <span class="commit-message" title="{{ commit.message }}">{{ commit.message }}</span>
               <span class="commit-id">{{ commit.id }}</span>
               <span class="commit-time">{{ commit.relative_time() }}</span>
-              <a href="{{ project.uri_log(selected_branch, 0) }}" class="commit-count">{{ info.commit_count }} Commit{% if info.commit_count != 1 %}s{% endif %}</a>
+              <a href="{{ project.uri_log(selected_branch, 0) }}" class="commit-count">⟲ {{ info.commit_count }} Commit{% if info.commit_count != 1 %}s{% endif %}</a>
             </div>
             {% endif %}
           </div>

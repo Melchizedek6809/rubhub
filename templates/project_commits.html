@@ -35,11 +35,17 @@
             </select>
             {% endif %}
 
-            <span class="repo-branches"><a href="{{ project.uri_branches() }}">{{ summary.branches.len() }} Branch{% if summary.branches.len() != 1
-                %}es{% endif %}</a></span>
+            <span class="repo-branches">
+              <a href="{{ project.uri_branches() }}">
+                ⎇ {{ summary.branches.len() }} branch{% if summary.branches.len() != 1 %}es{% endif %}
+              </a>
+            </span>
 
-            <span class="repo-tags"><a href="{{ project.uri_tags() }}">{{ summary.tags.len() }} Tag{% if summary.tags.len() != 1
-                %}s{% endif %}</a></span>
+            <span class="repo-tags">
+              <a href="{{ project.uri_tags() }}">
+                🏷 {{ summary.tags.len() }} Tag{% if summary.tags.len() != 1 %}s{% endif %}
+              </a>
+            </span>
 
             <div class="flex-gap"> </div>
 
