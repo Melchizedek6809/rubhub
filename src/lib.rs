@@ -1,4 +1,8 @@
+use std::time::Duration;
+
 use tokio::runtime::Builder;
+use sd_notify::notify;
+use sd_notify::NotifyState;
 
 mod controllers;
 mod extractors;
@@ -11,6 +15,38 @@ mod views;
 
 pub use models::{AccessType, Project, ProjectSummary, User};
 pub use state::{AppConfig, GlobalState};
+use tokio::time::interval;
+
+
+fn systemd_integration() {
+    // Tell systemd we are ready (no-op if not under systemd)
+    let _ = notify(false, &[NotifyState::Ready]);
+
+    // WATCHDOG_USEC is only set if watchdog is enabled *and* systemd manages us
+    let watchdog_usec = match std::env::var("WATCHDOG_USEC") {
+        Ok(v) => v.parse::<u64>().ok(),
+        Err(_) => None,
+    };
+
+    let watchdog_usec = match watchdog_usec {
+        Some(v) if v > 0 => v,
+        _ => return, // no watchdog → nothing to do
+    };
+
+    // systemd recommends pinging at least every WatchdogSec / 2
+    // we use /3 for extra margin
+    let interval_duration =
+        Duration::from_micros(watchdog_usec / 3);
+
+    tokio::spawn(async move {
+        let mut ticker = interval(interval_duration);
+
+        loop {
+            ticker.tick().await;
+            let _ = notify(false, &[NotifyState::Watchdog]);
+        }
+    });
+}
 
 pub async fn run<T: Future>(state: GlobalState, kill: T) {
     println!("[{:?}] - RubHub started", state.process_start.elapsed());
@@ -34,6 +70,8 @@ pub async fn run<T: Future>(state: GlobalState, kill: T) {
         .expect("Couldn't start ssh_server");
 
     println!("[{:?}] - RubHub ready", state.process_start.elapsed());
+
+    systemd_integration();
 
     tokio::select! {
         http_res = http_server => {

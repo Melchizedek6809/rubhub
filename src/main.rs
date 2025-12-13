@@ -8,6 +8,7 @@ fn main() {
 
     // We do this two-step approach to make it easier to do integration tests.
     let config = rubhub::AppConfig::new().expect("Error creating AppConfig");
+    eprintln!("{:?}", config);
     let state = config
         .build(start)
         .expect("Error creating GlobalState from AppConfig");

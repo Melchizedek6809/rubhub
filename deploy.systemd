@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+
+cargo build --release
+install -Dm0755 target/release/rubhub /usr/local/bin/rubhub
+
+install -Dm0644 rubhub@.service /etc/systemd/system/rubhub@.service
+systemctl daemon-reload
+
+for i in 1 2 3; do
+    echo "Restarting replica #$i"
+    systemctl restart rubhub@$i
+    sleep 0.05
+done
