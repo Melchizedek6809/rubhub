@@ -4,8 +4,13 @@ use argon2::{
 };
 
 fn desired_params() -> Params {
-    // 64 MiB memory, 4 iterations, 1 lane keeps CPU modest while resisting GPU attacks.
-    Params::new(64 * 1024, 4, 1, None).expect("argon2 params are valid")
+    if cfg!(debug_assertions) {
+        // Much less secure params when running a debug binary, mainly because testing is super slow otherwise
+        Params::new(4 * 1024, 1, 1, None).expect("argon2 params are valid")
+    } else {
+        // 64 MiB memory, 4 iterations, 1 lane keeps CPU modest while resisting GPU attacks.
+        Params::new(64 * 1024, 4, 1, None).expect("argon2 params are valid")
+    }
 }
 
 fn password_hasher() -> Argon2<'static> {
