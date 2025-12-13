@@ -21,44 +21,16 @@
         </div>
 
         <div class="card">
-          <div class="repo-bar">
-            {% if summary.branches.len() > 0 %}
-            <select name="branch-name" class="branch-switcher" data-base-suffix="log" data-base-href="{{ project.uri() }}">
-              {% for branch in summary.branches %}
-              <option value="{{ branch }}" {% if branch==selected_branch.as_str() %}selected{% endif %}>{{ branch
-                }}</option>
-              {% endfor %}
-            </select>
-            {% else %}
-            <select name="branch-name" disabled>
-              <option selected>Empty Repo</option>
-            </select>
-            {% endif %}
-
-            <span class="repo-branches"><a href="{{ project.uri_branches() }}">{{ summary.branches.len() }} Branch{% if summary.branches.len() != 1
-                %}es{% endif %}</a></span>
-
-            <span class="repo-tags"><a href="{{ project.uri_tags() }}">{{ summary.tags.len() }} Tag{% if summary.tags.len() != 1
-                %}s{% endif %}</a></span>
-
-            <div class="flex-gap"> </div>
-
-            <rubhub-clone-url value="{{ ssh_clone_url }}"></rubhub-clone-url>
-          </div>
+          {% include "repo_bar.html" %}
 
           {% if let Some(info) = info %}
           <div class="commit-bar">
             {% if info.commits.is_empty() %}
-            <p>No commits available</p>
+              <p>No commits available</p>
             {% else %}
-            {% for commit in info.commits %}
-            <div class="commit">
-              <span class="commit-author" title="{{ commit.author }}">{{ commit.author }}</span>
-              <span class="commit-message" title="{{ commit.message }}">{{ commit.message }}</span>
-              <span class="commit-id">{{ commit.id }}</span>
-              <span class="commit-time">{{ commit.relative_time() }}</span>
-            </div>
-            {% endfor %}
+              {% for commit in info.commits %}
+                {% include "commit.html" %}
+              {% endfor %}
             {% endif %}
 
             <nav class="pagination">

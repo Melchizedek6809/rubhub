@@ -67,7 +67,9 @@ const initSidebar = () => {
 		return;
 	}
 
-	const buttons = document.querySelectorAll<HTMLElement>("header .show-navigation");
+	const buttons = document.querySelectorAll<HTMLElement>(
+		"header .show-navigation",
+	);
 
 	const toggleSidebar = () => {
 		sidebar.classList.toggle("visible");

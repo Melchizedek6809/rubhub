@@ -33,6 +33,40 @@
 	align-content: center;
 }
 
+a.commit-count,
+.repo-branches a,
+.repo-tags a {
+	text-decoration: none;
+	color: var(--text-color);
+	width: 100%;
+	height: 100%;
+	display: flex;
+	font-variant-emoji: text;
+
+	align-content: center;
+	justify-content: center;
+	text-align: center;
+	transition: color 200ms ease-in-out;
+}
+
+a.commit-count:hover,
+a.commit-count:focus,
+.repo-branches a:hover,
+.repo-branches a:focus,
+.repo-tags a:hover,
+.repo-tags a:focus {
+	color: var(--primary-color);
+}
+
+.repo-stats {
+	display: flex;
+	padding: var(--space-s) 0;
+}
+
+.repo-stats > * {
+	flex: 1;
+}
+
 @media screen and (max-width: 700px) {
 	.repo-bar {
 		display: grid;
@@ -44,7 +78,7 @@
 	}
 
 	.repo-bar .branch-switcher {
-		grid-column: 1;
+		grid-column: 1 / -1;
 		grid-row: 1;
 	}
 
