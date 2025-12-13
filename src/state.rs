@@ -1,5 +1,6 @@
-use std::{env, net::SocketAddr, path::PathBuf, sync::Arc, time::Instant};
-use tokio::fs;
+use std::{env, fs, net::SocketAddr, path::PathBuf, sync::Arc, time::Instant};
+
+use anyhow::Result;
 
 #[derive(Debug, Clone)]
 pub struct AppConfig {
@@ -11,18 +12,20 @@ pub struct AppConfig {
     pub base_url: String,
 }
 
-#[derive(Debug, Clone)]
-pub struct GlobalState {
-    pub config: Arc<AppConfig>,
-    pub process_start: Instant,
-}
+impl AppConfig {
+    pub fn set_dir_root(mut self, dir_root: &str) -> Self {
+        let dir_root = PathBuf::from(dir_root);
 
-impl GlobalState {
-    pub fn uri(&self, path: &str) -> String {
-        format!("{}{}", self.config.base_url, path)
+        let git_root = dir_root.join("git");
+        let session_root = dir_root.join("sessions");
+
+        self.git_root = git_root;
+        self.session_root = session_root;
+
+        self
     }
 
-    pub async fn new(process_start: Instant) -> anyhow::Result<Self> {
+    pub fn new() -> Result<Self> {
         let dir_root = env::var("DIR_ROOT").unwrap_or_else(|_| "./data/".to_owned());
         let dir_root = PathBuf::from(dir_root);
 
@@ -60,23 +63,41 @@ impl GlobalState {
                 }
             });
 
-        let (fsa, fsb) = tokio::join!(
-            fs::create_dir_all(&git_root),
-            fs::create_dir_all(&session_root),
-        );
-        fsa?;
-        fsb?;
+        let state = Self {
+            base_url,
+            git_root,
+            session_root,
+            http_bind_addr,
+            ssh_bind_addr,
+            ssh_public_host,
+        };
+
+        Ok(state)
+    }
+
+    pub fn build(self, process_start: Instant) -> Result<GlobalState> {
+        GlobalState::new(self, process_start)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct GlobalState {
+    pub config: Arc<AppConfig>,
+    pub process_start: Instant,
+}
+
+impl GlobalState {
+    pub fn uri(&self, path: &str) -> String {
+        format!("{}{}", self.config.base_url, path)
+    }
+
+    pub fn new(config: AppConfig, process_start: Instant) -> Result<Self> {
+        fs::create_dir_all(&config.git_root)?;
+        fs::create_dir_all(&config.session_root)?;
 
         let state = Self {
             process_start,
-            config: Arc::new(AppConfig {
-                base_url,
-                git_root,
-                session_root,
-                http_bind_addr,
-                ssh_bind_addr,
-                ssh_public_host,
-            }),
+            config: Arc::new(config),
         };
 
         Ok(state)
