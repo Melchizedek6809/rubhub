@@ -26,11 +26,20 @@ pub async fn run<T: Future>(state: GlobalState, kill: T) {
     #[cfg(not(unix))]
     let terminate = std::future::pending::<()>();
 
+    let http_server = http::http_server(state.clone())
+        .await
+        .expect("Couldn't start http_server");
+    let ssh_server = ssh::ssh_server(state.clone())
+        .await
+        .expect("Couldn't start ssh_server");
+
+    println!("[{:?}] - RubHub ready", state.process_start.elapsed());
+
     tokio::select! {
-        http_res = http::start_http_server(state.clone()) => {
+        http_res = http_server => {
             eprintln!("HTTP server stopped: {:?}", http_res);
         }
-        ssh_res = ssh::start_ssh_server(state.clone()) => {
+        ssh_res = ssh_server => {
             eprintln!("SSH server stopped: {:?}", ssh_res);
         }
         signal_res = tokio::signal::ctrl_c() => {

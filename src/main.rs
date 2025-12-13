@@ -11,6 +11,6 @@ fn main() {
     let state = config
         .build(start)
         .expect("Error creating GlobalState from AppConfig");
-    
+
     rubhub::run_single_thread(state)
 }

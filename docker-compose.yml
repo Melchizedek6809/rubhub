@@ -4,11 +4,11 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      HTTP_BIND_ADDRESS: 127.0.0.1
-      HTTP_BIND_PORT: 3000
-      SSH_BIND_ADDRESS: 0.0.0.0
-      SSH_PORT: 22
+      HTTP_BIND_ADDRESS: 127.0.0.1:3000
+      SSH_BIND_ADDRESS: 0.0.0.0:22
+      BASE_URL: https://rubhub.net
       SSH_PUBLIC_HOST: rubhub.net
+      REUSE_PORT: TRUE
       DIR_ROOT: /app/data/
     volumes:
       - ./data:/app/data

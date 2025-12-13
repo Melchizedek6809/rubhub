@@ -7,6 +7,7 @@ use tokio::fs as tokio_fs;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpSocket;
 use tokio::process::Command;
+use tokio::task::JoinHandle;
 
 use crate::{AccessType, GlobalState, Project, User};
 
@@ -41,7 +42,9 @@ async fn ensure_host_keys() -> Result<(), io::Error> {
     Ok(())
 }
 
-pub async fn start_ssh_server(state: GlobalState) -> Result<(), std::io::Error> {
+pub async fn ssh_server(
+    state: GlobalState,
+) -> Result<JoinHandle<Result<(), std::io::Error>>, std::io::Error> {
     ensure_host_keys().await?;
 
     let ed_key = fs::read_to_string("./data/id_ed25519")?;
@@ -68,7 +71,9 @@ pub async fn start_ssh_server(state: GlobalState) -> Result<(), std::io::Error> 
     };
     let config = Arc::new(config);
     let process_start = state.process_start;
-    let mut sh = Server { state };
+    let mut sh = Server {
+        state: state.clone(),
+    };
 
     let bind_addr = sh.state.config.ssh_bind_addr;
     let socket = if bind_addr.is_ipv4() {
@@ -78,21 +83,21 @@ pub async fn start_ssh_server(state: GlobalState) -> Result<(), std::io::Error> 
     };
     socket.set_reuseaddr(true)?;
     #[cfg(target_os = "linux")]
-    {
-        socket.set_reuseport(true)?;
-    }
+    socket.set_reuseport(state.config.reuse_port)?;
     socket.bind(bind_addr)?;
     let socket = socket.listen(1024)?;
-
-    let server = sh.run_on_socket(config, &socket);
-    let _handle = server.handle();
 
     println!(
         "[{:?}] - Started rubhub SSH server on {bind_addr}",
         process_start.elapsed()
     );
 
-    server.await
+    Ok(tokio::task::spawn(async move {
+        let server = sh.run_on_socket(config, &socket);
+        let _handle = server.handle();
+
+        server.await
+    }))
 }
 
 #[derive(Clone)]

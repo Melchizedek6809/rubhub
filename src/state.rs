@@ -1,4 +1,10 @@
-use std::{env, fs, net::SocketAddr, path::PathBuf, sync::Arc, time::Instant};
+use std::{
+    env, fs,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::PathBuf,
+    sync::Arc,
+    time::Instant,
+};
 
 use anyhow::Result;
 
@@ -10,6 +16,41 @@ pub struct AppConfig {
     pub ssh_bind_addr: SocketAddr,
     pub ssh_public_host: String,
     pub base_url: String,
+    pub reuse_port: bool,
+}
+
+impl Default for AppConfig {
+    fn default() -> Self {
+        let dir_root = PathBuf::from("./data/");
+        let git_root = dir_root.join("git");
+        let session_root = dir_root.join("sessions");
+
+        let ip = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
+        let port = 3000;
+        let http_bind_addr = SocketAddr::new(ip, port);
+
+        let base_url = format!("http://{http_bind_addr}");
+
+        let ip = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
+        let port = 2222;
+        let ssh_bind_addr = SocketAddr::new(ip, port);
+
+        let ssh_public_host = if port == 22 {
+            format!("{ssh_bind_addr}")
+        } else {
+            format!("{ip}")
+        };
+
+        Self {
+            git_root,
+            session_root,
+            http_bind_addr,
+            ssh_bind_addr,
+            ssh_public_host,
+            base_url,
+            reuse_port: false,
+        }
+    }
 }
 
 impl AppConfig {
@@ -25,54 +66,81 @@ impl AppConfig {
         self
     }
 
-    pub fn new() -> Result<Self> {
-        let dir_root = env::var("DIR_ROOT").unwrap_or_else(|_| "./data/".to_owned());
-        let dir_root = PathBuf::from(dir_root);
+    pub fn set_http_bind_addr(mut self, bind_addr: &str) -> Result<Self> {
+        let addr = bind_addr.parse::<SocketAddr>()?;
 
-        let git_root = dir_root.join("git");
-        let session_root = dir_root.join("sessions");
+        self.http_bind_addr = addr;
+        self.base_url = format!("http://{addr}");
 
-        let bind_addr = env::var("BIND_ADDR").ok();
-        let http_bind_addr = if let Some(addr) = bind_addr {
-            addr.parse::<SocketAddr>()?
+        Ok(self)
+    }
+
+    pub fn set_ssh_bind_addr(mut self, bind_addr: &str) -> Result<Self> {
+        let addr = bind_addr.parse::<SocketAddr>()?;
+
+        self.ssh_bind_addr = addr;
+        self.ssh_public_host = if addr.port() == 22 {
+            format!("{addr}")
         } else {
-            let http_addr =
-                env::var("HTTP_BIND_ADDRESS").unwrap_or_else(|_| "127.0.0.1".to_owned());
-            let http_port: u16 = env::var("HTTP_BIND_PORT")
-                .ok()
-                .and_then(|val| val.parse().ok())
-                .unwrap_or(3000);
-            format!("{http_addr}:{http_port}").parse::<SocketAddr>()?
+            format!("{}", addr.ip())
         };
 
-        let base_url = env::var("BASE_URL").unwrap_or_else(|_| format!("http://{http_bind_addr}"));
+        Ok(self)
+    }
 
-        let ssh_port: u16 = env::var("SSH_PORT")
-            .ok()
-            .and_then(|val| val.parse().ok())
-            .unwrap_or(2222);
-        let ssh_addr = env::var("SSH_BIND_ADDRESS").unwrap_or_else(|_| "127.0.0.1".to_owned());
-        let ssh_bind_addr = format!("{ssh_addr}:{ssh_port}").parse::<SocketAddr>()?;
-        let ssh_public_host = env::var("SSH_PUBLIC_HOST")
-            .or_else(|_| env::var("SSH_URL"))
-            .unwrap_or_else(|_| {
-                if ssh_port == 22 {
-                    ssh_addr.clone()
-                } else {
-                    format!("{ssh_addr}:{ssh_port}")
-                }
-            });
+    pub fn set_base_url(mut self, base_url: &str) -> Self {
+        self.base_url = base_url.to_string();
+        self
+    }
 
-        let state = Self {
-            base_url,
-            git_root,
-            session_root,
-            http_bind_addr,
-            ssh_bind_addr,
-            ssh_public_host,
+    pub fn set_ssh_public_host(mut self, host: &str) -> Self {
+        self.ssh_public_host = host.to_string();
+        self
+    }
+
+    pub fn set_reuse_port(mut self, reuse_port: bool) -> Self {
+        self.reuse_port = reuse_port;
+        self
+    }
+
+    pub fn load_env(self) -> Result<Self> {
+        let config = self;
+
+        let config = match env::var("DIR_ROOT") {
+            Ok(dir_root) => config.set_dir_root(&dir_root),
+            _ => config,
+        };
+        let config = match env::var("HTTP_BIND_ADDRESS") {
+            Ok(addr) => config.set_http_bind_addr(&addr)?,
+            _ => config,
+        };
+        let config = match env::var("BASE_URL") {
+            Ok(uri) => config.set_base_url(&uri),
+            _ => config,
+        };
+        let config = match env::var("SSH_BIND_ADDRESS") {
+            Ok(addr) => config.set_ssh_bind_addr(&addr)?,
+            _ => config,
+        };
+        let config = match env::var("SSH_PUBLIC_HOST") {
+            Ok(uri) => config.set_ssh_public_host(&uri),
+            _ => config,
+        };
+        let config = match env::var("REUSE_PORT") {
+            Ok(b) => config.set_reuse_port(if b.to_lowercase() == "true" {
+                true
+            } else {
+                false
+            }),
+            _ => config,
         };
 
-        Ok(state)
+        Ok(config)
+    }
+
+    pub fn new() -> Result<Self> {
+        let config: Self = Self::default();
+        Ok(config.load_env()?)
     }
 
     pub fn build(self, process_start: Instant) -> Result<GlobalState> {

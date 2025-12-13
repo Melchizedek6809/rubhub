@@ -4,8 +4,10 @@ use axum::{
     http::{StatusCode, header},
     response::{Html, IntoResponse},
     routing::get,
+    serve::Serve,
 };
 use rust_embed::Embed;
+use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
 
 use crate::{GlobalState, controllers, views};
@@ -14,7 +16,9 @@ use crate::{GlobalState, controllers, views};
 #[folder = "dist/"]
 struct EmbeddedDist;
 
-pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
+pub async fn http_server(
+    state: GlobalState,
+) -> anyhow::Result<Serve<TcpListener, Router<()>, Router<()>>> {
     let bind_addr = state.config.http_bind_addr;
     let process_start = state.process_start;
 
@@ -99,7 +103,7 @@ pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
 
     // Enable reuseport on Linux, that way we can run multiple replicas
     #[cfg(target_os = "linux")]
-    socket.set_reuseport(true)?;
+    socket.set_reuseport(state.config.reuse_port)?;
 
     socket.bind(bind_addr)?;
 
@@ -109,7 +113,6 @@ pub async fn start_http_server(state: GlobalState) -> anyhow::Result<()> {
         "[{:?}] - RubHub HTTP ready on {bind_addr}",
         process_start.elapsed()
     );
-    axum::serve(listener, app).await?;
 
-    Ok(())
+    Ok(axum::serve(listener, app))
 }
