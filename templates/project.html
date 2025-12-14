@@ -49,7 +49,7 @@
 
             <div class="flex-gap"> </div>
 
-            <rubhub-clone-url value="{{ ssh_clone_url }}"></rubhub-clone-url>
+            {% include "project_clone_url.html" %}
           </div>
 
           {% if let Some(info) = info %}

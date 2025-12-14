@@ -32,8 +32,8 @@
 .repo-branches a,
 .repo-tags a,
 a.commit-count {
-    color: var(--text-color);
-    text-decoration: none;
+	color: var(--text-color);
+	text-decoration: none;
 }
 
 @media screen and (max-width: 700px) {

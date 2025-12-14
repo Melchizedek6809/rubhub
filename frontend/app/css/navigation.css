@@ -19,7 +19,7 @@
 	padding: var(--space-m);
 	background: var(--background-color-bright);
 	transition: max-width 300ms ease-in-out;
-	z-index:8;
+	z-index: 8;
 }
 
 .logo {
@@ -110,7 +110,7 @@
 }
 
 @media screen and (max-width: 500px) {
-    #sidebar {
-	max-width: none;;
-    }
+	#sidebar {
+		max-width: none;
+	}
 }

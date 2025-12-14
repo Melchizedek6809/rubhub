@@ -1,0 +1,17 @@
+.clone-url {
+	display: inline-flex;
+	position: relative;
+}
+
+.clone-url input {
+	flex: 1;
+	margin: 0;
+	border-radius: var(--space-s) 0 0 var(--space-s);
+	border-color: var(--primary-color);
+	border-right: none;
+	width: auto;
+}
+
+.clone-url button {
+	border-radius: 0 var(--space-s) var(--space-s) 0;
+}

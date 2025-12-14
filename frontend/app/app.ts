@@ -67,7 +67,9 @@ const initSidebar = () => {
 		return;
 	}
 
-	const buttons = document.querySelectorAll<HTMLElement>("header .show-navigation");
+	const buttons = document.querySelectorAll<HTMLElement>(
+		"header .show-navigation",
+	);
 
 	const toggleSidebar = () => {
 		sidebar.classList.toggle("visible");
@@ -92,3 +94,39 @@ const initSidebar = () => {
 	}
 };
 setTimeout(initSidebar, 0);
+
+const initCopyButtons = () => {
+	console.log("buttons");
+	for (const b of document.querySelectorAll<HTMLElement>(".copy-button")) {
+		console.log(b);
+		b.onclick = async () => {
+			const value = b.getAttribute("copy-value");
+			if (!value) {
+				return;
+			}
+			await navigator.clipboard.writeText(value);
+			const popup = document.createElement("DIV");
+			popup.classList.add("button-popup");
+			popup.innerText = "Copied";
+
+			b.append(popup);
+			popup.offsetTop;
+			popup.classList.add("visible");
+
+			const hide = (e: Event) => {
+				e?.preventDefault();
+				e?.stopPropagation();
+				if (popup.classList.contains("hide")) {
+					return;
+				}
+				popup.classList.add("hide");
+				setTimeout(() => {
+					popup.remove();
+				}, 300);
+			};
+			setTimeout(hide, 1000);
+			popup.onclick = hide;
+		};
+	}
+};
+setTimeout(initCopyButtons, 0);

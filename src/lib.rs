@@ -1,8 +1,8 @@
 use std::time::Duration;
 
-use tokio::runtime::Builder;
-use sd_notify::notify;
 use sd_notify::NotifyState;
+use sd_notify::notify;
+use tokio::runtime::Builder;
 
 mod controllers;
 mod extractors;
@@ -16,7 +16,6 @@ mod views;
 pub use models::{AccessType, Project, ProjectSummary, User};
 pub use state::{AppConfig, GlobalState};
 use tokio::time::interval;
-
 
 fn systemd_integration() {
     // Tell systemd we are ready (no-op if not under systemd)
@@ -35,8 +34,7 @@ fn systemd_integration() {
 
     // systemd recommends pinging at least every WatchdogSec / 2
     // we use /3 for extra margin
-    let interval_duration =
-        Duration::from_micros(watchdog_usec / 3);
+    let interval_duration = Duration::from_micros(watchdog_usec / 3);
 
     tokio::spawn(async move {
         let mut ticker = interval(interval_duration);
