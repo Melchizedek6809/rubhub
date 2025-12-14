@@ -30,6 +30,9 @@ KillSignal=SIGTERM
 TimeoutStartSec=5s
 TimeoutStopSec=5s
 
+MemoryHigh=512M
+MemoryMax=768M
+
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
