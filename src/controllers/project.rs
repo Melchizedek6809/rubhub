@@ -132,7 +132,10 @@ pub async fn handle_new_project(
 
     match Project::new(&current_user, name, selected_public_access) {
         Ok(project) => {
-            if let Ok(_) = Project::load(&state, &project.owner, &project.slug).await {
+            if Project::load(&state, &project.owner, &project.slug)
+                .await
+                .is_ok()
+            {
                 return Ok(render_new_project_page(
                     &cookies,
                     Some("Project already exists"),
@@ -180,20 +183,19 @@ pub async fn render_project_page(
     project: Project,
     branch: Option<String>,
 ) -> Result<Html<String>, (StatusCode, Html<String>)> {
-    let Some(summary) = get_git_summary(&state, &owner.slug, &project.slug).await else {
-        return Err(not_found().await);
-    };
-
-    let current = match branch {
-        Some(branch) => branch,
-        None => project.main_branch.clone(),
-    };
-    let info = get_git_info(&state, &owner.slug, &project.slug, &current, 1, 0).await;
-
-    let session_user = session::current_user(&state, &cookies).await.ok();
+    let session_user = session::current_user(state, &cookies).await.ok();
     let access_level = project
         .access_level(session_user.as_ref().map(|user| user.slug.clone()))
         .await;
+
+    if access_level == AccessType::None {
+        return Err(not_found().await);
+    }
+
+    let Some(summary) = get_git_summary(state, &owner.slug, &project.slug).await else {
+        return Err(not_found().await);
+    };
+
     let git_user = session_user.map(|u| u.slug).unwrap_or("anon".to_string());
 
     let ssh_clone_url = format!(
@@ -201,7 +203,13 @@ pub async fn render_project_page(
         git_user, state.config.ssh_public_host, owner.slug, project.slug
     );
 
-    let readme = get_git_file(&state, &owner.slug, &project.slug, &current, "README.md").await;
+    let current = match branch {
+        Some(branch) => branch,
+        None => project.main_branch.clone(),
+    };
+    let info = get_git_info(state, &owner.slug, &project.slug, &current, 1, 0).await;
+
+    let readme = get_git_file(state, &owner.slug, &project.slug, &current, "README.md").await;
     let readme = readme
         .map(|b| {
             let str = String::from_utf8_lossy(&b.data);
@@ -211,6 +219,9 @@ pub async fn render_project_page(
             ammonia::clean(&html)
         })
         .ok();
+
+    // let tree = get_git_tree(state, &owner.slug, &project.slug, &current, "").await;
+    // let tree = tree.unwrap_or_default();
 
     Ok(Html(
         views::project::project_with_access(

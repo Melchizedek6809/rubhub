@@ -1,9 +1,9 @@
-use std::{fs, io, path::Path, process::Stdio, sync::Arc};
+use std::path::PathBuf;
+use std::{fs, io, process::Stdio, sync::Arc};
 
 use russh::keys::*;
 use russh::server::{Msg, Server as _, Session};
 use russh::*;
-use tokio::fs as tokio_fs;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpSocket;
 use tokio::process::Command;
@@ -11,12 +11,12 @@ use tokio::task::JoinHandle;
 
 use crate::{AccessType, GlobalState, Project, User};
 
-async fn ensure_host_key(path: &str, key_type: &str) -> Result<(), io::Error> {
-    if Path::new(path).exists() {
+async fn ensure_host_key(path: &PathBuf, key_type: &str) -> Result<(), io::Error> {
+    if path.exists() {
         return Ok(());
     }
 
-    println!("Generating missing {key_type} host key at {path}");
+    println!("Generating missing {key_type} host key");
     let status = Command::new("ssh-keygen")
         .arg("-t")
         .arg(key_type)
@@ -31,28 +31,25 @@ async fn ensure_host_key(path: &str, key_type: &str) -> Result<(), io::Error> {
         eprintln!("No {key_type} SSH key found, generated one using ssh-keygen");
         Ok(())
     } else {
-        Err(io::Error::other(format!("ssh-keygen failed for {path}")))
+        Err(io::Error::other(format!(
+            "ssh-keygen failed for {key_type}"
+        )))
     }
 }
 
-async fn ensure_host_keys() -> Result<(), io::Error> {
-    tokio_fs::create_dir_all("./data").await?;
-    ensure_host_key("./data/id_ed25519", "ed25519").await?;
-    ensure_host_key("./data/id_rsa", "rsa").await?;
-    Ok(())
+async fn load_or_create_key(state: &GlobalState, key_type: &str) -> Result<PrivateKey, io::Error> {
+    let filename = format!("id_{key_type}");
+    let path = state.config.dir_root.join(filename);
+    ensure_host_key(&path, key_type).await?;
+    let ed_key = fs::read_to_string(path)?;
+    russh::keys::PrivateKey::from_openssh(ed_key).map_err(io::Error::other)
 }
 
 pub async fn ssh_server(
     state: GlobalState,
 ) -> Result<JoinHandle<Result<(), std::io::Error>>, std::io::Error> {
-    ensure_host_keys().await?;
-
-    let ed_key = fs::read_to_string("./data/id_ed25519")?;
-    let ed_key = russh::keys::PrivateKey::from_openssh(ed_key).map_err(io::Error::other)?;
-
-    let rsa_key = fs::read_to_string("./data/id_rsa")?;
-    let rsa_key = russh::keys::PrivateKey::from_openssh(rsa_key).map_err(io::Error::other)?;
-    let keys: Vec<PrivateKey> = vec![ed_key, rsa_key];
+    let ed_key = load_or_create_key(&state, "ed25519").await?;
+    let rsa_key = load_or_create_key(&state, "rsa").await?;
 
     let mut methods = MethodSet::empty();
     methods.push(MethodKind::PublicKey);
@@ -61,7 +58,7 @@ pub async fn ssh_server(
         inactivity_timeout: Some(std::time::Duration::from_secs(10)),
         auth_rejection_time: std::time::Duration::from_secs(3),
         auth_rejection_time_initial: Some(std::time::Duration::from_secs(0)),
-        keys,
+        keys: vec![ed_key, rsa_key],
         methods,
         preferred: Preferred {
             // kex: std::borrow::Cow::Owned(vec![russh::kex::DH_GEX_SHA256]),

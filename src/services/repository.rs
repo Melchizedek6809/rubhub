@@ -1,5 +1,5 @@
 use anyhow::{Result, anyhow};
-use gix::{Commit, ObjectDetached, Repository, date::Time};
+use gix::{Commit, ObjectDetached, Repository, date::Time, objs::tree::EntryKind};
 use std::{
     io,
     time::{SystemTime, UNIX_EPOCH},
@@ -201,11 +201,83 @@ pub async fn get_git_file(
     res
 }
 
+pub async fn get_git_tree(
+    state: &GlobalState,
+    user_name: &str,
+    project_slug: &str,
+    branch: &str,
+    path: &str,
+) -> Result<Vec<GitTreeEntry>> {
+    let state = state.clone();
+    let user_name = user_name.to_string();
+    let project_slug = project_slug.to_string();
+    let branch = branch.to_string();
+    let path = path.to_string();
+
+    let Ok(res) = tokio::task::spawn_blocking(move || {
+        let repo = get_git_repo(&state, &user_name, &project_slug)
+            .ok_or(anyhow!("Couldn't get Repository"))?;
+        let mut reference = repo.find_reference(&branch)?;
+
+        let commit = reference.peel_to_commit()?;
+
+        let tree = if path.is_empty() {
+            commit.tree()?
+        } else {
+            let entry = commit
+                .tree()?
+                .peel_to_entry_by_path(path)?
+                .ok_or(anyhow!("Can't lookup entry"))?;
+
+            entry.object()?.into_tree()
+        };
+
+        let mut tree = tree
+            .iter()
+            .flatten()
+            .map(|entry| {
+                let filename = entry.filename().to_string();
+                let kind = entry.kind();
+
+                GitTreeEntry { filename, kind }
+            })
+            .collect::<Vec<GitTreeEntry>>();
+        tree.sort();
+
+        Ok(tree)
+    })
+    .await
+    else {
+        return Err(anyhow!("Error when getting git file"));
+    };
+    res
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct GitTreeEntry {
+    pub filename: String,
+    pub kind: EntryKind,
+}
+
+impl Ord for GitTreeEntry {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.filename.cmp(&other.filename)
+    }
+}
+
+impl PartialOrd for GitTreeEntry {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct GitSummary {
     pub branches: Vec<String>,
     pub tags: Vec<String>,
 }
 
+#[derive(Debug, Clone)]
 pub struct GitCommitInfo {
     pub id: String,
     pub author: String,
@@ -213,6 +285,7 @@ pub struct GitCommitInfo {
     pub time: Time,
 }
 
+#[derive(Debug, Clone)]
 pub struct GitRefInfo {
     pub branch_name: String,
     pub commit_count: usize,

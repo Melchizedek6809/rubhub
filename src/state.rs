@@ -10,6 +10,7 @@ use anyhow::Result;
 
 #[derive(Debug, Clone)]
 pub struct AppConfig {
+    pub dir_root: PathBuf,
     pub git_root: PathBuf,
     pub session_root: PathBuf,
     pub http_bind_addr: SocketAddr,
@@ -42,6 +43,7 @@ impl Default for AppConfig {
         };
 
         Self {
+            dir_root,
             git_root,
             session_root,
             http_bind_addr,
@@ -127,11 +129,7 @@ impl AppConfig {
             _ => config,
         };
         let config = match env::var("REUSE_PORT") {
-            Ok(b) => config.set_reuse_port(if b.to_lowercase() == "true" {
-                true
-            } else {
-                false
-            }),
+            Ok(b) => config.set_reuse_port(b.to_lowercase() == "true"),
             _ => config,
         };
 
@@ -140,7 +138,7 @@ impl AppConfig {
 
     pub fn new() -> Result<Self> {
         let config: Self = Self::default();
-        Ok(config.load_env()?)
+        config.load_env()
     }
 
     pub fn build(self, process_start: Instant) -> Result<GlobalState> {
