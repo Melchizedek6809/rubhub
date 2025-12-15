@@ -3,7 +3,7 @@ use askama::Template;
 use crate::{
     AccessType, Project, User,
     services::repository::{GitRefInfo, GitSummary},
-    views::{extract_html_parts, theme_render},
+    views::ThemedRender,
 };
 
 #[derive(Template)]
@@ -33,7 +33,7 @@ pub async fn project_with_access(
         .map(|i| i.branch_name.to_string())
         .unwrap_or_default();
 
-    let contents = ProjectTemplate {
+    ProjectTemplate {
         owner: &owner,
         project: &project,
         access_level,
@@ -43,10 +43,5 @@ pub async fn project_with_access(
         selected_branch,
         readme_html,
     }
-    .render()
-    .unwrap();
-
-    let parts = extract_html_parts(&contents);
-
-    theme_render(parts.0, parts.1).await
+    .render_with_theme()
 }

@@ -1,5 +1,4 @@
-#[cfg(debug_assertions)]
-use tokio::fs;
+use askama::Template;
 
 #[cfg(not(debug_assertions))]
 const APP_THEME: &str = include_str!("../../dist/app.html");
@@ -26,14 +25,23 @@ pub fn extract_html_parts(html: &str) -> (&str, &str) {
     (head, body)
 }
 
-pub async fn theme_render(head: &str, body: &str) -> String {
-    #[cfg(not(debug_assertions))]
-    let contents = APP_THEME;
-    #[cfg(debug_assertions)]
-    let contents = fs::read_to_string("dist/app.html").await.unwrap();
+pub trait ThemedRender {
+    fn render_with_theme(&self) -> String;
+}
 
-    let contents = contents.replace("<!--HEAD-->", head);
-    contents.replace("<!--BODY-->", body)
+impl<T: Template> ThemedRender for T {
+    fn render_with_theme(&self) -> String {
+        #[cfg(not(debug_assertions))]
+        let theme = APP_THEME;
+        #[cfg(debug_assertions)]
+        let theme = std::fs::read_to_string("dist/app.html").expect("Couldn't read dist/app.html");
+
+        let contents = self.render().expect("Couldn't render template");
+        let (head, body) = extract_html_parts(&contents);
+
+        let theme = theme.replace("<!--HEAD-->", head);
+        theme.replace("<!--BODY-->", body)
+    }
 }
 
 #[cfg(test)]

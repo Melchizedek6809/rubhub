@@ -1,10 +1,6 @@
 use askama::Template;
 
-use crate::{
-    AccessType, Project, User,
-    services::repository::GitRefInfo,
-    views::{extract_html_parts, theme_render},
-};
+use crate::{AccessType, Project, User, services::repository::GitRefInfo, views::ThemedRender};
 
 #[derive(Template)]
 #[template(path = "project_branches.html")]
@@ -21,16 +17,11 @@ pub async fn project_branches(
     access_level: AccessType,
     branches: Vec<GitRefInfo>,
 ) -> String {
-    let contents = ProjectBranchesTemplate {
+    ProjectBranchesTemplate {
         owner: &owner,
         project: &project,
         access_level,
         branches,
     }
-    .render()
-    .unwrap();
-
-    let parts = extract_html_parts(&contents);
-
-    theme_render(parts.0, parts.1).await
+    .render_with_theme()
 }

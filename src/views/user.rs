@@ -1,9 +1,6 @@
 use askama::Template;
 
-use crate::{
-    ProjectSummary, User,
-    views::{extract_html_parts, theme_render},
-};
+use crate::{ProjectSummary, User, views::ThemedRender};
 
 #[derive(Template)]
 #[template(path = "user.html")]
@@ -14,15 +11,10 @@ struct UserTemplate<'a> {
 }
 
 pub async fn profile(user: &User, projects: &[ProjectSummary<'_>], is_owner: bool) -> String {
-    let contents = UserTemplate {
+    UserTemplate {
         user,
         projects,
         is_owner,
     }
-    .render()
-    .unwrap();
-
-    let parts = extract_html_parts(&contents);
-
-    theme_render(parts.0, parts.1).await
+    .render_with_theme()
 }

@@ -1,9 +1,6 @@
 use askama::Template;
 
-use crate::{
-    AccessType,
-    views::{extract_html_parts, theme_render},
-};
+use crate::{AccessType, views::ThemedRender};
 
 #[derive(Template)]
 #[template(path = "project_new.html")]
@@ -13,14 +10,9 @@ struct NewProjectTemplate<'a> {
 }
 
 pub async fn new_project(message: Option<&str>, public_access: AccessType) -> String {
-    let contents = NewProjectTemplate {
+    NewProjectTemplate {
         message,
         public_access: public_access.as_str(),
     }
-    .render()
-    .unwrap();
-
-    let parts = extract_html_parts(&contents);
-
-    theme_render(parts.0, parts.1).await
+    .render_with_theme()
 }

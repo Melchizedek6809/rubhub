@@ -3,7 +3,7 @@ use askama::Template;
 use crate::{
     AccessType, Project, User,
     services::repository::{GitRefInfo, GitSummary},
-    views::{extract_html_parts, theme_render},
+    views::ThemedRender,
 };
 
 #[derive(Template)]
@@ -39,7 +39,8 @@ pub async fn project_commits(
 
     let page_min = (current_page - 5).max(0);
     let page_max = (current_page + 5).min(page_count);
-    let contents = ProjectCommitsTemplate {
+
+    ProjectCommitsTemplate {
         owner: &owner,
         project: &project,
         access_level,
@@ -52,10 +53,5 @@ pub async fn project_commits(
         page_min,
         page_max,
     }
-    .render()
-    .unwrap();
-
-    let parts = extract_html_parts(&contents);
-
-    theme_render(parts.0, parts.1).await
+    .render_with_theme()
 }

@@ -12,4 +12,4 @@ pub mod theme;
 pub mod user;
 pub mod user_settings;
 
-pub use theme::{extract_html_parts, theme_render};
+pub use theme::ThemedRender;

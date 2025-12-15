@@ -1,9 +1,6 @@
 use askama::Template;
 
-use crate::{
-    User,
-    views::{extract_html_parts, theme_render},
-};
+use crate::{User, views::ThemedRender};
 
 #[derive(Template)]
 #[template(path = "user_settings.html")]
@@ -14,15 +11,10 @@ struct UserSettingsTemplate<'a> {
 }
 
 pub async fn settings(user: User, ssh_keys: &[String], message: Option<&str>) -> String {
-    let contents = UserSettingsTemplate {
+    UserSettingsTemplate {
         user: &user,
         ssh_keys,
         message,
     }
-    .render()
-    .unwrap();
-
-    let parts = extract_html_parts(&contents);
-
-    theme_render(parts.0, parts.1).await
+    .render_with_theme()
 }

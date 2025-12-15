@@ -1,6 +1,6 @@
 use askama::Template;
 
-use crate::views::{extract_html_parts, theme_render};
+use crate::views::ThemedRender;
 
 #[derive(Template)]
 #[template(path = "login.html")]
@@ -9,9 +9,5 @@ struct LoginTemplate<'a> {
 }
 
 pub async fn login(message: Option<&str>) -> String {
-    let contents = LoginTemplate { message }.render().unwrap();
-
-    let parts = extract_html_parts(&contents);
-
-    theme_render(parts.0, parts.1).await
+    LoginTemplate { message }.render_with_theme()
 }
