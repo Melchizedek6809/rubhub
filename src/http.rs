@@ -1,10 +1,5 @@
 use axum::{
-    Router,
-    extract::Path,
-    http::header,
-    response::IntoResponse,
-    routing::get,
-    serve::Serve,
+    Router, extract::Path, http::header, response::IntoResponse, routing::get, serve::Serve,
 };
 use rust_embed::Embed;
 use tokio::net::TcpListener;
@@ -25,10 +20,7 @@ pub async fn http_server(
     // build our application with a single route
     let app = Router::new()
         .route("/", get(controllers::index))
-        .route(
-            "/contact",
-            get(get(controllers::contact)),
-        )
+        .route("/contact", get(get(controllers::contact)))
         .route(
             "/login",
             get(controllers::login_page).post(controllers::handle_login),
@@ -44,34 +36,29 @@ pub async fn http_server(
         )
         .route(
             "/projects/new",
-            get(controllers::project::new_project_page)
-                .post(controllers::project::handle_new_project),
+            get(controllers::project_new_get).post(controllers::project_new_post),
         )
         .route("/{username}", get(controllers::user_page))
-        .route(
-            "/{username}/{slug}",
-            get(controllers::project::project_page),
-        )
+        .route("/{username}/{slug}", get(controllers::project_overview_get))
         .route(
             "/{username}/{slug}/branches",
-            get(controllers::project::project_page_branches),
+            get(controllers::project_branches_get),
         )
         .route(
             "/{username}/{slug}/tags",
-            get(controllers::project::project_page_tags),
+            get(controllers::project_tags_get),
         )
         .route(
             "/{username}/{slug}/tree/{branch}",
-            get(controllers::project::project_page_tree),
+            get(controllers::project_overview_tree_get),
         )
         .route(
             "/{username}/{slug}/log/{branch}",
-            get(controllers::project::project_page_commits),
+            get(controllers::project_commits_get),
         )
         .route(
             "/{username}/{slug}/settings",
-            get(controllers::project::project_settings_page)
-                .post(controllers::project::handle_project_settings),
+            get(controllers::project_settings_get).post(controllers::project_settings_post),
         )
         .route(
             "/dist/{*path}",
@@ -85,9 +72,7 @@ pub async fn http_server(
                         )
                             .into_response()
                     }
-                    None => controllers::not_found()
-                        .await
-                        .into_response(),
+                    None => controllers::not_found().await.into_response(),
                 }
             }),
         )

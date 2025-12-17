@@ -1,5 +1,5 @@
 use askama::Template;
-use axum::{response::Html, http::StatusCode};
+use axum::{http::StatusCode, response::Html};
 
 use crate::views::ThemedRender;
 

@@ -103,8 +103,8 @@ pub async fn get_git_info(
     user_name: &str,
     project_slug: &str,
     branch: &str,
-    max_commits: usize,
-    offset: usize,
+    max_commits: i32,
+    offset: i32,
 ) -> Option<GitRefInfo> {
     if max_commits < 1 {
         return None;
@@ -117,17 +117,22 @@ pub async fn get_git_info(
 
     let Ok(res) = tokio::task::spawn_blocking(move || {
         let mut repo = get_git_repo(&state, &user_name, &project_slug)?;
-        // Makes this a little slower
         repo.object_cache_size(Some(4096 * 4096));
         let mut reference = repo.find_reference(&branch).ok()?;
         let commit = reference.peel_to_commit().ok()?;
 
-        let commit_count = commit.ancestors().all().ok()?.count();
+        let commit_count: i32 = commit
+            .ancestors()
+            .all()
+            .ok()?
+            .count()
+            .try_into()
+            .unwrap_or_default();
 
         let walk = commit.ancestors().all().ok()?;
         let commits: Vec<GitCommitInfo> = walk
-            .skip(offset)
-            .take(max_commits)
+            .skip(offset.try_into().unwrap_or_default())
+            .take(max_commits.try_into().unwrap_or_default())
             .flatten()
             .flat_map(|c| c.object().map(|o| o.into()))
             .collect();
@@ -288,7 +293,7 @@ pub struct GitCommitInfo {
 #[derive(Debug, Clone)]
 pub struct GitRefInfo {
     pub branch_name: String,
-    pub commit_count: usize,
+    pub commit_count: i32,
     pub commits: Vec<GitCommitInfo>,
 }
 

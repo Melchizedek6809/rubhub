@@ -1,13 +1,17 @@
-mod not_found;
 mod auth;
 mod contact;
 mod landing;
+mod not_found;
+mod project;
 mod user;
 
-pub mod project;
-
-pub use user::{settings_page, handle_settings, user_page};
+pub use auth::{handle_login, handle_registration, login_page, logout, registration_page};
 pub use contact::contact;
 pub use landing::index;
 pub use not_found::not_found;
-pub use auth::{handle_login, login_page, logout, handle_registration, registration_page};
+pub use project::{
+    project_branches_get, project_commits_get, project_new_get, project_new_post,
+    project_overview_get, project_overview_tree_get, project_settings_get, project_settings_post,
+    project_tags_get,
+};
+pub use user::{handle_settings, settings_page, user_page};

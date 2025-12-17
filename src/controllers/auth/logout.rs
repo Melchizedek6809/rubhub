@@ -1,7 +1,11 @@
-use axum::{extract::State, http::StatusCode, response::{Html, Redirect}};
+use axum::{
+    extract::State,
+    http::StatusCode,
+    response::{Html, Redirect},
+};
 use tower_cookies::Cookies;
 
-use crate::{services::session, GlobalState};
+use crate::{GlobalState, services::session};
 
 pub async fn logout(
     State(state): State<GlobalState>,

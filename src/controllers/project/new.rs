@@ -1,0 +1,93 @@
+use askama::Template;
+use axum::{
+    Form,
+    body::Body,
+    extract::State,
+    http::Response,
+    response::{Html, IntoResponse, Redirect},
+};
+use serde::Deserialize;
+use tower_cookies::Cookies;
+
+use crate::{
+    AccessType, GlobalState, Project,
+    services::{repository::create_bare_repo, session, validation::validate_project_name},
+    views::ThemedRender,
+};
+
+#[derive(Debug, Deserialize)]
+pub struct NewProjectForm {
+    pub name: String,
+    pub public_access: Option<String>,
+}
+
+#[derive(Template)]
+#[template(path = "project_new.html")]
+struct NewProjectTemplate<'a> {
+    message: Option<&'a str>,
+}
+
+pub async fn project_new_get(
+    State(state): State<GlobalState>,
+    cookies: Cookies,
+) -> Result<Html<String>, Redirect> {
+    match session::current_user(&state, &cookies).await {
+        Ok(_) => Ok(render_new_project_page(None)),
+        Err(_) => Err(Redirect::to("/login")),
+    }
+}
+
+fn render_new_project_page(message: Option<&str>) -> Html<String> {
+    let template = NewProjectTemplate { message };
+    Html(template.render_with_theme())
+}
+
+pub async fn project_new_post(
+    State(state): State<GlobalState>,
+    cookies: Cookies,
+    Form(form): Form<NewProjectForm>,
+) -> Response<Body> {
+    let selected_public_access = form
+        .public_access
+        .as_deref()
+        .and_then(|value| AccessType::parse_public_access(value).ok())
+        .unwrap_or(AccessType::Read);
+
+    let current_user = match session::current_user(&state, &cookies).await {
+        Ok(user) => user,
+        Err(_) => return Redirect::to("/login").into_response(),
+    };
+
+    let name = form.name.trim();
+    if name.is_empty() {
+        return render_new_project_page(Some("Name is required.")).into_response();
+    }
+
+    if let Err(msg) = validate_project_name(name) {
+        return render_new_project_page(Some(msg)).into_response();
+    }
+
+    let user_slug = current_user.slug.clone();
+
+    match Project::new(&current_user, name, selected_public_access) {
+        Ok(project) => {
+            if Project::load(&state, &project.owner, &project.slug)
+                .await
+                .is_ok()
+            {
+                return render_new_project_page(Some("Project already exists")).into_response();
+            };
+            match project.save(&state).await {
+                Ok(_) => {
+                    match create_bare_repo(&state, user_slug.clone(), project.slug.clone()).await {
+                        Ok(_) => Redirect::to(&project.uri()).into_response(),
+                        Err(_) => render_new_project_page(Some("Could not create project."))
+                            .into_response(),
+                    }
+                }
+                Err(msg) => render_new_project_page(Some(&msg.to_string())).into_response(),
+            }
+        }
+        Err(msg) => render_new_project_page(Some(&msg.to_string())).into_response(),
+    }
+}

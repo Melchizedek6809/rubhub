@@ -1,8 +1,12 @@
 use askama::Template;
-use axum::{extract::State, response::{Html, Redirect}, Form};
+use axum::{
+    Form,
+    extract::State,
+    response::{Html, Redirect},
+};
 use serde::Deserialize;
 
-use crate::{services::session, views::ThemedRender, GlobalState, User};
+use crate::{GlobalState, User, services::session, views::ThemedRender};
 
 #[derive(Debug, Deserialize)]
 pub struct LoginForm {
@@ -40,9 +44,7 @@ pub async fn handle_login(
     let username = form.username.trim();
     let password = form.password.trim();
 
-
-    handle_login_action(&state, cookies, username, password)
-        .await
+    handle_login_action(&state, cookies, username, password).await
 }
 
 async fn handle_login_action(

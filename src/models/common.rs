@@ -29,4 +29,14 @@ impl AccessType {
             AccessType::Admin => "admin",
         }
     }
+
+    pub fn parse_public_access(value: &str) -> Result<Self, &'static str> {
+        match value.to_ascii_lowercase().as_str() {
+            "none" => Ok(AccessType::None),
+            "read" => Ok(AccessType::Read),
+            "write" => Ok(AccessType::Write),
+            "admin" => Err("Public admin access is not allowed."),
+            _ => Err("Invalid access level."),
+        }
+    }
 }

@@ -1,4 +1,4 @@
-use crate::{views::ThemedRender, GlobalState, Project, ProjectSummary, User};
+use crate::{GlobalState, Project, ProjectSummary, User, views::ThemedRender};
 use askama::Template;
 use axum::{extract::State, response::Html};
 
@@ -25,7 +25,9 @@ pub async fn index(State(state): State<GlobalState>) -> Html<String> {
         })
         .collect();
 
-    let template = IndexTemplate { featured: &featured };
+    let template = IndexTemplate {
+        featured: &featured,
+    };
 
     Html(template.render_with_theme())
 }

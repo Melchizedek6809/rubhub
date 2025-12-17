@@ -1,9 +1,20 @@
 use askama::Template;
-use axum::{extract::State, response::{Html, Redirect}, Form, http::{StatusCode}};
+use axum::{
+    Form,
+    extract::State,
+    http::StatusCode,
+    response::{Html, Redirect},
+};
 use serde::Deserialize;
 
-
-use crate::{services::{session, validation::{slugify, validate_password, validate_username}}, views::ThemedRender, GlobalState, User};
+use crate::{
+    GlobalState, User,
+    services::{
+        session,
+        validation::{slugify, validate_password, validate_username},
+    },
+    views::ThemedRender,
+};
 
 #[derive(Debug, Deserialize)]
 pub struct RegistrationForm {
@@ -11,7 +22,6 @@ pub struct RegistrationForm {
     pub email: String,
     pub password: String,
 }
-
 
 #[derive(Template)]
 #[template(path = "registration.html")]
@@ -44,8 +54,7 @@ pub async fn handle_registration(
     let email = form.email.trim();
     let password = form.password.trim();
 
-    handle_registration_action(&state, cookies, username, email, password)
-        .await
+    handle_registration_action(&state, cookies, username, email, password).await
 }
 
 async fn handle_registration_action(
@@ -56,11 +65,17 @@ async fn handle_registration_action(
     password: &str,
 ) -> Result<Redirect, (StatusCode, Html<String>)> {
     if let Err(msg) = validate_username(username) {
-        return Err((StatusCode::BAD_REQUEST, render_registration_page(Some(msg)).await));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            render_registration_page(Some(msg)).await,
+        ));
     }
 
     if let Err(msg) = validate_password(password) {
-        return Err((StatusCode::BAD_REQUEST, render_registration_page(Some(msg)).await));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            render_registration_page(Some(msg)).await,
+        ));
     }
 
     let slug = slugify(username);

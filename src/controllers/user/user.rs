@@ -2,7 +2,10 @@ use askama::Template;
 use axum::{extract::State, http::StatusCode, response::Html};
 use tower_cookies::Cookies;
 
-use crate::{controllers::not_found, extractors::PathUser, services::session, views::ThemedRender, GlobalState, ProjectSummary, User};
+use crate::{
+    GlobalState, ProjectSummary, User, controllers::not_found, extractors::PathUser,
+    services::session, views::ThemedRender,
+};
 
 #[derive(Template)]
 #[template(path = "user.html")]

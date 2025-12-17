@@ -1,5 +1,5 @@
 mod settings;
 mod user;
 
-pub use settings::{settings_page, handle_settings};
-pub use user::{user_page};
+pub use settings::{handle_settings, settings_page};
+pub use user::user_page;
