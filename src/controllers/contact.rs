@@ -1,4 +1,5 @@
 use askama::Template;
+use axum::response::Html;
 
 use crate::views::ThemedRender;
 
@@ -6,6 +7,6 @@ use crate::views::ThemedRender;
 #[template(path = "contact.html")]
 struct ContactTemplate;
 
-pub async fn contact() -> String {
-    ContactTemplate.render_with_theme()
+pub async fn contact() -> Html<String> {
+    Html(ContactTemplate.render_with_theme())
 }

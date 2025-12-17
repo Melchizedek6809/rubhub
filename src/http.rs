@@ -1,8 +1,8 @@
 use axum::{
     Router,
     extract::Path,
-    http::{StatusCode, header},
-    response::{Html, IntoResponse},
+    http::header,
+    response::IntoResponse,
     routing::get,
     serve::Serve,
 };
@@ -10,7 +10,7 @@ use rust_embed::Embed;
 use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
 
-use crate::{GlobalState, controllers, views};
+use crate::{GlobalState, controllers};
 
 #[derive(Embed)]
 #[folder = "dist/"]
@@ -24,26 +24,30 @@ pub async fn http_server(
 
     // build our application with a single route
     let app = Router::new()
-        .route("/", get(controllers::landing::index))
+        .route("/", get(controllers::index))
         .route(
             "/contact",
-            get(|| async { Html(views::contact::contact().await) }),
+            get(get(controllers::contact)),
         )
         .route(
             "/login",
-            get(controllers::auth::login_page).post(controllers::auth::handle_login),
+            get(controllers::login_page).post(controllers::handle_login),
         )
-        .route("/logout", get(controllers::auth::logout))
+        .route(
+            "/registration",
+            get(controllers::registration_page).post(controllers::handle_registration),
+        )
+        .route("/logout", get(controllers::logout))
         .route(
             "/settings",
-            get(controllers::user::settings_page).post(controllers::user::handle_settings),
+            get(controllers::settings_page).post(controllers::handle_settings),
         )
         .route(
             "/projects/new",
             get(controllers::project::new_project_page)
                 .post(controllers::project::handle_new_project),
         )
-        .route("/{username}", get(controllers::project::project_list_page))
+        .route("/{username}", get(controllers::user_page))
         .route(
             "/{username}/{slug}",
             get(controllers::project::project_page),
@@ -81,20 +85,13 @@ pub async fn http_server(
                         )
                             .into_response()
                     }
-                    None => (
-                        StatusCode::NOT_FOUND,
-                        Html(views::not_found::not_found().await),
-                    )
+                    None => controllers::not_found()
+                        .await
                         .into_response(),
                 }
             }),
         )
-        .fallback(|| async {
-            (
-                StatusCode::NOT_FOUND,
-                Html(views::not_found::not_found().await),
-            )
-        })
+        .fallback(controllers::not_found)
         .layer(CookieManagerLayer::new())
         .with_state(state.clone());
 

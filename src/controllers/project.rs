@@ -7,14 +7,11 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    AccessType, GlobalState, Project, ProjectSummary, User,
-    extractors::{PathUser, PathUserProject, PathUserProjectBranch},
-    services::{
-        repository::{GitRefInfo, create_bare_repo, get_git_file, get_git_info, get_git_summary},
+    controllers::not_found, extractors::{PathUserProject, PathUserProjectBranch}, services::{
+        repository::{create_bare_repo, get_git_file, get_git_info, get_git_summary, GitRefInfo},
         session,
         validation::{validate_project_name, validate_uri},
-    },
-    views,
+    }, views, AccessType, GlobalState, Project, User
 };
 
 #[derive(Debug, Deserialize)]
@@ -30,47 +27,6 @@ pub struct ProjectSettingsForm {
     pub public_access: String,
     pub main_branch: String,
     pub website: String,
-}
-
-async fn not_found() -> (StatusCode, Html<String>) {
-    (
-        StatusCode::NOT_FOUND,
-        Html(views::not_found::not_found().await),
-    )
-}
-
-pub async fn project_list_page(
-    State(state): State<GlobalState>,
-    cookies: Cookies,
-    PathUser(owner): PathUser,
-) -> Result<Html<String>, (StatusCode, Html<String>)> {
-    let is_owner = session::current_user(&state, &cookies)
-        .await
-        .map(|user| user.id == owner.id)
-        .unwrap_or(false);
-
-    let projects = match owner.projects(&state).await {
-        Ok(projects) => projects,
-        Err(e) => {
-            eprintln!("{:?}", e);
-            return Err(not_found().await);
-        }
-    };
-
-    let summaries: Vec<_> = projects
-        .iter()
-        .map(|p| ProjectSummary {
-            name: p.name.as_str(),
-            slug: p.slug.as_str(),
-            owner_name: owner.name.as_str(),
-            owner_slug: owner.slug.as_str(),
-            description: p.description.as_str(),
-        })
-        .collect();
-
-    Ok(Html(
-        views::user::profile(&owner, &summaries, is_owner).await,
-    ))
 }
 
 pub async fn new_project_page(

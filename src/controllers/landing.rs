@@ -1,5 +1,12 @@
-use crate::{GlobalState, Project, ProjectSummary, User, views};
+use crate::{views::ThemedRender, GlobalState, Project, ProjectSummary, User};
+use askama::Template;
 use axum::{extract::State, response::Html};
+
+#[derive(Template)]
+#[template(path = "index.html")]
+struct IndexTemplate<'a> {
+    featured: &'a [ProjectSummary<'a>],
+}
 
 pub async fn index(State(state): State<GlobalState>) -> Html<String> {
     let mut projects: Vec<(User, Project)> = vec![];
@@ -18,5 +25,7 @@ pub async fn index(State(state): State<GlobalState>) -> Html<String> {
         })
         .collect();
 
-    Html(views::index::index(&featured).await)
+    let template = IndexTemplate { featured: &featured };
+
+    Html(template.render_with_theme())
 }

@@ -1,3 +1,4 @@
+use askama::Template;
 use axum::{
     Form,
     extract::State,
@@ -8,12 +9,10 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, User,
     services::{
         session as session_service,
         validation::{validate_uri, validate_username},
-    },
-    views,
+    }, views::ThemedRender, GlobalState, User
 };
 
 #[derive(Debug, Deserialize)]
@@ -24,6 +23,14 @@ pub struct UserSettingsForm {
     pub description: String,
     pub default_main_branch: String,
     pub ssh_keys: Option<String>,
+}
+
+#[derive(Template)]
+#[template(path = "user_settings.html")]
+struct UserSettingsTemplate<'a> {
+    user: &'a User,
+    ssh_keys: &'a [String],
+    message: Option<&'a str>,
 }
 
 pub async fn settings_page(
@@ -130,5 +137,10 @@ async fn render_settings_page(
     ssh_keys: &[String],
     message: Option<&str>,
 ) -> Html<String> {
-    Html(views::user_settings::settings(user, ssh_keys, message).await)
+    let template = UserSettingsTemplate {
+        user: &user,
+        ssh_keys,
+        message,
+    };
+    Html(template.render_with_theme())
 }
