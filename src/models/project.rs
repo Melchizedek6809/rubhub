@@ -4,7 +4,10 @@ use time::OffsetDateTime;
 
 use crate::{
     AccessType, GlobalState, User,
-    services::validation::{slugify, validate_slug},
+    services::{
+        fs::atomic_write,
+        validation::{slugify, validate_slug},
+    },
 };
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -38,7 +41,6 @@ impl Project {
         Ok(user)
     }
 
-    // ToDo: would be better to do things atomic, should be good enough for now though
     pub async fn save(&self, state: &GlobalState) -> Result<()> {
         if validate_slug(&self.owner).is_err() {
             return Err(anyhow!("Invalid username"));
@@ -53,7 +55,7 @@ impl Project {
         let filename = format!("!{}.json", self.slug);
         let path = path.join(filename);
         let data = serde_json::to_string(&self)?;
-        tokio::fs::write(path, data).await?;
+        atomic_write(path, data).await?;
 
         Ok(())
     }

@@ -6,7 +6,10 @@ use tower_cookies::{Cookie, Cookies, cookie::SameSite};
 use urlencoding;
 use uuid::Uuid;
 
-use crate::{GlobalState, User};
+use crate::{
+    GlobalState, User,
+    services::fs::atomic_write,
+};
 
 pub const SESSION_COOKIE: &str = "session_id";
 pub const SESSION_USER_COOKIE: &str = "session_user";
@@ -120,7 +123,7 @@ pub async fn create_session(
     let json = serde_json::to_string(&new_session)?;
     let path = session_id.to_string();
     let path = state.config.session_root.join(&path);
-    tokio::fs::write(path, json).await?;
+    atomic_write(path, json).await?;
 
     let cookie = Cookie::build((SESSION_COOKIE, session_id.to_string()))
         .path("/")

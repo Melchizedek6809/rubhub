@@ -8,6 +8,7 @@ use uuid::Uuid;
 use crate::{
     GlobalState, Project,
     services::{
+        fs::atomic_write,
         password::{PasswordVerification, hash_password, verify_password_hash},
         validation::{slugify, validate_username},
     },
@@ -84,14 +85,13 @@ impl User {
         Ok(user)
     }
 
-    // ToDo: would be better to do things atomic, should be good enough for now though
     pub async fn save(&self, state: &GlobalState) -> Result<()> {
         if validate_username(&self.slug).is_err() {
             return Err(anyhow!("Invalid username"));
         }
         let path = state.config.git_root.join(format!("!{}.json", self.slug));
         let data = serde_json::to_string(&self)?;
-        tokio::fs::write(path, data).await?;
+        atomic_write(path, data).await?;
 
         Ok(())
     }
