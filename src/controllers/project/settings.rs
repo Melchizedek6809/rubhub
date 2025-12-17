@@ -4,7 +4,7 @@ use axum::{
     body::Body,
     extract::State,
     http::Response,
-    response::{Html, IntoResponse, Redirect},
+    response::{IntoResponse, Redirect},
 };
 use serde::Deserialize;
 use tower_cookies::Cookies;
@@ -123,5 +123,5 @@ fn render_project_settings_page(
         project: &project,
         message,
     };
-    Html(template.render_with_theme()).into_response()
+    template.response()
 }

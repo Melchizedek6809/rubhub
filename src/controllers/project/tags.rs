@@ -1,10 +1,5 @@
 use askama::Template;
-use axum::{
-    body::Body,
-    extract::State,
-    http::Response,
-    response::{Html, IntoResponse},
-};
+use axum::{body::Body, extract::State, http::Response, response::IntoResponse};
 use tower_cookies::Cookies;
 
 use crate::{
@@ -54,5 +49,5 @@ pub async fn project_tags_get(
         access_level,
         tags,
     };
-    Html(template.render_with_theme()).into_response()
+    template.response()
 }

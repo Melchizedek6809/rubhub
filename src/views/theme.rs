@@ -1,4 +1,9 @@
 use askama::Template;
+use axum::{
+    body::Body,
+    http::Response,
+    response::{Html, IntoResponse},
+};
 
 #[cfg(not(debug_assertions))]
 const APP_THEME: &str = include_str!("../../dist/app.html");
@@ -27,6 +32,7 @@ pub fn extract_html_parts(html: &str) -> (&str, &str) {
 
 pub trait ThemedRender {
     fn render_with_theme(&self) -> String;
+    fn response(&self) -> Response<Body>;
 }
 
 impl<T: Template> ThemedRender for T {
@@ -41,6 +47,10 @@ impl<T: Template> ThemedRender for T {
 
         let theme = theme.replace("<!--HEAD-->", head);
         theme.replace("<!--BODY-->", body)
+    }
+
+    fn response(&self) -> Response<Body> {
+        Html(self.render_with_theme()).into_response()
     }
 }
 

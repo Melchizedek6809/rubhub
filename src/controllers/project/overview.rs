@@ -1,10 +1,5 @@
 use askama::Template;
-use axum::{
-    body::Body,
-    extract::State,
-    http::Response,
-    response::{Html, IntoResponse},
-};
+use axum::{body::Body, extract::State, http::Response, response::IntoResponse};
 use tower_cookies::Cookies;
 
 use crate::{
@@ -93,7 +88,7 @@ async fn render_project_page(
         selected_branch,
         readme_html,
     };
-    Html(template.render_with_theme()).into_response()
+    template.response()
 }
 
 pub async fn project_overview_tree_get(
