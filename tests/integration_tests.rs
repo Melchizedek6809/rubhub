@@ -63,14 +63,13 @@ async fn basic_workflow() {
 
         let mut form = HashMap::new();
         let pw = "12345678901234567890";
-        form.insert("action", "register");
         form.insert("username", "t");
         form.insert("email", "test@rubhub.net");
         form.insert("password", pw);
 
         // First we try to register with a username that's too short
         client
-            .post(&format!("{base}/login"))
+            .post(&format!("{base}/registration"))
             .form(&form)
             .send()
             .await
@@ -81,7 +80,7 @@ async fn basic_workflow() {
         // Now we use the full username
         form.insert("username", "test");
         client
-            .post(&format!("{base}/login"))
+            .post(&format!("{base}/registration"))
             .form(&form)
             .send()
             .await
