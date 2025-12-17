@@ -20,6 +20,7 @@ struct ProjectTagsTemplate<'a> {
     project: &'a Project,
     access_level: AccessType,
     tags: Vec<GitRefInfo>,
+    logged_in_user: Option<&'a User>,
 }
 
 pub async fn project_tags_get(
@@ -48,6 +49,7 @@ pub async fn project_tags_get(
         project: &project,
         access_level,
         tags,
+        logged_in_user: session_user.as_ref(),
     };
     template.response()
 }

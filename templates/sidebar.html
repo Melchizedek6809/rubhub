@@ -10,7 +10,15 @@
 
   <div class="flex-gap"> </div>
 
-  <user-badge></user-badge>
+  <div class="actions">
+    {% if let Some(user) = logged_in_user %}
+    <span>{{ user.slug }}</span>
+    <a href="/settings" class="btn btn-outline">Settings</a>
+    <a href="/logout" class="btn btn-outline">Logout</a>
+    {% else %}
+    <a href="/login" class="btn">Login</a>
+    {% endif %}
+  </div>
 </header>
 
 <aside id="sidebar">
@@ -18,12 +26,23 @@
     <a href="/" class="logo">RubHub</a>
     <div class="flex-gap"></div>
   </div>
-  
-  
-  <a href="/" id="browse-link">Browse</a>
+
+  {% if let Some(user) = logged_in_user %}
+  <a href="/~{{ user.slug }}" class="nav-btn" id="browse-link">Browse</a>
+  {% else %}
+  <a href="/" class="nav-btn" id="browse-link">Browse</a>
+  {% endif %}
 
   <div class="flex-gap"></div>
 
-  <a href="/contact">Contact</a>
-  <user-badge></user-badge>
+  <a href="/contact" class="nav-btn">Contact</a>
+  <div class="actions">
+    {% if let Some(user) = logged_in_user %}
+    <span>{{ user.slug }}</span>
+    <a href="/settings" class="btn btn-outline">Settings</a>
+    <a href="/logout" class="btn btn-outline">Logout</a>
+    {% else %}
+    <a href="/login" class="btn">Login</a>
+    {% endif %}
+  </div>
 </aside>

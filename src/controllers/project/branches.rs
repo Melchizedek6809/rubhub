@@ -20,6 +20,7 @@ struct ProjectBranchesTemplate<'a> {
     project: &'a Project,
     access_level: AccessType,
     branches: Vec<GitRefInfo>,
+    logged_in_user: Option<&'a User>,
 }
 
 pub async fn project_branches_get(
@@ -48,6 +49,7 @@ pub async fn project_branches_get(
         project: &project,
         access_level,
         branches,
+        logged_in_user: session_user.as_ref(),
     };
 
     Ok(Html(template.render_with_theme()))

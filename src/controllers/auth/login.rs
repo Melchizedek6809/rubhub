@@ -18,10 +18,14 @@ pub struct LoginForm {
 #[template(path = "login.html")]
 struct LoginTemplate<'a> {
     message: Option<&'a str>,
+    logged_in_user: Option<&'a User>,
 }
 
 async fn render_login_page(message: Option<&str>) -> Html<String> {
-    let template = LoginTemplate { message };
+    let template = LoginTemplate {
+        message,
+        logged_in_user: None,
+    };
     Html(template.render_with_theme())
 }
 

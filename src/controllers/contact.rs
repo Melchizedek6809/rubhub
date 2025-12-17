@@ -1,12 +1,19 @@
 use askama::Template;
-use axum::response::Html;
+use axum::{extract::State, response::Html};
+use tower_cookies::Cookies;
 
-use crate::views::ThemedRender;
+use crate::{GlobalState, User, views::ThemedRender, services::session};
 
 #[derive(Template)]
 #[template(path = "contact.html")]
-struct ContactTemplate;
+struct ContactTemplate<'a> {
+    logged_in_user: Option<&'a User>,
+}
 
-pub async fn contact() -> Html<String> {
-    Html(ContactTemplate.render_with_theme())
+pub async fn contact(State(state): State<GlobalState>, cookies: Cookies) -> Html<String> {
+    let logged_in_user = session::current_user(&state, &cookies).await.ok();
+    let template = ContactTemplate {
+        logged_in_user: logged_in_user.as_ref(),
+    };
+    Html(template.render_with_theme())
 }

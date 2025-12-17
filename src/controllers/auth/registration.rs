@@ -27,10 +27,14 @@ pub struct RegistrationForm {
 #[template(path = "registration.html")]
 struct RegistrationTemplate<'a> {
     message: Option<&'a str>,
+    logged_in_user: Option<&'a User>,
 }
 
 async fn render_registration_page(message: Option<&str>) -> Html<String> {
-    let template = RegistrationTemplate { message };
+    let template = RegistrationTemplate {
+        message,
+        logged_in_user: None,
+    };
     Html(template.render_with_theme())
 }
 

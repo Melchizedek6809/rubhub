@@ -10,7 +10,7 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    AccessType, GlobalState, Project,
+    AccessType, GlobalState, Project, User,
     services::{repository::create_bare_repo, session, validation::validate_project_name},
     views::ThemedRender,
 };
@@ -25,20 +25,25 @@ pub struct NewProjectForm {
 #[template(path = "project_new.html")]
 struct NewProjectTemplate<'a> {
     message: Option<&'a str>,
+    logged_in_user: Option<&'a User>,
 }
 
 pub async fn project_new_get(
     State(state): State<GlobalState>,
     cookies: Cookies,
 ) -> Result<Html<String>, Redirect> {
-    match session::current_user(&state, &cookies).await {
-        Ok(_) => Ok(render_new_project_page(None)),
-        Err(_) => Err(Redirect::to("/login")),
-    }
+    let logged_in_user = match session::current_user(&state, &cookies).await {
+        Ok(user) => user,
+        Err(_) => return Err(Redirect::to("/login")),
+    };
+    Ok(render_new_project_page(Some(&logged_in_user), None))
 }
 
-fn render_new_project_page(message: Option<&str>) -> Html<String> {
-    let template = NewProjectTemplate { message };
+fn render_new_project_page(logged_in_user: Option<&User>, message: Option<&str>) -> Html<String> {
+    let template = NewProjectTemplate {
+        message,
+        logged_in_user,
+    };
     Html(template.render_with_theme())
 }
 
@@ -60,11 +65,11 @@ pub async fn project_new_post(
 
     let name = form.name.trim();
     if name.is_empty() {
-        return render_new_project_page(Some("Name is required.")).into_response();
+        return render_new_project_page(Some(&current_user), Some("Name is required.")).into_response();
     }
 
     if let Err(msg) = validate_project_name(name) {
-        return render_new_project_page(Some(msg)).into_response();
+        return render_new_project_page(Some(&current_user), Some(msg)).into_response();
     }
 
     let user_slug = current_user.slug.clone();
@@ -75,19 +80,19 @@ pub async fn project_new_post(
                 .await
                 .is_ok()
             {
-                return render_new_project_page(Some("Project already exists")).into_response();
+                return render_new_project_page(Some(&current_user), Some("Project already exists")).into_response();
             };
             match project.save(&state).await {
                 Ok(_) => {
                     match create_bare_repo(&state, user_slug.clone(), project.slug.clone()).await {
                         Ok(_) => Redirect::to(&project.uri()).into_response(),
-                        Err(_) => render_new_project_page(Some("Could not create project."))
+                        Err(_) => render_new_project_page(Some(&current_user), Some("Could not create project."))
                             .into_response(),
                     }
                 }
-                Err(msg) => render_new_project_page(Some(&msg.to_string())).into_response(),
+                Err(msg) => render_new_project_page(Some(&current_user), Some(&msg.to_string())).into_response(),
             }
         }
-        Err(msg) => render_new_project_page(Some(&msg.to_string())).into_response(),
+        Err(msg) => render_new_project_page(Some(&current_user), Some(&msg.to_string())).into_response(),
     }
 }

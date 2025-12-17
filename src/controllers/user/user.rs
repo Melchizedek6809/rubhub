@@ -13,6 +13,7 @@ struct UserTemplate<'a> {
     user: &'a User,
     projects: &'a [ProjectSummary<'a>],
     is_owner: bool,
+    logged_in_user: Option<&'a User>,
 }
 
 pub async fn user_page(
@@ -20,8 +21,9 @@ pub async fn user_page(
     cookies: Cookies,
     PathUser(owner): PathUser,
 ) -> Result<Html<String>, (StatusCode, Html<String>)> {
-    let is_owner = session::current_user(&state, &cookies)
-        .await
+    let logged_in_user = session::current_user(&state, &cookies).await.ok();
+    let is_owner = logged_in_user
+        .as_ref()
         .map(|user| user.id == owner.id)
         .unwrap_or(false);
 
@@ -48,6 +50,7 @@ pub async fn user_page(
         user: &owner,
         projects: &summaries,
         is_owner,
+        logged_in_user: logged_in_user.as_ref(),
     };
     Ok(Html(template.render_with_theme()))
 }

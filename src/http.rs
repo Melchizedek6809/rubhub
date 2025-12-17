@@ -20,7 +20,7 @@ pub async fn http_server(
     // build our application with a single route
     let app = Router::new()
         .route("/", get(controllers::index))
-        .route("/contact", get(get(controllers::contact)))
+        .route("/contact", get(controllers::contact))
         .route(
             "/login",
             get(controllers::login_page).post(controllers::handle_login),

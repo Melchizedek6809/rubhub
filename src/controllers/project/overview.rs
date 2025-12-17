@@ -24,6 +24,7 @@ struct ProjectTemplate<'a> {
     summary: GitSummary,
     info: Option<GitRefInfo>,
     readme_html: Option<String>,
+    logged_in_user: Option<&'a User>,
 }
 
 async fn render_project_page(
@@ -46,7 +47,7 @@ async fn render_project_page(
         return not_found().await.into_response();
     };
 
-    let git_user = session_user.map(|u| u.slug).unwrap_or("anon".to_string());
+    let git_user = session_user.as_ref().map(|u| u.slug.clone()).unwrap_or("anon".to_string());
 
     let ssh_clone_url = format!(
         "ssh://{}@{}/{}/{}",
@@ -87,6 +88,7 @@ async fn render_project_page(
         info,
         selected_branch,
         readme_html,
+        logged_in_user: session_user.as_ref(),
     };
     template.response()
 }

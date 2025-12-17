@@ -33,6 +33,7 @@ struct UserSettingsTemplate<'a> {
     user: &'a User,
     ssh_keys: &'a [String],
     message: Option<&'a str>,
+    logged_in_user: Option<&'a User>,
 }
 
 pub async fn settings_page(
@@ -143,6 +144,7 @@ async fn render_settings_page(
         user: &user,
         ssh_keys,
         message,
+        logged_in_user: Some(&user),
     };
     Html(template.render_with_theme())
 }

@@ -23,6 +23,20 @@ button:focus {
 	background-color: var(--primary-color-dark);
 }
 
+.btn-outline {
+	background: transparent;
+	color: var(--primary-color);
+	border: 1px solid var(--primary-color-dark);
+	transition: color 300ms ease-in-out, background-color 300ms ease-in-out, border 30ms ease-in-out;
+}
+
+.btn-outline:hover,
+.btn-outline:focus {
+	color: var(--white);
+	background-color: var(--primary-color-dark);
+	border-color: var(--primary-color-dark);
+}
+
 select,
 textarea,
 input {

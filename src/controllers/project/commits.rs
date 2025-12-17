@@ -37,6 +37,7 @@ struct ProjectCommitsTemplate<'a> {
     page_count: i32,
     page_min: i32,
     page_max: i32,
+    logged_in_user: Option<&'a User>,
 }
 
 pub async fn project_commits_get(
@@ -68,7 +69,7 @@ pub async fn project_commits_get(
     let access_level = project
         .access_level(session_user.as_ref().map(|user| user.slug.clone()))
         .await;
-    let git_user = session_user.map(|u| u.slug).unwrap_or("anon".to_string());
+    let git_user = session_user.as_ref().map(|u| u.slug.clone()).unwrap_or("anon".to_string());
 
     let ssh_clone_url = format!(
         "ssh://{}@{}/{}/{}",
@@ -95,6 +96,7 @@ pub async fn project_commits_get(
         page_count,
         page_min,
         page_max,
+        logged_in_user: session_user.as_ref(),
     };
     Ok(Html(template.render_with_theme()))
 }

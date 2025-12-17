@@ -29,7 +29,7 @@
 	color: var(--secondary-color);
 }
 
-#sidebar a {
+.nav-btn {
 	text-decoration: none;
 	color: var(--text-color);
 	display: block;
@@ -40,9 +40,9 @@
 	transition: background-color 300ms ease-in-out;
 }
 
-#sidebar a:focus,
-#sidebar a:hover,
-#sidebar a:active {
+.nav-btn:focus,
+.nav-btn:hover,
+.nav-btn:active {
 	background: var(--background-color);
 }
 
@@ -51,8 +51,14 @@
 	color: var(--secondary-color);
 }
 
-#sidebar user-badge {
+#sidebar .actions {
 	padding: var(--space-s) var(--space-m);
+	align-items: center;
+	width: 100%;
+}
+
+#sidebar .actions > span {
+	flex: 1;
 }
 
 #sidebar-top {
@@ -90,7 +96,7 @@
 	}
 
 	#sidebar-top,
-	#sidebar user-badge {
+	#sidebar .actions {
 		display: none;
 	}
 
