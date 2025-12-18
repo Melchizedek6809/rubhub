@@ -62,6 +62,7 @@ impl AppConfig {
         let git_root = dir_root.join("git");
         let session_root = dir_root.join("sessions");
 
+        self.dir_root = dir_root;
         self.git_root = git_root;
         self.session_root = session_root;
 
