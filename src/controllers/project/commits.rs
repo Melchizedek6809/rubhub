@@ -1,8 +1,8 @@
 use askama::Template;
 use axum::{
+    body::Body,
     extract::{Query, State},
-    http::StatusCode,
-    response::Html,
+    http::Response,
 };
 use serde::Deserialize;
 use tower_cookies::Cookies;
@@ -45,9 +45,17 @@ pub async fn project_commits_get(
     cookies: Cookies,
     Query(q): Query<Pagination>,
     PathUserProjectBranch(owner, project, current): PathUserProjectBranch,
-) -> Result<Html<String>, (StatusCode, Html<String>)> {
+) -> Response<Body> {
+    let logged_in_user = session::current_user(&state, &cookies).await.ok();
+    let access_level = project
+        .access_level(logged_in_user.as_ref().map(|user| user.slug.clone()))
+        .await;
+
+    if access_level == AccessType::None {
+        return not_found(logged_in_user);
+    }
     let Some(summary) = get_git_summary(&state, &owner.slug, &project.slug).await else {
-        return Err(not_found().await);
+        return not_found(logged_in_user);
     };
 
     let page_size: i32 = 20;
@@ -65,11 +73,10 @@ pub async fn project_commits_get(
     let commit_count = info.as_ref().map(|i| i.commit_count).unwrap_or(0);
     let page_count = commit_count / page_size;
 
-    let session_user = session::current_user(&state, &cookies).await.ok();
-    let access_level = project
-        .access_level(session_user.as_ref().map(|user| user.slug.clone()))
-        .await;
-    let git_user = session_user.as_ref().map(|u| u.slug.clone()).unwrap_or("anon".to_string());
+    let git_user = logged_in_user
+        .as_ref()
+        .map(|u| u.slug.clone())
+        .unwrap_or("anon".to_string());
 
     let ssh_clone_url = format!(
         "ssh://{}@{}/{}/{}",
@@ -96,7 +103,7 @@ pub async fn project_commits_get(
         page_count,
         page_min,
         page_max,
-        logged_in_user: session_user.as_ref(),
+        logged_in_user: logged_in_user.as_ref(),
     };
-    Ok(Html(template.render_with_theme()))
+    template.response()
 }

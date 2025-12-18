@@ -1,5 +1,5 @@
 use askama::Template;
-use axum::{extract::State, http::StatusCode, response::Html};
+use axum::{body::Body, extract::State, http::Response, response::Html};
 use tower_cookies::Cookies;
 
 use crate::{
@@ -20,7 +20,7 @@ pub async fn user_page(
     State(state): State<GlobalState>,
     cookies: Cookies,
     PathUser(owner): PathUser,
-) -> Result<Html<String>, (StatusCode, Html<String>)> {
+) -> Result<Html<String>, Response<Body>> {
     let logged_in_user = session::current_user(&state, &cookies).await.ok();
     let is_owner = logged_in_user
         .as_ref()
@@ -31,7 +31,7 @@ pub async fn user_page(
         Ok(projects) => projects,
         Err(e) => {
             eprintln!("{:?}", e);
-            return Err(not_found().await);
+            return Err(not_found(logged_in_user));
         }
     };
 

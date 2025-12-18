@@ -94,10 +94,20 @@ pub async fn project_settings_post(
     }
 
     if name.is_empty() {
-        return render_project_settings_page(&current_user, owner, project, Some("Name is required."));
+        return render_project_settings_page(
+            &current_user,
+            owner,
+            project,
+            Some("Name is required."),
+        );
     }
     if main_branch.is_empty() {
-        return render_project_settings_page(&current_user, owner, project, Some("Branch name is required."));
+        return render_project_settings_page(
+            &current_user,
+            owner,
+            project,
+            Some("Branch name is required."),
+        );
     }
 
     project.name = name.to_owned();

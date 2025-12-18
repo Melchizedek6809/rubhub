@@ -1,5 +1,5 @@
 use askama::Template;
-use axum::{body::Body, extract::State, http::Response, response::IntoResponse};
+use axum::{body::Body, extract::State, http::Response};
 use tower_cookies::Cookies;
 
 use crate::{
@@ -34,20 +34,23 @@ async fn render_project_page(
     project: Project,
     branch: Option<String>,
 ) -> Response<Body> {
-    let session_user = session::current_user(state, &cookies).await.ok();
+    let logged_in_user = session::current_user(state, &cookies).await.ok();
     let access_level = project
-        .access_level(session_user.as_ref().map(|user| user.slug.clone()))
+        .access_level(logged_in_user.as_ref().map(|user| user.slug.clone()))
         .await;
 
     if access_level == AccessType::None {
-        return not_found().await.into_response();
+        return not_found(logged_in_user);
     }
 
     let Some(summary) = get_git_summary(state, &owner.slug, &project.slug).await else {
-        return not_found().await.into_response();
+        return not_found(logged_in_user);
     };
 
-    let git_user = session_user.as_ref().map(|u| u.slug.clone()).unwrap_or("anon".to_string());
+    let git_user = logged_in_user
+        .as_ref()
+        .map(|u| u.slug.clone())
+        .unwrap_or("anon".to_string());
 
     let ssh_clone_url = format!(
         "ssh://{}@{}/{}/{}",
@@ -88,7 +91,7 @@ async fn render_project_page(
         info,
         selected_branch,
         readme_html,
-        logged_in_user: session_user.as_ref(),
+        logged_in_user: logged_in_user.as_ref(),
     };
     template.response()
 }

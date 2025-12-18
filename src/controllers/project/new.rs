@@ -65,7 +65,8 @@ pub async fn project_new_post(
 
     let name = form.name.trim();
     if name.is_empty() {
-        return render_new_project_page(Some(&current_user), Some("Name is required.")).into_response();
+        return render_new_project_page(Some(&current_user), Some("Name is required."))
+            .into_response();
     }
 
     if let Err(msg) = validate_project_name(name) {
@@ -80,19 +81,29 @@ pub async fn project_new_post(
                 .await
                 .is_ok()
             {
-                return render_new_project_page(Some(&current_user), Some("Project already exists")).into_response();
+                return render_new_project_page(
+                    Some(&current_user),
+                    Some("Project already exists"),
+                )
+                .into_response();
             };
             match project.save(&state).await {
                 Ok(_) => {
                     match create_bare_repo(&state, user_slug.clone(), project.slug.clone()).await {
                         Ok(_) => Redirect::to(&project.uri()).into_response(),
-                        Err(_) => render_new_project_page(Some(&current_user), Some("Could not create project."))
-                            .into_response(),
+                        Err(_) => render_new_project_page(
+                            Some(&current_user),
+                            Some("Could not create project."),
+                        )
+                        .into_response(),
                     }
                 }
-                Err(msg) => render_new_project_page(Some(&current_user), Some(&msg.to_string())).into_response(),
+                Err(msg) => render_new_project_page(Some(&current_user), Some(&msg.to_string()))
+                    .into_response(),
             }
         }
-        Err(msg) => render_new_project_page(Some(&current_user), Some(&msg.to_string())).into_response(),
+        Err(msg) => {
+            render_new_project_page(Some(&current_user), Some(&msg.to_string())).into_response()
+        }
     }
 }

@@ -1,4 +1,4 @@
-use crate::{GlobalState, Project, ProjectSummary, User, views::ThemedRender, services::session};
+use crate::{GlobalState, Project, ProjectSummary, User, services::session, views::ThemedRender};
 use askama::Template;
 use axum::{extract::State, response::Html};
 use tower_cookies::Cookies;

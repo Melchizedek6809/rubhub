@@ -2,7 +2,7 @@ use askama::Template;
 use axum::{extract::State, response::Html};
 use tower_cookies::Cookies;
 
-use crate::{GlobalState, User, views::ThemedRender, services::session};
+use crate::{GlobalState, User, services::session, views::ThemedRender};
 
 #[derive(Template)]
 #[template(path = "contact.html")]

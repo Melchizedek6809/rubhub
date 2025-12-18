@@ -1,5 +1,5 @@
 use askama::Template;
-use axum::{body::Body, extract::State, http::Response, response::IntoResponse};
+use axum::{body::Body, extract::State, http::Response};
 use tower_cookies::Cookies;
 
 use crate::{
@@ -28,8 +28,16 @@ pub async fn project_tags_get(
     cookies: Cookies,
     PathUserProject(owner, project): PathUserProject,
 ) -> Response<Body> {
+    let logged_in_user = session::current_user(&state, &cookies).await.ok();
+    let access_level = project
+        .access_level(logged_in_user.as_ref().map(|user| user.slug.clone()))
+        .await;
+
+    if access_level == AccessType::None {
+        return not_found(logged_in_user);
+    }
     let Some(summary) = get_git_summary(&state, &owner.slug, &project.slug).await else {
-        return not_found().await.into_response();
+        return not_found(logged_in_user);
     };
 
     let mut tags: Vec<GitRefInfo> = vec![];
@@ -39,17 +47,12 @@ pub async fn project_tags_get(
         }
     }
 
-    let session_user = session::current_user(&state, &cookies).await.ok();
-    let access_level = project
-        .access_level(session_user.as_ref().map(|user| user.slug.clone()))
-        .await;
-
     let template = ProjectTagsTemplate {
         owner: &owner,
         project: &project,
         access_level,
         tags,
-        logged_in_user: session_user.as_ref(),
+        logged_in_user: logged_in_user.as_ref(),
     };
     template.response()
 }

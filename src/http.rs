@@ -1,11 +1,11 @@
 use axum::{
-    Router, extract::Path, http::header, response::IntoResponse, routing::get, serve::Serve,
+    Router, extract::{Path, State}, http::header, response::IntoResponse, routing::get, serve::Serve,
 };
 use rust_embed::Embed;
 use tokio::net::TcpListener;
-use tower_cookies::CookieManagerLayer;
+use tower_cookies::{CookieManagerLayer, Cookies};
 
-use crate::{GlobalState, controllers};
+use crate::{GlobalState, controllers, services::session};
 
 #[derive(Embed)]
 #[folder = "dist/"]
@@ -62,7 +62,7 @@ pub async fn http_server(
         )
         .route(
             "/dist/{*path}",
-            get(|Path(path): Path<String>| async move {
+            get(|Path(path): Path<String>, State(state): State<GlobalState>, cookies: Cookies| async move {
                 match EmbeddedDist::get(path.as_str()) {
                     Some(asset) => {
                         let mime = mime_guess::from_path(&path).first_or_octet_stream();
@@ -71,12 +71,15 @@ pub async fn http_server(
                             asset.data.into_owned(),
                         )
                             .into_response()
-                    }
-                    None => controllers::not_found().await.into_response(),
+                    },
+                    None => {
+                        let logged_in_user = session::current_user(&state, &cookies).await.ok();
+                        controllers::not_found(logged_in_user)
+                    },
                 }
             }),
         )
-        .fallback(controllers::not_found)
+        .fallback(controllers::not_found_get)
         .layer(CookieManagerLayer::new())
         .with_state(state.clone());
 
