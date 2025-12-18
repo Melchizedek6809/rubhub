@@ -25,8 +25,10 @@ pub async fn index(State(state): State<GlobalState>, cookies: Cookies) -> Html<S
     };
 
     let mut projects: Vec<(User, Project)> = vec![];
-    if let Ok(tuple) = Project::load_by_path(&state, "ben/rubhub".to_string()).await {
-        projects.push(tuple);
+    for project_path in &state.config.featured_projects {
+        if let Ok(tuple) = Project::load_by_path(&state, project_path.clone()).await {
+            projects.push(tuple);
+        }
     }
 
     let featured: Vec<ProjectSummary<'_>> = projects

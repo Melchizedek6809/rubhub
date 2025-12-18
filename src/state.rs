@@ -21,6 +21,7 @@ pub struct AppConfig {
     pub base_url: String,
     pub reuse_port: bool,
     pub content_pages: Vec<ContentPage>,
+    pub featured_projects: Vec<String>,
 }
 
 impl Default for AppConfig {
@@ -55,6 +56,7 @@ impl Default for AppConfig {
             base_url,
             reuse_port: false,
             content_pages: vec![],
+            featured_projects: vec![],
         }
     }
 }
@@ -115,6 +117,11 @@ impl AppConfig {
         self
     }
 
+    pub fn set_featured_projects(mut self, projects: Vec<String>) -> Self {
+        self.featured_projects = projects;
+        self
+    }
+
     pub fn load_env(self) -> Result<Self> {
         let config = self;
 
@@ -150,6 +157,14 @@ impl AppConfig {
             }
             _ => config,
         };
+        let config = match env::var("FEATURED_PROJECTS") {
+            Ok(spec) => {
+                let projects = parse_featured_projects(&spec)
+                    .context("Failed to parse FEATURED_PROJECTS environment variable")?;
+                config.set_featured_projects(projects)
+            }
+            _ => config,
+        };
 
         Ok(config)
     }
@@ -169,6 +184,21 @@ fn parse_content_pages(spec: &str) -> Result<Vec<ContentPage>> {
         .map(|s| s.trim())
         .filter(|s| !s.is_empty())
         .map(|s| ContentPage::parse(s))
+        .collect()
+}
+
+fn parse_featured_projects(spec: &str) -> Result<Vec<String>> {
+    spec.split(',')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .map(|s| {
+            // Enforce ~ prefix for user projects
+            if !s.starts_with('~') {
+                anyhow::bail!("Featured project '{}' must start with ~ prefix (e.g., ~username/project)", s);
+            }
+            // Strip the ~ prefix and store just the path
+            Ok(s[1..].to_string())
+        })
         .collect()
 }
 
