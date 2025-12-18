@@ -1,5 +1,10 @@
 use axum::{
-    Router, extract::{Path, State}, http::header, response::IntoResponse, routing::get, serve::Serve,
+    Router,
+    extract::{Path, State},
+    http::header,
+    response::IntoResponse,
+    routing::get,
+    serve::Serve,
 };
 use rust_embed::Embed;
 use tokio::net::TcpListener;
@@ -18,70 +23,76 @@ pub async fn http_server(
     let process_start = state.process_start;
 
     // build our application with a single route
-    let app = Router::new()
-        .route("/", get(controllers::index))
-        .route("/contact", get(controllers::contact))
-        .route(
-            "/login",
-            get(controllers::login_page).post(controllers::handle_login),
-        )
-        .route(
-            "/registration",
-            get(controllers::registration_page).post(controllers::handle_registration),
-        )
-        .route("/logout", get(controllers::logout))
-        .route(
-            "/settings",
-            get(controllers::settings_page).post(controllers::handle_settings),
-        )
-        .route(
-            "/projects/new",
-            get(controllers::project_new_get).post(controllers::project_new_post),
-        )
-        .route("/{username}", get(controllers::user_page))
-        .route("/{username}/{slug}", get(controllers::project_overview_get))
-        .route(
-            "/{username}/{slug}/branches",
-            get(controllers::project_branches_get),
-        )
-        .route(
-            "/{username}/{slug}/tags",
-            get(controllers::project_tags_get),
-        )
-        .route(
-            "/{username}/{slug}/tree/{branch}",
-            get(controllers::project_overview_tree_get),
-        )
-        .route(
-            "/{username}/{slug}/log/{branch}",
-            get(controllers::project_commits_get),
-        )
-        .route(
-            "/{username}/{slug}/settings",
-            get(controllers::project_settings_get).post(controllers::project_settings_post),
-        )
-        .route(
-            "/dist/{*path}",
-            get(|Path(path): Path<String>, State(state): State<GlobalState>, cookies: Cookies| async move {
-                match EmbeddedDist::get(path.as_str()) {
-                    Some(asset) => {
-                        let mime = mime_guess::from_path(&path).first_or_octet_stream();
-                        (
-                            [(header::CONTENT_TYPE, mime.as_ref())],
-                            asset.data.into_owned(),
-                        )
-                            .into_response()
+    let app =
+        Router::new()
+            .route("/", get(controllers::index))
+            .route("/contact", get(controllers::contact))
+            .route(
+                "/login",
+                get(controllers::login_page).post(controllers::handle_login),
+            )
+            .route(
+                "/registration",
+                get(controllers::registration_page).post(controllers::handle_registration),
+            )
+            .route("/logout", get(controllers::logout))
+            .route(
+                "/settings",
+                get(controllers::settings_page).post(controllers::handle_settings),
+            )
+            .route(
+                "/projects/new",
+                get(controllers::project_new_get).post(controllers::project_new_post),
+            )
+            .route("/{username}", get(controllers::user_page))
+            .route("/{username}/{slug}", get(controllers::project_overview_get))
+            .route(
+                "/{username}/{slug}/branches",
+                get(controllers::project_branches_get),
+            )
+            .route(
+                "/{username}/{slug}/tags",
+                get(controllers::project_tags_get),
+            )
+            .route(
+                "/{username}/{slug}/tree/{branch}",
+                get(controllers::project_overview_tree_get),
+            )
+            .route(
+                "/{username}/{slug}/log/{branch}",
+                get(controllers::project_commits_get),
+            )
+            .route(
+                "/{username}/{slug}/settings",
+                get(controllers::project_settings_get).post(controllers::project_settings_post),
+            )
+            .route(
+                "/dist/{*path}",
+                get(
+                    |Path(path): Path<String>,
+                     State(state): State<GlobalState>,
+                     cookies: Cookies| async move {
+                        match EmbeddedDist::get(path.as_str()) {
+                            Some(asset) => {
+                                let mime = mime_guess::from_path(&path).first_or_octet_stream();
+                                (
+                                    [(header::CONTENT_TYPE, mime.as_ref())],
+                                    asset.data.into_owned(),
+                                )
+                                    .into_response()
+                            }
+                            None => {
+                                let logged_in_user =
+                                    session::current_user(&state, &cookies).await.ok();
+                                controllers::not_found(logged_in_user)
+                            }
+                        }
                     },
-                    None => {
-                        let logged_in_user = session::current_user(&state, &cookies).await.ok();
-                        controllers::not_found(logged_in_user)
-                    },
-                }
-            }),
-        )
-        .fallback(controllers::not_found_get)
-        .layer(CookieManagerLayer::new())
-        .with_state(state.clone());
+                ),
+            )
+            .fallback(controllers::not_found_get)
+            .layer(CookieManagerLayer::new())
+            .with_state(state.clone());
 
     let socket = tokio::net::TcpSocket::new_v4()?;
     socket.set_reuseaddr(true)?;

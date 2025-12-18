@@ -4,20 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-RubHub is a federated git forge written in Rust with a TypeScript/Lit frontend. It uses git itself as the storage backend (no external database) and compiles to a single executable that handles both HTTP and SSH servers.
+RubHub is a federated git forge written in Rust with a TypeScript frontend. It uses git itself as the storage backend (no external database) and compiles to a single executable that handles both HTTP and SSH servers.
 
 **Key Philosophy**: Git as the single source of truth. Everything is stored as JSON files within the git directory structure, enabling federation through git remotes.
 
 ## Development Commands
 
-### Frontend Development (Bun)
+### Frontend Development (Node/npm)
 
 ```bash
-bun run dev          # Watch mode - rebuilds frontend on changes
-bun run build        # Production build - minified frontend assets
-bun run check        # TypeScript type checking
-bun run format       # Format frontend code with Biome
-bun run format:unsafe # Format with unsafe fixes
+npm run dev          # Watch mode - rebuilds frontend on changes
+npm run build        # Production build - minified frontend assets
+npm run check        # TypeScript type checking
+npm run format       # Format frontend code with Biome
+npm run format:unsafe # Format with unsafe fixes
 ```
 
 ### Backend Development (Rust)
@@ -49,7 +49,7 @@ cargo test -- --nocapture
 ### Monorepo Structure
 
 - **Rust backend** (`src/`): Axum HTTP server + russh SSH server in single executable
-- **Frontend** (`frontend/app/`): TypeScript + Lit web components, built with Bun
+- **Frontend** (`frontend/app/`): TypeScript web application, built with Vite
 - **Templates** (`templates/`): Askama server-side templates
 - **Data directory** (`data/`): Git repositories and session storage (not in repo)
 
@@ -91,9 +91,9 @@ pub enum AccessType {
 
 ### Frontend Architecture
 
-**Technology**: TypeScript + Lit Web Components + Bun bundler
+**Technology**: TypeScript + Vite bundler
 
-**Build Output**: Bun builds `frontend/app/app.html` → `dist/` directory → embedded in Rust binary via `rust-embed`
+**Build Output**: Vite builds `frontend/app/app.html` → `dist/` directory → embedded in Rust binary via `rust-embed`
 
 **Theme Injection System:**
 1. Server renders Askama template with placeholders: `<!--HEAD-->` and `<!--BODY-->`
@@ -176,7 +176,7 @@ Tests use fixed ports (32323 for HTTP, 32324 for SSH) to avoid conflicts.
 
 ## Build Pipeline
 
-1. **Frontend**: Bun builds HTML/TS/CSS → `dist/` directory
+1. **Frontend**: Vite builds HTML/TS/CSS → `dist/` directory
 2. **Backend**: Rust embeds `dist/` assets using `rust-embed` crate
 3. **Output**: Single executable with embedded frontend assets
 

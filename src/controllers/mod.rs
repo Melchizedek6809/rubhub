@@ -8,7 +8,7 @@ mod user;
 pub use auth::{handle_login, handle_registration, login_page, logout, registration_page};
 pub use contact::contact;
 pub use landing::index;
-pub use not_found::{not_found,not_found_get};
+pub use not_found::{not_found, not_found_get};
 pub use project::{
     project_branches_get, project_commits_get, project_new_get, project_new_post,
     project_overview_get, project_overview_tree_get, project_settings_get, project_settings_post,
