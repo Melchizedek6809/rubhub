@@ -18,8 +18,9 @@ struct EmbeddedDist;
 
 pub async fn http_server(
     state: GlobalState,
+    listener: TcpListener,
 ) -> anyhow::Result<Serve<TcpListener, Router<()>, Router<()>>> {
-    let bind_addr = state.config.http_bind_addr;
+    let bind_addr = listener.local_addr()?;
     let process_start = state.process_start;
 
     // build our application with a single route
@@ -120,17 +121,6 @@ pub async fn http_server(
             .fallback(controllers::not_found_get)
             .layer(CookieManagerLayer::new())
             .with_state(state.clone());
-
-    let socket = tokio::net::TcpSocket::new_v4()?;
-    socket.set_reuseaddr(true)?;
-
-    // Enable reuseport on Linux, that way we can run multiple replicas
-    #[cfg(target_os = "linux")]
-    socket.set_reuseport(state.config.reuse_port)?;
-
-    socket.bind(bind_addr)?;
-
-    let listener = socket.listen(1024)?;
 
     println!(
         "[{:?}] - RubHub HTTP ready on {bind_addr}",

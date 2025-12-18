@@ -1,11 +1,16 @@
 use std::collections::HashMap;
+use std::future::Future;
 
 use anyhow::{Result, anyhow};
 use reqwest::Client;
-use rubhub::{AppConfig, run};
+use rubhub::{AppConfig, GlobalState, create_listeners, run};
 use tempfile::TempDir;
 
-async fn with_backend<T: Future>(test: T) {
+async fn with_backend<F, Fut>(test: F)
+where
+    F: FnOnce(GlobalState) -> Fut,
+    Fut: Future<Output = ()>,
+{
     let process_start = std::time::Instant::now();
     let dir = TempDir::new().expect("Couldn't create TempDir");
     let path = dir.path();
@@ -13,16 +18,30 @@ async fn with_backend<T: Future>(test: T) {
 
     println!("TempDir: {dir_root}");
 
-    // ToDo: find a better way to figure out which port to run tests on!
+    // Bind to port 0 for OS-assigned ports
     let config = AppConfig::default()
         .set_dir_root(dir_root)
-        .set_http_bind_addr("127.0.0.1:32323")
+        .set_http_bind_addr("127.0.0.1:0")
         .expect("set_http_bind_addr")
-        .set_ssh_bind_addr("127.0.0.1:32324")
+        .set_ssh_bind_addr("127.0.0.1:0")
         .expect("set_ssh_bind_addr");
+
+    // Create listeners and get actual ports
+    let (http_listener, http_addr, ssh_listener, ssh_addr) =
+        create_listeners(&config).expect("Failed to create listeners");
+
+    println!("HTTP bound to: {}", http_addr);
+    println!("SSH bound to: {}", ssh_addr);
+
+    // Update config with actual addresses
+    let config = config.update_bound_addresses(http_addr, ssh_addr);
     let state = config.build(process_start).expect("GlobalState");
 
-    run(state, test).await;
+    // Pass state to test - it can access:
+    // - state.config.base_url for HTTP requests
+    // - state.config.ssh_public_host for SSH URLs
+    // - Any other config as needed
+    run(state.clone(), http_listener, ssh_listener, test(state)).await;
 
     std::fs::remove_dir_all(path).expect("Couldn't clean up TempDir");
 }
@@ -46,15 +65,15 @@ async fn response_contains(client: &Client, url: &str, needle: &str) -> Result<(
 
 #[tokio::test(flavor = "current_thread")]
 async fn basic_workflow() {
-    with_backend(async {
-        let base = "http://127.0.0.1:32323";
+    with_backend(|state| async move {
+        let base_url = &state.config.base_url;
 
         let client = reqwest::Client::builder()
             .cookie_store(true)
             .build()
             .expect("Couldn't initialize reqwest client");
 
-        response_contains(&client, &format!("{base}/"), "Welcome to RubHub")
+        response_contains(&client, &format!("{base_url}/"), "RubHub")
             .await
             .unwrap();
 
@@ -66,7 +85,7 @@ async fn basic_workflow() {
 
         // First we try to register with a username that's too short
         client
-            .post(format!("{base}/registration"))
+            .post(format!("{base_url}/registration"))
             .form(&form)
             .send()
             .await
@@ -77,7 +96,7 @@ async fn basic_workflow() {
         // Now we use the full username
         form.insert("username", "test");
         client
-            .post(format!("{base}/registration"))
+            .post(format!("{base_url}/registration"))
             .form(&form)
             .send()
             .await
@@ -85,12 +104,12 @@ async fn basic_workflow() {
             .error_for_status()
             .expect("Registration request failed");
 
-        response_contains(&client, &format!("{base}/~test"), "test")
+        response_contains(&client, &format!("{base_url}/~test"), "test")
             .await
             .unwrap();
 
         client
-            .get(format!("{base}/logout"))
+            .get(format!("{base_url}/logout"))
             .send()
             .await
             .expect("Logout failed")

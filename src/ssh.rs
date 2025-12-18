@@ -5,7 +5,6 @@ use russh::keys::*;
 use russh::server::{Msg, Server as _, Session};
 use russh::*;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpSocket;
 use tokio::process::Command;
 use tokio::task::JoinHandle;
 
@@ -47,6 +46,7 @@ async fn load_or_create_key(state: &GlobalState, key_type: &str) -> Result<Priva
 
 pub async fn ssh_server(
     state: GlobalState,
+    listener: tokio::net::TcpListener,
 ) -> Result<JoinHandle<Result<(), std::io::Error>>, std::io::Error> {
     let ed_key = load_or_create_key(&state, "ed25519").await?;
     let rsa_key = load_or_create_key(&state, "rsa").await?;
@@ -72,17 +72,7 @@ pub async fn ssh_server(
         state: state.clone(),
     };
 
-    let bind_addr = sh.state.config.ssh_bind_addr;
-    let socket = if bind_addr.is_ipv4() {
-        TcpSocket::new_v4()?
-    } else {
-        TcpSocket::new_v6()?
-    };
-    socket.set_reuseaddr(true)?;
-    #[cfg(target_os = "linux")]
-    socket.set_reuseport(state.config.reuse_port)?;
-    socket.bind(bind_addr)?;
-    let socket = socket.listen(1024)?;
+    let bind_addr = listener.local_addr()?;
 
     println!(
         "[{:?}] - Started rubhub SSH server on {bind_addr}",
@@ -90,7 +80,7 @@ pub async fn ssh_server(
     );
 
     Ok(tokio::task::spawn(async move {
-        let server = sh.run_on_socket(config, &socket);
+        let server = sh.run_on_socket(config, &listener);
         let _handle = server.handle();
 
         server.await

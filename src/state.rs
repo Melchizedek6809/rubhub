@@ -129,6 +129,25 @@ impl AppConfig {
         self
     }
 
+    /// Update bind addresses and derived URLs after binding
+    pub fn update_bound_addresses(
+        mut self,
+        http_addr: SocketAddr,
+        ssh_addr: SocketAddr,
+    ) -> Self {
+        self.http_bind_addr = http_addr;
+        self.base_url = format!("http://{}", http_addr);
+
+        self.ssh_bind_addr = ssh_addr;
+        self.ssh_public_host = if ssh_addr.port() == 22 {
+            format!("{}", ssh_addr.ip())
+        } else {
+            format!("{}", ssh_addr)
+        };
+
+        self
+    }
+
     pub fn load_env(self) -> Result<Self> {
         let config = self;
 
@@ -198,7 +217,7 @@ fn parse_content_pages(spec: &str) -> Result<Vec<ContentPage>> {
     spec.split(',')
         .map(|s| s.trim())
         .filter(|s| !s.is_empty())
-        .map(|s| ContentPage::parse(s))
+        .map(ContentPage::parse)
         .collect()
 }
 
@@ -221,11 +240,7 @@ fn parse_index_content(spec: &str) -> Result<ContentPage> {
     let path = spec.trim();
 
     // Strip leading ~ if present
-    let path = if path.starts_with('~') {
-        &path[1..]
-    } else {
-        path
-    };
+    let path = path.strip_prefix("~").unwrap_or(path);
 
     let parts: Vec<&str> = path.split('/').collect();
     if parts.len() < 3 {
