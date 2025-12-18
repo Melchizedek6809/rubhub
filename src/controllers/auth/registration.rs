@@ -8,7 +8,7 @@ use axum::{
 use serde::Deserialize;
 
 use crate::{
-    GlobalState, User,
+    GlobalState, Project, User,
     services::{
         session,
         validation::{slugify, validate_password, validate_username},
@@ -28,12 +28,14 @@ pub struct RegistrationForm {
 struct RegistrationTemplate<'a> {
     message: Option<&'a str>,
     logged_in_user: Option<&'a User>,
+    sidebar_projects: Vec<Project>,
 }
 
 async fn render_registration_page(message: Option<&str>) -> Html<String> {
     let template = RegistrationTemplate {
         message,
         logged_in_user: None,
+        sidebar_projects: vec![],
     };
     Html(template.render_with_theme())
 }

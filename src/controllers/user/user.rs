@@ -3,7 +3,7 @@ use axum::{body::Body, extract::State, http::Response, response::Html};
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, ProjectSummary, User, controllers::not_found, extractors::PathUser,
+    GlobalState, Project, ProjectSummary, User, controllers::not_found, extractors::PathUser,
     services::session, views::ThemedRender,
 };
 
@@ -14,6 +14,7 @@ struct UserTemplate<'a> {
     projects: &'a [ProjectSummary<'a>],
     is_owner: bool,
     logged_in_user: Option<&'a User>,
+    sidebar_projects: Vec<Project>,
 }
 
 pub async fn user_page(
@@ -22,6 +23,13 @@ pub async fn user_page(
     PathUser(owner): PathUser,
 ) -> Result<Html<String>, Response<Body>> {
     let logged_in_user = session::current_user(&state, &cookies).await.ok();
+
+    let sidebar_projects = if let Some(ref user) = logged_in_user {
+        user.sidebar_projects(&state).await
+    } else {
+        vec![]
+    };
+
     let is_owner = logged_in_user
         .as_ref()
         .map(|user| user.id == owner.id)
@@ -31,7 +39,7 @@ pub async fn user_page(
         Ok(projects) => projects,
         Err(e) => {
             eprintln!("{:?}", e);
-            return Err(not_found(logged_in_user));
+            return Err(not_found(logged_in_user, vec![]));
         }
     };
 
@@ -51,6 +59,7 @@ pub async fn user_page(
         projects: &summaries,
         is_owner,
         logged_in_user: logged_in_user.as_ref(),
+        sidebar_projects,
     };
     Ok(Html(template.render_with_theme()))
 }

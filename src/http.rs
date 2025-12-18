@@ -84,7 +84,7 @@ pub async fn http_server(
                             None => {
                                 let logged_in_user =
                                     session::current_user(&state, &cookies).await.ok();
-                                controllers::not_found(logged_in_user)
+                                controllers::not_found(logged_in_user, vec![])
                             }
                         }
                     },

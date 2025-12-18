@@ -141,6 +141,18 @@ impl User {
         Ok(ret)
     }
 
+    pub async fn sidebar_projects(&self, state: &GlobalState) -> Vec<Project> {
+        let mut projects = self.projects(state).await.unwrap_or_default();
+
+        // Sort alphabetically by project name (case-insensitive)
+        projects.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+
+        // Limit to 10 projects
+        projects.truncate(10);
+
+        projects
+    }
+
     pub fn uri(&self) -> String {
         format!("/~{}", self.slug)
     }

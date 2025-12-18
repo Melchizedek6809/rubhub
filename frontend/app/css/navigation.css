@@ -46,6 +46,72 @@
 	background: var(--background-color);
 }
 
+.nav-section-heading {
+	display: block;
+	width: 100%;
+	padding: var(--space-s) var(--space-m);
+	font-size: 0.85rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--text-color);
+	opacity: 0.6;
+}
+
+.nav-project-item {
+	display: flex;
+	align-items: center;
+	gap: var(--space-xs);
+	width: 100%;
+}
+
+.nav-btn-secondary {
+	text-decoration: none;
+	color: var(--text-color);
+	display: block;
+	flex: 1;
+	padding: var(--space-s) var(--space-m);
+	border-radius: var(--space-s);
+	background: var(--background-color-bright);
+	transition: background-color 300ms ease-in-out;
+	opacity: 0.8;
+	font-size: 0.95rem;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.nav-btn-secondary:focus,
+.nav-btn-secondary:hover,
+.nav-btn-secondary:active {
+	background: var(--background-color);
+	opacity: 1;
+}
+
+.nav-project-settings {
+	text-decoration: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 2rem;
+	height: 2rem;
+	border-radius: var(--space-s);
+	background: var(--background-color-bright);
+	transition:
+		background-color 300ms ease-in-out,
+		opacity 300ms ease-in-out;
+	opacity: 0.5;
+	font-size: 0.9rem;
+	flex-shrink: 0;
+	color: var(--text-color);
+}
+
+.nav-project-settings:hover,
+.nav-project-settings:focus {
+	background: var(--background-color);
+	opacity: 1;
+}
+
 #sidebar a.logo {
 	background: var(--background-color-bright);
 	color: var(--secondary-color);
@@ -66,8 +132,12 @@
 #sidebar-top {
 	display: flex;
 	align-content: start;
-	justify-content: center;
+	justify-content: start;
 	width: 100%;
+}
+
+#sidebar-top .logo {
+	padding: var(--space-s) var(--space-m);
 }
 
 @media screen and (min-width: 1000px) {

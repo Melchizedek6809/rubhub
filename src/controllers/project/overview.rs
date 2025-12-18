@@ -25,6 +25,7 @@ struct ProjectTemplate<'a> {
     info: Option<GitRefInfo>,
     readme_html: Option<String>,
     logged_in_user: Option<&'a User>,
+    sidebar_projects: Vec<Project>,
 }
 
 async fn render_project_page(
@@ -35,16 +36,23 @@ async fn render_project_page(
     branch: Option<String>,
 ) -> Response<Body> {
     let logged_in_user = session::current_user(state, &cookies).await.ok();
+
+    let sidebar_projects = if let Some(ref user) = logged_in_user {
+        user.sidebar_projects(state).await
+    } else {
+        vec![]
+    };
+
     let access_level = project
         .access_level(logged_in_user.as_ref().map(|user| user.slug.clone()))
         .await;
 
     if access_level == AccessType::None {
-        return not_found(logged_in_user);
+        return not_found(logged_in_user, vec![]);
     }
 
     let Some(summary) = get_git_summary(state, &owner.slug, &project.slug).await else {
-        return not_found(logged_in_user);
+        return not_found(logged_in_user, vec![]);
     };
 
     let git_user = logged_in_user
@@ -92,6 +100,7 @@ async fn render_project_page(
         selected_branch,
         readme_html,
         logged_in_user: logged_in_user.as_ref(),
+        sidebar_projects,
     };
     template.response()
 }

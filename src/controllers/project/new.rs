@@ -26,6 +26,7 @@ pub struct NewProjectForm {
 struct NewProjectTemplate<'a> {
     message: Option<&'a str>,
     logged_in_user: Option<&'a User>,
+    sidebar_projects: Vec<Project>,
 }
 
 pub async fn project_new_get(
@@ -36,13 +37,24 @@ pub async fn project_new_get(
         Ok(user) => user,
         Err(_) => return Err(Redirect::to("/login")),
     };
-    Ok(render_new_project_page(Some(&logged_in_user), None))
+    Ok(render_new_project_page(&state, Some(&logged_in_user), None).await)
 }
 
-fn render_new_project_page(logged_in_user: Option<&User>, message: Option<&str>) -> Html<String> {
+async fn render_new_project_page(
+    state: &GlobalState,
+    logged_in_user: Option<&User>,
+    message: Option<&str>,
+) -> Html<String> {
+    let sidebar_projects = if let Some(user) = logged_in_user {
+        user.sidebar_projects(state).await
+    } else {
+        vec![]
+    };
+
     let template = NewProjectTemplate {
         message,
         logged_in_user,
+        sidebar_projects,
     };
     Html(template.render_with_theme())
 }
@@ -65,12 +77,15 @@ pub async fn project_new_post(
 
     let name = form.name.trim();
     if name.is_empty() {
-        return render_new_project_page(Some(&current_user), Some("Name is required."))
+        return render_new_project_page(&state, Some(&current_user), Some("Name is required."))
+            .await
             .into_response();
     }
 
     if let Err(msg) = validate_project_name(name) {
-        return render_new_project_page(Some(&current_user), Some(msg)).into_response();
+        return render_new_project_page(&state, Some(&current_user), Some(msg))
+            .await
+            .into_response();
     }
 
     let user_slug = current_user.slug.clone();
@@ -82,9 +97,11 @@ pub async fn project_new_post(
                 .is_ok()
             {
                 return render_new_project_page(
+                    &state,
                     Some(&current_user),
                     Some("Project already exists"),
                 )
+                .await
                 .into_response();
             };
             match project.save(&state).await {
@@ -92,18 +109,23 @@ pub async fn project_new_post(
                     match create_bare_repo(&state, user_slug.clone(), project.slug.clone()).await {
                         Ok(_) => Redirect::to(&project.uri()).into_response(),
                         Err(_) => render_new_project_page(
+                            &state,
                             Some(&current_user),
                             Some("Could not create project."),
                         )
+                        .await
                         .into_response(),
                     }
                 }
-                Err(msg) => render_new_project_page(Some(&current_user), Some(&msg.to_string()))
-                    .into_response(),
+                Err(msg) => {
+                    render_new_project_page(&state, Some(&current_user), Some(&msg.to_string()))
+                        .await
+                        .into_response()
+                }
             }
         }
-        Err(msg) => {
-            render_new_project_page(Some(&current_user), Some(&msg.to_string())).into_response()
-        }
+        Err(msg) => render_new_project_page(&state, Some(&current_user), Some(&msg.to_string()))
+            .await
+            .into_response(),
     }
 }

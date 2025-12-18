@@ -9,7 +9,7 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, User,
+    GlobalState, Project, User,
     services::{
         session as session_service,
         validation::{validate_uri, validate_username},
@@ -34,6 +34,7 @@ struct UserSettingsTemplate<'a> {
     ssh_keys: &'a [String],
     message: Option<&'a str>,
     logged_in_user: Option<&'a User>,
+    sidebar_projects: Vec<Project>,
 }
 
 pub async fn settings_page(
@@ -46,11 +47,12 @@ pub async fn settings_page(
     };
     let ssh_keys = current_user.ssh_keys.clone();
 
-    Ok(render_settings_page(&cookies, current_user, &ssh_keys, None).await)
+    Ok(render_settings_page(&cookies, &state, current_user, &ssh_keys, None).await)
 }
 
 async fn internal_error(
     cookies: &tower_cookies::Cookies,
+    state: &GlobalState,
     user: User,
     ssh_keys: &[String],
     err: &str,
@@ -58,7 +60,7 @@ async fn internal_error(
     eprintln!("auth error: {err}");
     (
         axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-        render_settings_page(cookies, user, ssh_keys, Some(err)).await,
+        render_settings_page(cookies, state, user, ssh_keys, Some(err)).await,
     )
 }
 
@@ -90,6 +92,7 @@ pub async fn handle_settings(
             StatusCode::BAD_REQUEST,
             render_settings_page(
                 &cookies,
+                &state,
                 current_user,
                 &ssh_keys,
                 Some("Default main branch is required"),
@@ -101,7 +104,7 @@ pub async fn handle_settings(
     if let Err(msg) = validate_username(name) {
         return Err((
             StatusCode::BAD_REQUEST,
-            render_settings_page(&cookies, current_user, &ssh_keys, Some(msg)).await,
+            render_settings_page(&cookies, &state, current_user, &ssh_keys, Some(msg)).await,
         ));
     }
 
@@ -110,7 +113,7 @@ pub async fn handle_settings(
     {
         return Err((
             StatusCode::BAD_REQUEST,
-            render_settings_page(&cookies, current_user, &ssh_keys, Some(msg)).await,
+            render_settings_page(&cookies, &state, current_user, &ssh_keys, Some(msg)).await,
         ));
     }
 
@@ -122,29 +125,39 @@ pub async fn handle_settings(
     current_user.ssh_keys = ssh_keys.clone();
 
     if let Err(err) = current_user.save(&state).await {
-        return Err(internal_error(&cookies, current_user, &ssh_keys, &err.to_string()).await);
+        return Err(
+            internal_error(&cookies, &state, current_user, &ssh_keys, &err.to_string()).await,
+        );
     }
 
     session_service::set_user_cookie(&cookies, current_user.id, &current_user.slug);
 
-    Ok(
-        render_settings_page(&cookies, current_user, &ssh_keys, Some("Settings updated."))
-            .await
-            .into_response(),
+    Ok(render_settings_page(
+        &cookies,
+        &state,
+        current_user,
+        &ssh_keys,
+        Some("Settings updated."),
     )
+    .await
+    .into_response())
 }
 
 async fn render_settings_page(
     _cookies: &tower_cookies::Cookies,
+    state: &GlobalState,
     user: User,
     ssh_keys: &[String],
     message: Option<&str>,
 ) -> Html<String> {
+    let sidebar_projects = user.sidebar_projects(state).await;
+
     let template = UserSettingsTemplate {
         user: &user,
         ssh_keys,
         message,
         logged_in_user: Some(&user),
+        sidebar_projects,
     };
     Html(template.render_with_theme())
 }

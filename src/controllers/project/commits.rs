@@ -38,6 +38,7 @@ struct ProjectCommitsTemplate<'a> {
     page_min: i32,
     page_max: i32,
     logged_in_user: Option<&'a User>,
+    sidebar_projects: Vec<Project>,
 }
 
 pub async fn project_commits_get(
@@ -47,15 +48,22 @@ pub async fn project_commits_get(
     PathUserProjectBranch(owner, project, current): PathUserProjectBranch,
 ) -> Response<Body> {
     let logged_in_user = session::current_user(&state, &cookies).await.ok();
+
+    let sidebar_projects = if let Some(ref user) = logged_in_user {
+        user.sidebar_projects(&state).await
+    } else {
+        vec![]
+    };
+
     let access_level = project
         .access_level(logged_in_user.as_ref().map(|user| user.slug.clone()))
         .await;
 
     if access_level == AccessType::None {
-        return not_found(logged_in_user);
+        return not_found(logged_in_user, vec![]);
     }
     let Some(summary) = get_git_summary(&state, &owner.slug, &project.slug).await else {
-        return not_found(logged_in_user);
+        return not_found(logged_in_user, vec![]);
     };
 
     let page_size: i32 = 20;
@@ -104,6 +112,7 @@ pub async fn project_commits_get(
         page_min,
         page_max,
         logged_in_user: logged_in_user.as_ref(),
+        sidebar_projects,
     };
     template.response()
 }

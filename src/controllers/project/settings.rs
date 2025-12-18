@@ -26,6 +26,7 @@ struct ProjectSettingsTemplate<'a> {
     project: &'a Project,
     message: Option<&'a str>,
     logged_in_user: Option<&'a User>,
+    sidebar_projects: Vec<Project>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -52,7 +53,7 @@ pub async fn project_settings_get(
         return Redirect::to(&project.uri()).into_response();
     }
 
-    render_project_settings_page(&current_user, owner, project, None)
+    render_project_settings_page(&state, &current_user, owner, project, None).await
 }
 
 pub async fn project_settings_post(
@@ -79,35 +80,42 @@ pub async fn project_settings_post(
     let public_access = match AccessType::parse_public_access(&form.public_access) {
         Ok(level) => level,
         Err(msg) => {
-            return render_project_settings_page(&current_user, owner, project, Some(msg));
+            return render_project_settings_page(&state, &current_user, owner, project, Some(msg))
+                .await;
         }
     };
 
     if let Err(msg) = validate_project_name(name) {
-        return render_project_settings_page(&current_user, owner, project, Some(msg));
+        return render_project_settings_page(&state, &current_user, owner, project, Some(msg))
+            .await;
     }
 
     if !website.is_empty()
         && let Err(msg) = validate_uri(website)
     {
-        return render_project_settings_page(&current_user, owner, project, Some(msg));
+        return render_project_settings_page(&state, &current_user, owner, project, Some(msg))
+            .await;
     }
 
     if name.is_empty() {
         return render_project_settings_page(
+            &state,
             &current_user,
             owner,
             project,
             Some("Name is required."),
-        );
+        )
+        .await;
     }
     if main_branch.is_empty() {
         return render_project_settings_page(
+            &state,
             &current_user,
             owner,
             project,
             Some("Branch name is required."),
-        );
+        )
+        .await;
     }
 
     project.name = name.to_owned();
@@ -124,17 +132,21 @@ pub async fn project_settings_post(
     Redirect::to(&project.uri_settings()).into_response()
 }
 
-fn render_project_settings_page(
+async fn render_project_settings_page(
+    state: &GlobalState,
     logged_in_user: &User,
     owner: User,
     project: Project,
     message: Option<&str>,
 ) -> Response<Body> {
+    let sidebar_projects = logged_in_user.sidebar_projects(state).await;
+
     let template = ProjectSettingsTemplate {
         owner: &owner,
         project: &project,
         message,
         logged_in_user: Some(logged_in_user),
+        sidebar_projects,
     };
     template.response()
 }
