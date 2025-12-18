@@ -67,6 +67,10 @@ pub async fn http_server(
                 get(controllers::project_settings_get).post(controllers::project_settings_post),
             )
             .route(
+                "/{username}/{slug}/delete",
+                axum::routing::post(controllers::project_delete_post),
+            )
+            .route(
                 "/dist/{*path}",
                 get(
                     |Path(path): Path<String>,

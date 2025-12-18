@@ -60,6 +60,36 @@ impl Project {
         Ok(())
     }
 
+    pub async fn delete(&self, state: &GlobalState) -> Result<()> {
+        // Validate slugs for safety (defense in depth)
+        if validate_slug(&self.owner).is_err() {
+            return Err(anyhow!("Invalid username"));
+        }
+        if validate_slug(&self.slug).is_err() {
+            return Err(anyhow!("Invalid projectname"));
+        }
+
+        // Verify user exists (safety check)
+        let _user = User::load(state, &self.owner).await?;
+
+        // Construct paths
+        let metadata_path = state
+            .config
+            .git_root
+            .join(&self.owner)
+            .join(format!("!{}.json", self.slug));
+
+        let repo_path = state.config.git_root.join(&self.owner).join(&self.slug);
+
+        // Delete metadata first (safer failure mode)
+        tokio::fs::remove_file(&metadata_path).await?;
+
+        // Delete git repository directory
+        tokio::fs::remove_dir_all(&repo_path).await?;
+
+        Ok(())
+    }
+
     pub fn new(user: &User, name: &str, public_access: AccessType) -> Result<Self> {
         let slug = slugify(name);
         if validate_slug(&user.slug).is_err() {

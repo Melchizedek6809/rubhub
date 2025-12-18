@@ -63,6 +63,24 @@
 
           <button type="submit">Save</button>
         </form>
+
+        <!-- Danger Zone -->
+        <div class="danger-zone card">
+          <h2>Danger Zone</h2>
+          <p>Deleting a project is permanent and cannot be undone. All repository data and commit history will be lost.</p>
+
+          <form method="post" action="/~{{ owner.slug }}/{{ project.slug }}/delete" class="delete-form">
+            <input type="hidden" name="confirmation" value="" />
+            <button
+              type="button"
+              id="project-delete-button"
+              class="danger-button"
+              data-project-path="{{ owner.slug }}/{{ project.slug }}"
+            >
+              Delete Project
+            </button>
+          </form>
+        </div>
       </section>
     </main>
   </body>

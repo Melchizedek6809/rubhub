@@ -130,3 +130,48 @@ const initCopyButtons = () => {
 	}
 };
 setTimeout(initCopyButtons, 0);
+
+const initProjectDelete = () => {
+	const deleteButton = document.querySelector<HTMLButtonElement>(
+		"#project-delete-button",
+	);
+	if (!deleteButton) {
+		return;
+	}
+
+	const projectPath = deleteButton.getAttribute("data-project-path");
+	if (!projectPath) {
+		return;
+	}
+
+	deleteButton.onclick = (e) => {
+		e.preventDefault();
+
+		const confirmation = prompt(
+			`To confirm deletion, type the project path exactly:\n${projectPath}`,
+		);
+
+		if (confirmation === null) {
+			// User cancelled
+			return;
+		}
+
+		if (confirmation.trim() !== projectPath) {
+			alert("Confirmation text did not match. Deletion cancelled.");
+			return;
+		}
+
+		// Submit the form
+		const form = deleteButton.closest("form");
+		if (form) {
+			const confirmationInput = form.querySelector<HTMLInputElement>(
+				'input[name="confirmation"]',
+			);
+			if (confirmationInput) {
+				confirmationInput.value = confirmation;
+			}
+			form.submit();
+		}
+	};
+};
+setTimeout(initProjectDelete, 0);

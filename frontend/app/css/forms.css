@@ -40,6 +40,27 @@ button:focus {
 	border-color: var(--primary-color-dark);
 }
 
+.danger-button {
+	background: var(--error-color-bright);
+	color: var(--white);
+}
+
+.danger-button:hover,
+.danger-button:focus {
+	background-color: var(--error-color);
+}
+
+.danger-zone {
+	margin-top: var(--space-xl);
+	border: 2px solid var(--error-color);
+	padding: var(--space-l);
+}
+
+.danger-zone h2 {
+	color: var(--error-color-bright);
+	margin-top: 0;
+}
+
 select,
 textarea,
 input {
