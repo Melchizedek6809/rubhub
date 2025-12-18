@@ -115,6 +115,27 @@ Environment variables (use `.env` or `.env.development`):
 - `DIR_ROOT` - Data directory root (defaults to `./data/`)
 - `HTTP_BIND_ADDR` - HTTP server bind address (default: `127.0.0.1:3000`)
 - `SSH_BIND_ADDR` - SSH server bind address (default: `127.0.0.1:2222`)
+- `SITE_CONTENT` - Comma-separated list of content pages (optional)
+
+#### Content Pages
+
+Static content pages can be configured via the `SITE_CONTENT` environment variable:
+
+```bash
+SITE_CONTENT=Contact:/ben/rubhub.net/contact.md,Terms:/ben/rubhub.net/terms.md
+```
+
+**Format**: `Title:user/repo/path.md` (comma-separated)
+- URLs are auto-slugified from titles (`/contact`, `/terms-of-service`)
+- Markdown files are fetched from git repositories (always public, tries `main` then `master` branch)
+- Pages automatically appear in sidebar navigation
+- Markdown is rendered with GitHub Flavored Markdown and sanitized with ammonia
+
+**Implementation**:
+- Parsed at startup in `AppConfig::load_env()` (fails fast on invalid format)
+- Routes dynamically registered in `http.rs` before `/{username}` route
+- Content fetched on each request via `services::repository::get_git_file()`
+- Rendering handled by `controllers::content_page::render_content_page()`
 
 ## Important Patterns
 

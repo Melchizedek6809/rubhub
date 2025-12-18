@@ -6,7 +6,9 @@ use std::{
     time::Instant,
 };
 
-use anyhow::Result;
+use anyhow::{Context, Result};
+
+use crate::models::ContentPage;
 
 #[derive(Debug, Clone)]
 pub struct AppConfig {
@@ -18,6 +20,7 @@ pub struct AppConfig {
     pub ssh_public_host: String,
     pub base_url: String,
     pub reuse_port: bool,
+    pub content_pages: Vec<ContentPage>,
 }
 
 impl Default for AppConfig {
@@ -51,6 +54,7 @@ impl Default for AppConfig {
             ssh_public_host,
             base_url,
             reuse_port: false,
+            content_pages: vec![],
         }
     }
 }
@@ -106,6 +110,11 @@ impl AppConfig {
         self
     }
 
+    pub fn set_content_pages(mut self, pages: Vec<ContentPage>) -> Self {
+        self.content_pages = pages;
+        self
+    }
+
     pub fn load_env(self) -> Result<Self> {
         let config = self;
 
@@ -133,6 +142,14 @@ impl AppConfig {
             Ok(b) => config.set_reuse_port(b.to_lowercase() == "true"),
             _ => config,
         };
+        let config = match env::var("SITE_CONTENT") {
+            Ok(spec) => {
+                let pages = parse_content_pages(&spec)
+                    .context("Failed to parse SITE_CONTENT environment variable")?;
+                config.set_content_pages(pages)
+            }
+            _ => config,
+        };
 
         Ok(config)
     }
@@ -145,6 +162,14 @@ impl AppConfig {
     pub fn build(self, process_start: Instant) -> Result<GlobalState> {
         GlobalState::new(self, process_start)
     }
+}
+
+fn parse_content_pages(spec: &str) -> Result<Vec<ContentPage>> {
+    spec.split(',')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .map(|s| ContentPage::parse(s))
+        .collect()
 }
 
 #[derive(Debug, Clone)]

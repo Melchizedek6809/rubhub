@@ -3,8 +3,8 @@ use axum::{body::Body, extract::State, http::Response, response::Html};
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, Project, ProjectSummary, User, controllers::not_found, extractors::PathUser,
-    services::session, views::ThemedRender,
+    controllers::not_found, extractors::PathUser, models::ContentPage, services::session,
+    views::ThemedRender, GlobalState, Project, ProjectSummary, User,
 };
 
 #[derive(Template)]
@@ -15,6 +15,7 @@ struct UserTemplate<'a> {
     is_owner: bool,
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
+    content_pages: Vec<ContentPage>,
 }
 
 pub async fn user_page(
@@ -39,7 +40,7 @@ pub async fn user_page(
         Ok(projects) => projects,
         Err(e) => {
             eprintln!("{:?}", e);
-            return Err(not_found(logged_in_user, vec![]));
+            return Err(not_found(logged_in_user, state.config.content_pages.clone()));
         }
     };
 
@@ -60,6 +61,7 @@ pub async fn user_page(
         is_owner,
         logged_in_user: logged_in_user.as_ref(),
         sidebar_projects,
+        content_pages: state.config.content_pages.clone(),
     };
     Ok(Html(template.render_with_theme()))
 }

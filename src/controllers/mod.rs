@@ -1,12 +1,12 @@
 mod auth;
-mod contact;
+mod content_page;
 mod landing;
 mod not_found;
 mod project;
 mod user;
 
 pub use auth::{handle_login, handle_registration, login_page, logout, registration_page};
-pub use contact::contact;
+pub use content_page::render_content_page;
 pub use landing::index;
 pub use not_found::{not_found, not_found_get};
 pub use project::{

@@ -9,12 +9,13 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, Project, User,
+    models::ContentPage,
     services::{
         session as session_service,
         validation::{validate_uri, validate_username},
     },
     views::ThemedRender,
+    GlobalState, Project, User,
 };
 
 #[derive(Debug, Deserialize)]
@@ -35,6 +36,7 @@ struct UserSettingsTemplate<'a> {
     message: Option<&'a str>,
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
+    content_pages: Vec<ContentPage>,
 }
 
 pub async fn settings_page(
@@ -158,6 +160,7 @@ async fn render_settings_page(
         message,
         logged_in_user: Some(&user),
         sidebar_projects,
+        content_pages: state.config.content_pages.clone(),
     };
     Html(template.render_with_theme())
 }

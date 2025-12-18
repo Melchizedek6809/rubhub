@@ -6,6 +6,7 @@ use crate::{
     AccessType, GlobalState, Project, User,
     controllers::not_found,
     extractors::{PathUserProject, PathUserProjectBranch},
+    models::ContentPage,
     services::{
         repository::{GitRefInfo, GitSummary, get_git_file, get_git_info, get_git_summary},
         session,
@@ -27,6 +28,7 @@ struct ProjectTemplate<'a> {
     readme_html: Option<String>,
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
+    content_pages: Vec<ContentPage>,
 }
 
 async fn render_project_page(
@@ -101,6 +103,7 @@ async fn render_project_page(
         readme_html,
         logged_in_user: logged_in_user.as_ref(),
         sidebar_projects,
+        content_pages: state.config.content_pages.clone(),
     };
     template.response()
 }

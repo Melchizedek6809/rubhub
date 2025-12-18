@@ -47,7 +47,11 @@
 
   <div class="flex-gap"></div>
 
-  <a href="/contact" class="nav-btn">Contact</a>
+  {% if !content_pages.is_empty() %}
+    {% for page in content_pages %}
+  <a href="{{ page.url_path() }}" class="nav-btn">{{ page.title }}</a>
+    {% endfor %}
+  {% endif %}
   <div class="actions">
     {% if let Some(user) = logged_in_user %}
     <span>{{ user.slug }}</span>

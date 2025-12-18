@@ -11,6 +11,7 @@ use crate::{
     AccessType, GlobalState, Project, User,
     controllers::not_found,
     extractors::PathUserProjectBranch,
+    models::ContentPage,
     services::{
         repository::{GitRefInfo, GitSummary, get_git_info, get_git_summary},
         session,
@@ -40,6 +41,7 @@ struct ProjectCommitsTemplate<'a> {
     page_max: i32,
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
+    content_pages: Vec<ContentPage>,
 }
 
 pub async fn project_commits_get(
@@ -113,6 +115,7 @@ pub async fn project_commits_get(
         page_max,
         logged_in_user: logged_in_user.as_ref(),
         sidebar_projects,
+        content_pages: state.config.content_pages.clone(),
     };
     template.response()
 }

@@ -6,6 +6,7 @@ use crate::{
     AccessType, GlobalState, Project, User,
     controllers::not_found,
     extractors::PathUserProject,
+    models::ContentPage,
     services::{
         repository::{GitRefInfo, get_git_info, get_git_summary},
         session,
@@ -22,6 +23,7 @@ struct ProjectTagsTemplate<'a> {
     tags: Vec<GitRefInfo>,
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
+    content_pages: Vec<ContentPage>,
 }
 
 pub async fn project_tags_get(
@@ -62,6 +64,7 @@ pub async fn project_tags_get(
         tags,
         logged_in_user: logged_in_user.as_ref(),
         sidebar_projects,
+        content_pages: state.config.content_pages.clone(),
     };
     template.response()
 }

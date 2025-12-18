@@ -1,4 +1,7 @@
-use crate::{GlobalState, Project, ProjectSummary, User, services::session, views::ThemedRender};
+use crate::{
+    models::ContentPage, services::session, views::ThemedRender, GlobalState, Project,
+    ProjectSummary, User,
+};
 use askama::Template;
 use axum::{extract::State, response::Html};
 use tower_cookies::Cookies;
@@ -9,6 +12,7 @@ struct IndexTemplate<'a> {
     featured: &'a [ProjectSummary<'a>],
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
+    content_pages: Vec<ContentPage>,
 }
 
 pub async fn index(State(state): State<GlobalState>, cookies: Cookies) -> Html<String> {
@@ -40,6 +44,7 @@ pub async fn index(State(state): State<GlobalState>, cookies: Cookies) -> Html<S
         featured: &featured,
         logged_in_user: logged_in_user.as_ref(),
         sidebar_projects,
+        content_pages: state.config.content_pages.clone(),
     };
 
     Html(template.render_with_theme())

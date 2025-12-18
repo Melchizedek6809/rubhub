@@ -57,9 +57,6 @@ async fn basic_workflow() {
         response_contains(&client, &format!("{base}/"), "Welcome to RubHub")
             .await
             .unwrap();
-        response_contains(&client, &format!("{base}/contact"), "melchizedek6809")
-            .await
-            .unwrap();
 
         let mut form = HashMap::new();
         let pw = "12345678901234567890";

@@ -8,12 +8,13 @@ use axum::{
 use serde::Deserialize;
 
 use crate::{
-    GlobalState, Project, User,
+    models::ContentPage,
     services::{
         session,
         validation::{slugify, validate_password, validate_username},
     },
     views::ThemedRender,
+    GlobalState, Project, User,
 };
 
 #[derive(Debug, Deserialize)]
@@ -29,6 +30,7 @@ struct RegistrationTemplate<'a> {
     message: Option<&'a str>,
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
+    content_pages: Vec<ContentPage>,
 }
 
 async fn render_registration_page(message: Option<&str>) -> Html<String> {
@@ -36,6 +38,7 @@ async fn render_registration_page(message: Option<&str>) -> Html<String> {
         message,
         logged_in_user: None,
         sidebar_projects: vec![],
+        content_pages: vec![],
     };
     Html(template.render_with_theme())
 }

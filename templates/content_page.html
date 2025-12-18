@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>{{ page_title }} - RubHub</title>
+  </head>
+
+  <body>
+    {% include "sidebar.html" %}
+    <main>
+      <section>
+        <div>
+          <h1>{{ page_title }}</h1>
+          <div class="card-grid">
+            <div class="card">
+              <div class="markdown">{{- content_html|safe -}}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+
+</html>

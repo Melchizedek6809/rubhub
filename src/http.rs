@@ -23,14 +23,12 @@ pub async fn http_server(
     let process_start = state.process_start;
 
     // build our application with a single route
-    let app =
-        Router::new()
-            .route("/", get(controllers::index))
-            .route("/contact", get(controllers::contact))
-            .route(
-                "/login",
-                get(controllers::login_page).post(controllers::handle_login),
-            )
+    let mut app = Router::new()
+        .route("/", get(controllers::index))
+        .route(
+            "/login",
+            get(controllers::login_page).post(controllers::handle_login),
+        )
             .route(
                 "/registration",
                 get(controllers::registration_page).post(controllers::handle_registration),
@@ -43,7 +41,23 @@ pub async fn http_server(
             .route(
                 "/projects/new",
                 get(controllers::project_new_get).post(controllers::project_new_post),
-            )
+            );
+
+    // Dynamically register content page routes
+    for page in &state.config.content_pages {
+        let page_clone = page.clone();
+        let route_path = page.url_path();
+
+        app = app.route(
+            &route_path,
+            get(move |state: State<GlobalState>, cookies: Cookies| {
+                let page = page_clone.clone();
+                async move { controllers::render_content_page(state, cookies, page).await }
+            }),
+        );
+    }
+
+    let app = app
             .route("/{username}", get(controllers::user_page))
             .route("/{username}/{slug}", get(controllers::project_overview_get))
             .route(

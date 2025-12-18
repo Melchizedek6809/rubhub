@@ -11,6 +11,7 @@ use tower_cookies::Cookies;
 
 use crate::{
     AccessType, GlobalState, Project, User,
+    models::ContentPage,
     services::{repository::create_bare_repo, session, validation::validate_project_name},
     views::ThemedRender,
 };
@@ -27,6 +28,7 @@ struct NewProjectTemplate<'a> {
     message: Option<&'a str>,
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
+    content_pages: Vec<ContentPage>,
 }
 
 pub async fn project_new_get(
@@ -55,6 +57,7 @@ async fn render_new_project_page(
         message,
         logged_in_user,
         sidebar_projects,
+        content_pages: state.config.content_pages.clone(),
     };
     Html(template.render_with_theme())
 }

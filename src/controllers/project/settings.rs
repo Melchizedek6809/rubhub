@@ -12,6 +12,7 @@ use tower_cookies::Cookies;
 use crate::{
     AccessType, GlobalState, Project, User,
     extractors::PathUserProject,
+    models::ContentPage,
     services::{
         session,
         validation::{validate_project_name, validate_uri},
@@ -27,6 +28,7 @@ struct ProjectSettingsTemplate<'a> {
     message: Option<&'a str>,
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
+    content_pages: Vec<ContentPage>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -147,6 +149,7 @@ async fn render_project_settings_page(
         message,
         logged_in_user: Some(logged_in_user),
         sidebar_projects,
+        content_pages: state.config.content_pages.clone(),
     };
     template.response()
 }
