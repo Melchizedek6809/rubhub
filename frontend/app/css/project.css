@@ -63,7 +63,7 @@
 		display: none;
 	}
 
-	.repo-bar .clone-url {
+	.repo-bar .clone-url-wrapper {
 		grid-column: 1 / -1;
 		grid-row: 2;
 	}
