@@ -20,6 +20,7 @@ struct ProjectTemplate<'a> {
     project: &'a Project,
     access_level: AccessType,
     ssh_clone_url: String,
+    http_clone_url: String,
     selected_branch: String,
     summary: GitSummary,
     info: Option<GitRefInfo>,
@@ -60,10 +61,8 @@ async fn render_project_page(
         .map(|u| u.slug.clone())
         .unwrap_or("anon".to_string());
 
-    let ssh_clone_url = format!(
-        "ssh://{}@{}/{}/{}",
-        git_user, state.config.ssh_public_host, owner.slug, project.slug
-    );
+    let ssh_clone_url = project.ssh_clone_url(&state.config.ssh_public_host, &git_user);
+    let http_clone_url = project.http_clone_url(&state.config.base_url);
 
     let current = match branch {
         Some(branch) => branch,
@@ -95,6 +94,7 @@ async fn render_project_page(
         project: &project,
         access_level,
         ssh_clone_url,
+        http_clone_url,
         summary,
         info,
         selected_branch,

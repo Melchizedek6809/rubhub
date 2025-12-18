@@ -37,9 +37,9 @@ impl Default for AppConfig {
         let ssh_bind_addr = SocketAddr::new(ip, port);
 
         let ssh_public_host = if port == 22 {
-            format!("{ssh_bind_addr}")
-        } else {
             format!("{ip}")
+        } else {
+            format!("{ip}:{port}")
         };
 
         Self {
@@ -83,9 +83,9 @@ impl AppConfig {
 
         self.ssh_bind_addr = addr;
         self.ssh_public_host = if addr.port() == 22 {
-            format!("{addr}")
-        } else {
             format!("{}", addr.ip())
+        } else {
+            format!("{}", addr)
         };
 
         Ok(self)

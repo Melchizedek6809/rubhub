@@ -70,6 +70,15 @@ pub async fn http_server(
                 "/{username}/{slug}/delete",
                 axum::routing::post(controllers::project_delete_post),
             )
+            // Git HTTP protocol endpoints (must come after specific routes)
+            .route(
+                "/{username}/{slug}/info/refs",
+                get(controllers::git_info_refs),
+            )
+            .route(
+                "/{username}/{slug}/git-upload-pack",
+                axum::routing::post(controllers::git_upload_pack),
+            )
             .route(
                 "/dist/{*path}",
                 get(

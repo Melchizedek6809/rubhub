@@ -3214,6 +3214,7 @@ dependencies = [
  "askama",
  "axum",
  "dotenvy",
+ "futures",
  "gix",
  "markdown",
  "mime_guess",

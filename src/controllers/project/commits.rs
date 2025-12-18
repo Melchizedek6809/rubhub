@@ -31,6 +31,7 @@ struct ProjectCommitsTemplate<'a> {
     selected_branch: String,
     access_level: AccessType,
     ssh_clone_url: String,
+    http_clone_url: String,
     summary: GitSummary,
     info: Option<GitRefInfo>,
     current_page: i32,
@@ -86,10 +87,8 @@ pub async fn project_commits_get(
         .map(|u| u.slug.clone())
         .unwrap_or("anon".to_string());
 
-    let ssh_clone_url = format!(
-        "ssh://{}@{}/{}/{}",
-        git_user, state.config.ssh_public_host, owner.slug, project.slug
-    );
+    let ssh_clone_url = project.ssh_clone_url(&state.config.ssh_public_host, &git_user);
+    let http_clone_url = project.http_clone_url(&state.config.base_url);
 
     let selected_branch = info
         .as_ref()
@@ -104,6 +103,7 @@ pub async fn project_commits_get(
         project: &project,
         access_level,
         ssh_clone_url,
+        http_clone_url,
         summary,
         info,
         selected_branch,

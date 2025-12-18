@@ -25,6 +25,7 @@ russh = "0.55"
 argon2 = { version = "0.5", features = ["password-hash"] }
 time = { version = "0.3", features = ["serde", "macros", "formatting", "parsing"] }
 tokio = { version = "1.48", features = ["macros", "process", "signal"] }
+futures = "0.3"
 tower = "0.5"
 tower-cookies = "0.11"
 tower-http = { version = "0.6", features = ["fs"] }

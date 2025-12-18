@@ -10,8 +10,8 @@ pub use contact::contact;
 pub use landing::index;
 pub use not_found::{not_found, not_found_get};
 pub use project::{
-    project_branches_get, project_commits_get, project_delete_post, project_new_get,
-    project_new_post, project_overview_get, project_overview_tree_get, project_settings_get,
-    project_settings_post, project_tags_get,
+    git_info_refs, git_upload_pack, project_branches_get, project_commits_get,
+    project_delete_post, project_new_get, project_new_post, project_overview_get,
+    project_overview_tree_get, project_settings_get, project_settings_post, project_tags_get,
 };
 pub use user::{handle_settings, settings_page, user_page};

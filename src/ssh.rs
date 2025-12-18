@@ -296,6 +296,16 @@ impl server::Handler for Connection {
         let path = parts[1];
         let path = path.trim_start_matches('\'').trim_end_matches('\'');
         let path = path.trim_start_matches('/').trim_end_matches('/');
+
+        // Require tilde prefix for canonical URLs
+        if !path.starts_with('~') {
+            eprintln!(
+                "SSH path denied: missing tilde prefix in path '{path}'. Use ~username/project format."
+            );
+            return Err(russh::Error::RequestDenied);
+        }
+
+        let path = path.trim_start_matches('~');
         let path = path.to_string();
 
         let Ok((owner, project)) = Project::load_by_path(&self.state, path).await else {

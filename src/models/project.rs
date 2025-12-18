@@ -137,6 +137,17 @@ impl Project {
         format!("/~{}/{}/tags", self.owner, self.slug)
     }
 
+    pub fn ssh_clone_url(&self, ssh_public_host: &str, git_user: &str) -> String {
+        format!(
+            "ssh://{}@{}/~{}/{}",
+            git_user, ssh_public_host, self.owner, self.slug
+        )
+    }
+
+    pub fn http_clone_url(&self, base_url: &str) -> String {
+        format!("{}/~{}/{}", base_url, self.owner, self.slug)
+    }
+
     pub fn uri_log(&self, branch: &str, page: i32) -> String {
         if page > 0 {
             format!(

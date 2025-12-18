@@ -69,7 +69,7 @@ async fn basic_workflow() {
 
         // First we try to register with a username that's too short
         client
-            .post(&format!("{base}/registration"))
+            .post(format!("{base}/registration"))
             .form(&form)
             .send()
             .await
@@ -80,7 +80,7 @@ async fn basic_workflow() {
         // Now we use the full username
         form.insert("username", "test");
         client
-            .post(&format!("{base}/registration"))
+            .post(format!("{base}/registration"))
             .form(&form)
             .send()
             .await
@@ -93,7 +93,7 @@ async fn basic_workflow() {
             .unwrap();
 
         client
-            .get(&format!("{base}/logout"))
+            .get(format!("{base}/logout"))
             .send()
             .await
             .expect("Logout failed")
