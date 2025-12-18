@@ -12,12 +12,9 @@
         <div>
           <div class="card-grid">
             <div class="card">
-              Welcome to RubHub,<br/>
-              <br/>
-              a new experimental git forge that grew out of me experimenting around with Rust webdev.<br/>
+              <div class="markdown">{{- index_content|safe -}}</div>
             </div>
           </div>
-          <br/>
           <br/>
           <h2>Featured projects</h2>
           {% if featured.len() == 0 %}

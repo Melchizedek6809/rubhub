@@ -13,6 +13,7 @@ struct IndexTemplate<'a> {
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
+    index_content: String,
 }
 
 pub async fn index(State(state): State<GlobalState>, cookies: Cookies) -> Html<String> {
@@ -42,11 +43,19 @@ pub async fn index(State(state): State<GlobalState>, cookies: Cookies) -> Html<S
         })
         .collect();
 
+    let index_content = match &state.config.index_content {
+        Some(page) => {
+            page.render_content(&state).await.unwrap_or("Error rendering INDEX_CONTENT!".to_string())
+        },
+        None => "<p>Welcome to your new <a href=\"https://rubhub.net/~ben/rubhub\">rubhub</a> instance, please specify INDEX_CONTENT to remove this message.</p>".to_string(),
+    };
+
     let template = IndexTemplate {
         featured: &featured,
         logged_in_user: logged_in_user.as_ref(),
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
+        index_content,
     };
 
     Html(template.render_with_theme())

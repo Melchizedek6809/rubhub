@@ -21,6 +21,7 @@ pub struct AppConfig {
     pub base_url: String,
     pub reuse_port: bool,
     pub content_pages: Vec<ContentPage>,
+    pub index_content: Option<ContentPage>,
     pub featured_projects: Vec<String>,
 }
 
@@ -56,6 +57,7 @@ impl Default for AppConfig {
             base_url,
             reuse_port: false,
             content_pages: vec![],
+            index_content: None,
             featured_projects: vec![],
         }
     }
@@ -117,6 +119,11 @@ impl AppConfig {
         self
     }
 
+    pub fn set_index_content(mut self, page: Option<ContentPage>) -> Self {
+        self.index_content = page;
+        self
+    }
+
     pub fn set_featured_projects(mut self, projects: Vec<String>) -> Self {
         self.featured_projects = projects;
         self
@@ -154,6 +161,14 @@ impl AppConfig {
                 let pages = parse_content_pages(&spec)
                     .context("Failed to parse SITE_CONTENT environment variable")?;
                 config.set_content_pages(pages)
+            }
+            _ => config,
+        };
+        let config = match env::var("INDEX_CONTENT") {
+            Ok(spec) => {
+                let page = parse_index_content(&spec)
+                    .context("Failed to parse INDEX_CONTENT environment variable")?;
+                config.set_index_content(Some(page))
             }
             _ => config,
         };
@@ -200,6 +215,41 @@ fn parse_featured_projects(spec: &str) -> Result<Vec<String>> {
             Ok(s[1..].to_string())
         })
         .collect()
+}
+
+fn parse_index_content(spec: &str) -> Result<ContentPage> {
+    let path = spec.trim();
+
+    // Strip leading ~ if present
+    let path = if path.starts_with('~') {
+        &path[1..]
+    } else {
+        path
+    };
+
+    let parts: Vec<&str> = path.split('/').collect();
+    if parts.len() < 3 {
+        anyhow::bail!(
+            "Invalid path format: expected 'user/repo/file.md' or '~user/repo/file.md', got '{}'",
+            spec
+        );
+    }
+
+    let repo_owner = parts[0];
+    let repo_slug = parts[1];
+    let file_path = parts[2..].join("/");
+
+    if file_path.is_empty() {
+        anyhow::bail!("File path cannot be empty");
+    }
+
+    Ok(ContentPage {
+        title: "Index".to_string(),
+        slug: "index".to_string(),
+        repo_owner: repo_owner.to_string(),
+        repo_slug: repo_slug.to_string(),
+        file_path,
+    })
 }
 
 #[derive(Debug, Clone)]
