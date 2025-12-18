@@ -51,12 +51,14 @@
 	color: var(--secondary-color);
 }
 
+#mobile-header .actions,
 #sidebar .actions {
 	padding: var(--space-s) var(--space-m);
 	align-items: center;
 	width: 100%;
 }
 
+#mobile-header .actions > span,
 #sidebar .actions > span {
 	flex: 1;
 }

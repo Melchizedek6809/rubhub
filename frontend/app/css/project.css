@@ -27,6 +27,7 @@
 .repo-bar > select {
 	width: auto;
 	margin-bottom: 0;
+	max-width: 120px;
 }
 
 .repo-bar > * {
@@ -62,7 +63,7 @@
 		display: none;
 	}
 
-	.repo-bar rubhub-clone-url {
+	.repo-bar .clone-url {
 		grid-column: 1 / -1;
 		grid-row: 2;
 	}
