@@ -59,3 +59,24 @@
 .clone-url button {
 	border-radius: 0 var(--space-s) var(--space-s) 0;
 }
+
+@media screen and (max-width: 700px) {
+	.clone-url-wrapper {
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	.protocol-switcher {
+		border-radius: var(--space-s);
+		width: 100%;
+		margin-top: var(--space-m);
+	}
+
+	.clone-url input {
+		border-radius: var(--space-s) 0 0 var(--space-s);
+	}
+
+	.clone-url button {
+		border-radius: 0 var(--space-s) var(--space-s) 0;
+	}
+}
