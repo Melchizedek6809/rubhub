@@ -1,5 +1,5 @@
 use askama::Template;
-use axum::{body::Body, extract::State, http::StatusCode, response::Response};
+use axum::{body::Body, extract::State, http::{StatusCode, header}, response::Response};
 use tower_cookies::Cookies;
 
 use crate::{
@@ -54,6 +54,7 @@ pub async fn render_content_page(
 
     Response::builder()
         .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
         .body(Body::from(template.render_with_theme()))
         .unwrap()
 }
