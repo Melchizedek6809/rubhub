@@ -32,7 +32,10 @@
 
   {# User's projects #}
   {% if !sidebar_projects.is_empty() %}
-    <span class="nav-section-heading">Projects</span>
+    <div class="nav-section-header">
+      <span class="nav-section-heading">Projects</span>
+      <a href="/projects/new" class="nav-section-action" title="New Project">+</a>
+    </div>
     {% for project in sidebar_projects %}
     <div class="nav-project-item">
       <a href="{{ project.uri() }}" class="nav-btn-secondary">{{ project.name }}</a>

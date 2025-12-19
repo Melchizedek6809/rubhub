@@ -46,9 +46,16 @@
 	background: var(--background-color);
 }
 
+.nav-section-header {
+	display: flex;
+	align-items: center;
+	gap: var(--space-xs);
+	width: 100%;
+}
+
 .nav-section-heading {
 	display: block;
-	width: 100%;
+	flex: 1;
 	padding: var(--space-s) var(--space-m);
 	font-size: 0.85rem;
 	font-weight: 600;
@@ -56,6 +63,31 @@
 	letter-spacing: 0.05em;
 	color: var(--text-color);
 	opacity: 0.6;
+}
+
+.nav-section-action {
+	text-decoration: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 2rem;
+	height: 2rem;
+	border-radius: var(--space-s);
+	background: var(--background-color-bright);
+	transition:
+		background-color 300ms ease-in-out,
+		opacity 300ms ease-in-out;
+	opacity: 0.5;
+	font-size: 1.2rem;
+	flex-shrink: 0;
+	color: var(--text-color);
+	line-height: 1;
+}
+
+.nav-section-action:hover,
+.nav-section-action:focus {
+	background: var(--background-color);
+	opacity: 1;
 }
 
 .nav-project-item {

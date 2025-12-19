@@ -44,6 +44,22 @@ cargo test basic_workflow
 cargo test -- --nocapture
 ```
 
+### Development Workflow Notes
+
+**IMPORTANT**: During active development sessions, the following are always running in background terminals:
+- **bacon** - Automatically rebuilds and restarts the Rust backend on changes. A dev backend is always running at `http://localhost:3000/` (as long as there are no compilation errors in the Rust code)
+- **npm run dev** - Automatically rebuilds the frontend on changes. The rebuilt assets are immediately available because the Rust backend serves frontend assets directly from the filesystem in dev builds (not from embedded assets like in production)
+
+**What this means for you**:
+- **Do NOT** manually run `npm run build` or `cargo build` after making changes
+- **Do NOT** manually run `cargo run` - the backend is already running via bacon
+- **DO** run checks and tests after making changes:
+  - `npm run check` - TypeScript type checking
+  - `cargo check` - Rust compilation check
+  - `cargo test` - Run integration tests
+
+Both frontend and backend changes are automatically picked up and served at `http://localhost:3000/`, so focus on validation rather than rebuilding.
+
 ## Architecture Overview
 
 ### Monorepo Structure
