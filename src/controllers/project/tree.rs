@@ -199,7 +199,7 @@ async fn render_tree_page(
         logged_in_user: logged_in_user.as_ref(),
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
-        active_tab: "files",
+        active_tab: "code",
     };
     template.response()
 }
@@ -278,7 +278,7 @@ pub async fn project_blob_get(
         logged_in_user: logged_in_user.as_ref(),
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
-        active_tab: "files",
+        active_tab: "code",
     };
     template.response()
 }

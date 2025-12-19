@@ -2,8 +2,8 @@
 	<a href="{{ project.uri() }}" class="tab {% if active_tab == "overview" %}active{% endif %}">
 		Overview
 	</a>
-	<a href="{{ project.uri_tree(&selected_branch, "") }}" class="tab {% if active_tab == "files" %}active{% endif %}">
-		Files
+	<a href="{{ project.uri_tree(&selected_branch, "") }}" class="tab {% if active_tab == "code" %}active{% endif %}">
+		Code
 	</a>
 	{% if access_level == AccessType::Admin %}
 		<a href="{{ project.uri_settings() }}" class="tab {% if active_tab == "settings" %}active{% endif %}">
