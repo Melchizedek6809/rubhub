@@ -98,12 +98,10 @@
             </div>
             {% endfor %}
           </div>
+          <br/>
 
           {% if let Some(readme_html) = readme_html %}
-          <div class="readme-section">
-            <h2>README.md</h2>
             <div class="markdown">{{- readme_html|safe -}}</div>
-          </div>
           {% endif %}
         </div>
       </section>
