@@ -161,6 +161,12 @@
 	flex: 1;
 }
 
+.username-link {
+	flex: 1;
+	text-decoration: none;
+	color: var(--text-color);
+}
+
 #sidebar-top {
 	display: flex;
 	align-content: start;

@@ -12,8 +12,7 @@
 
   <div class="actions">
     {% if let Some(user) = logged_in_user %}
-    <span>{{ user.slug }}</span>
-    <a href="/settings" class="btn btn-outline">Settings</a>
+    <a href="/~{{ user.slug }}" class="username-link">{{ user.slug }}</a>
     <a href="/logout" class="btn btn-outline">Logout</a>
     {% else %}
     <a href="/login" class="btn">Login</a>
@@ -57,8 +56,7 @@
   {% endif %}
   <div class="actions">
     {% if let Some(user) = logged_in_user %}
-    <span>{{ user.slug }}</span>
-    <a href="/settings" class="btn btn-outline">Settings</a>
+    <a href="/~{{ user.slug }}" class="username-link">{{ user.slug }}</a>
     <a href="/logout" class="btn btn-outline">Logout</a>
     {% else %}
     <a href="/login" class="btn">Login</a>
