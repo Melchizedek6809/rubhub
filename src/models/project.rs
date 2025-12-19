@@ -159,6 +159,18 @@ impl Project {
         }
     }
 
+    pub fn uri_tree(&self, git_ref: &str, path: &str) -> String {
+        if path.is_empty() {
+            format!("/~{}/{}/tree/{}", self.owner, self.slug, git_ref)
+        } else {
+            format!("/~{}/{}/tree/{}/{}", self.owner, self.slug, git_ref, path)
+        }
+    }
+
+    pub fn uri_blob(&self, git_ref: &str, path: &str) -> String {
+        format!("/~{}/{}/blob/{}/{}", self.owner, self.slug, git_ref, path)
+    }
+
     pub async fn load_by_path(state: &GlobalState, path: String) -> Result<(User, Project)> {
         let parts = path.split("/").collect::<Vec<&str>>();
         if parts.len() != 2 {

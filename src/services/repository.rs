@@ -118,8 +118,18 @@ pub async fn get_git_info(
     let Ok(res) = tokio::task::spawn_blocking(move || {
         let mut repo = get_git_repo(&state, &user_name, &project_slug)?;
         repo.object_cache_size(Some(4096 * 4096));
-        let mut reference = repo.find_reference(&branch).ok()?;
-        let commit = reference.peel_to_commit().ok()?;
+
+        // Try to resolve as reference first, fall back to rev_parse for commit hashes
+        let (commit, ref_name) = if let Ok(mut reference) = repo.find_reference(&branch) {
+            let commit = reference.peel_to_commit().ok()?;
+            let name = reference.name().shorten().to_string();
+            (commit, name)
+        } else {
+            // Try to parse as revision (commit hash, tag, etc.)
+            let object = repo.rev_parse_single(branch.as_str()).ok()?;
+            let commit = object.object().ok()?.try_into_commit().ok()?;
+            (commit, branch.clone())
+        };
 
         let commit_count: i32 = commit
             .ancestors()
@@ -138,7 +148,7 @@ pub async fn get_git_info(
             .collect();
 
         Some(GitRefInfo {
-            branch_name: reference.name().shorten().to_string(),
+            branch_name: ref_name,
             commit_count,
             commits,
         })
@@ -188,9 +198,16 @@ pub async fn get_git_file(
     let Ok(res) = tokio::task::spawn_blocking(move || {
         let repo = get_git_repo(&state, &user_name, &project_slug)
             .ok_or(anyhow!("Couldn't get Repository"))?;
-        let mut reference = repo.find_reference(&branch)?;
 
-        let commit = reference.peel_to_commit()?;
+        // Try to resolve as reference first, fall back to rev_parse for commit hashes
+        let commit = if let Ok(mut reference) = repo.find_reference(&branch) {
+            reference.peel_to_commit()?
+        } else {
+            // Try to parse as revision (commit hash, tag, etc.)
+            let object = repo.rev_parse_single(branch.as_str())?;
+            object.object()?.try_into_commit()?
+        };
+
         let entry = commit
             .tree()?
             .lookup_entry_by_path(path)?
@@ -222,9 +239,15 @@ pub async fn get_git_tree(
     let Ok(res) = tokio::task::spawn_blocking(move || {
         let repo = get_git_repo(&state, &user_name, &project_slug)
             .ok_or(anyhow!("Couldn't get Repository"))?;
-        let mut reference = repo.find_reference(&branch)?;
 
-        let commit = reference.peel_to_commit()?;
+        // Try to resolve as reference first, fall back to rev_parse for commit hashes
+        let commit = if let Ok(mut reference) = repo.find_reference(&branch) {
+            reference.peel_to_commit()?
+        } else {
+            // Try to parse as revision (commit hash, tag, etc.)
+            let object = repo.rev_parse_single(branch.as_str())?;
+            object.object()?.try_into_commit()?
+        };
 
         let tree = if path.is_empty() {
             commit.tree()?
@@ -264,9 +287,57 @@ pub struct GitTreeEntry {
     pub kind: EntryKind,
 }
 
+impl GitTreeEntry {
+    pub fn full_path(&self, current_path: &str) -> String {
+        if current_path.is_empty() {
+            self.filename.clone()
+        } else {
+            format!("{}/{}", current_path, self.filename)
+        }
+    }
+
+    pub fn uri_tree(
+        &self,
+        project_owner: &str,
+        project_slug: &str,
+        git_ref: &str,
+        current_path: &str,
+    ) -> String {
+        let full_path = self.full_path(current_path);
+        format!(
+            "/~{}/{}/tree/{}/{}",
+            project_owner, project_slug, git_ref, full_path
+        )
+    }
+
+    pub fn uri_blob(
+        &self,
+        project_owner: &str,
+        project_slug: &str,
+        git_ref: &str,
+        current_path: &str,
+    ) -> String {
+        let full_path = self.full_path(current_path);
+        format!(
+            "/~{}/{}/blob/{}/{}",
+            project_owner, project_slug, git_ref, full_path
+        )
+    }
+}
+
 impl Ord for GitTreeEntry {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.filename.cmp(&other.filename)
+        // Sort directories before files, then alphabetically by name
+        match (self.kind, other.kind) {
+            // Both are directories - sort alphabetically
+            (EntryKind::Tree, EntryKind::Tree) => self.filename.cmp(&other.filename),
+            // Self is directory, other is not - self comes first
+            (EntryKind::Tree, _) => std::cmp::Ordering::Less,
+            // Other is directory, self is not - other comes first
+            (_, EntryKind::Tree) => std::cmp::Ordering::Greater,
+            // Neither is directory - sort alphabetically
+            _ => self.filename.cmp(&other.filename),
+        }
     }
 }
 

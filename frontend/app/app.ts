@@ -36,6 +36,7 @@ const initBranchSwitcher = () => {
 		const base = ele.getAttribute("data-base-href");
 		const mainBranch = ele.getAttribute("data-main-branch");
 		const baseSuffix = ele.getAttribute("data-base-suffix") || "tree";
+		const currentPath = ele.getAttribute("data-current-path") || "";
 		if (!base) {
 			continue;
 		}
@@ -46,7 +47,11 @@ const initBranchSwitcher = () => {
 				return;
 			}
 
-			if (newValue === mainBranch) {
+			// Handle tree/blob views: preserve current path
+			if (baseSuffix === "tree" || baseSuffix === "blob") {
+				const pathSuffix = currentPath ? `/${currentPath}` : "";
+				document.location = `${base}/${baseSuffix}/${newValue}${pathSuffix}`;
+			} else if (newValue === mainBranch) {
 				document.location = `${base}`;
 			} else {
 				document.location = `${base}/${baseSuffix}/${newValue}`;

@@ -7,7 +7,9 @@ use axum::{
 };
 use tower_cookies::Cookies;
 
-use crate::{models::ContentPage, services::session, views::ThemedRender, GlobalState, Project, User};
+use crate::{
+    GlobalState, Project, User, models::ContentPage, services::session, views::ThemedRender,
+};
 
 #[derive(Template)]
 #[template(path = "404.html")]
@@ -17,10 +19,7 @@ struct NotFoundTemplate<'a> {
     content_pages: Vec<ContentPage>,
 }
 
-pub fn not_found(
-    logged_in_user: Option<User>,
-    content_pages: Vec<ContentPage>,
-) -> Response<Body> {
+pub fn not_found(logged_in_user: Option<User>, content_pages: Vec<ContentPage>) -> Response<Body> {
     let template = NotFoundTemplate {
         logged_in_user: logged_in_user.as_ref(),
         sidebar_projects: vec![],

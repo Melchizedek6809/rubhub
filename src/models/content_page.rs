@@ -1,6 +1,9 @@
 use anyhow::{Context, Result};
 
-use crate::{GlobalState, services::{repository, validation}};
+use crate::{
+    GlobalState,
+    services::{repository, validation},
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ContentPage {
@@ -83,11 +86,9 @@ impl ContentPage {
                     let markdown_str = String::from_utf8_lossy(&blob.data);
 
                     // Render markdown with GitHub Flavored Markdown
-                    let html = markdown::to_html_with_options(
-                        &markdown_str,
-                        &markdown::Options::gfm(),
-                    )
-                    .unwrap_or_default();
+                    let html =
+                        markdown::to_html_with_options(&markdown_str, &markdown::Options::gfm())
+                            .unwrap_or_default();
 
                     // Sanitize HTML to prevent XSS
                     return Ok(ammonia::clean(&html));

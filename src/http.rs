@@ -30,19 +30,19 @@ pub async fn http_server(
             "/login",
             get(controllers::login_page).post(controllers::handle_login),
         )
-            .route(
-                "/registration",
-                get(controllers::registration_page).post(controllers::handle_registration),
-            )
-            .route("/logout", get(controllers::logout))
-            .route(
-                "/settings",
-                get(controllers::settings_page).post(controllers::handle_settings),
-            )
-            .route(
-                "/projects/new",
-                get(controllers::project_new_get).post(controllers::project_new_post),
-            );
+        .route(
+            "/registration",
+            get(controllers::registration_page).post(controllers::handle_registration),
+        )
+        .route("/logout", get(controllers::logout))
+        .route(
+            "/settings",
+            get(controllers::settings_page).post(controllers::handle_settings),
+        )
+        .route(
+            "/projects/new",
+            get(controllers::project_new_get).post(controllers::project_new_post),
+        );
 
     // Dynamically register content page routes
     for page in &state.config.content_pages {
@@ -58,8 +58,8 @@ pub async fn http_server(
         );
     }
 
-    let app = app
-            .route("/{username}", get(controllers::user_page))
+    let app =
+        app.route("/{username}", get(controllers::user_page))
             .route("/{username}/{slug}", get(controllers::project_overview_get))
             .route(
                 "/{username}/{slug}/branches",
@@ -70,8 +70,16 @@ pub async fn http_server(
                 get(controllers::project_tags_get),
             )
             .route(
-                "/{username}/{slug}/tree/{branch}",
-                get(controllers::project_overview_tree_get),
+                "/{username}/{slug}/tree/{ref}/{*path}",
+                get(controllers::project_tree_get),
+            )
+            .route(
+                "/{username}/{slug}/tree/{ref}",
+                get(controllers::project_tree_root_get),
+            )
+            .route(
+                "/{username}/{slug}/blob/{ref}/{*path}",
+                get(controllers::project_blob_get),
             )
             .route(
                 "/{username}/{slug}/log/{branch}",

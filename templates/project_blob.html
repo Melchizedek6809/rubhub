@@ -2,7 +2,7 @@
 <html>
 
   <head>
-    <title>{{ owner.name }}/{{ project.name }}</title>
+    <title>{{ owner.name }}/{{ project.name }} - {{ file_path }}</title>
   </head>
 
   <body>
@@ -21,10 +21,9 @@
         <div class="card">
           <div class="repo-bar">
             {% if summary.branches.len() > 0 %}
-            <select name="branch-name" class="branch-switcher" data-main-branch="{{ project.main_branch }}" data-base-href="{{ project.uri() }}">
+            <select name="branch-name" class="branch-switcher" data-base-suffix="blob" data-current-path="{{ file_path }}" data-base-href="{{ project.uri() }}">
               {% for branch in summary.branches %}
-              <option value="{{ branch }}" {% if branch==selected_branch.as_str() %}selected{% endif %}>{{ branch
-                }}</option>
+              <option value="{{ branch }}" {% if branch==selected_branch.as_str() %}selected{% endif %}>{{ branch }}</option>
               {% endfor %}
             </select>
             {% else %}
@@ -35,8 +34,7 @@
 
             <span class="repo-branches">
               <a href="{{ project.uri_branches() }}">
-                ⎇ {{ summary.branches.len() }} branch{% if summary.branches.len() != 1
-                %}es{% endif %}
+                ⎇ {{ summary.branches.len() }} branch{% if summary.branches.len() != 1 %}es{% endif %}
               </a>
             </span>
 
@@ -59,16 +57,33 @@
               <span class="commit-message" title="{{ commit.message }}">{{ commit.message }}</span>
               <span class="commit-id">{{ commit.id }}</span>
               <span class="commit-time">{{ commit.relative_time() }}</span>
-              <a href="{{ project.uri_log(selected_branch, 0) }}" class="commit-count">⟲ {{ info.commit_count }} Commit{% if info.commit_count != 1 %}s{% endif %}</a>
             </div>
             {% endif %}
           </div>
           {% endif %}
 
-          {% if let Some(readme_html) = readme_html %}
-          <br/>
-          <div class="markdown">{{- readme_html|safe -}}</div>
-          {% endif %}
+          <div class="file-view">
+            <div class="file-header">
+              <div class="path-breadcrumb">
+                <a href="{{ project.uri_tree(&selected_branch, "") }}">{{ project.slug }}</a>
+                {% for (i, part) in path_parts.iter().enumerate() %}
+                  {% if i == path_parts.len() - 1 %}
+                    / {{ part }}
+                  {% else %}
+                    / <a href="{{ project.uri_tree(&selected_branch, &path_parts[..=i].join("/")) }}">{{ part }}</a>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+
+            {% if is_binary %}
+            <div class="binary-notice">
+              <p>Binary file</p>
+            </div>
+            {% else %}
+            <pre class="file-content"><code>{{ file_content }}</code></pre>
+            {% endif %}
+          </div>
         </div>
       </section>
     </main>

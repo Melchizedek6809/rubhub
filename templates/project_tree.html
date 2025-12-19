@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <title>{{ owner.name }}/{{ project.name }} - {{ current_path }}</title>
+  </head>
+
+  <body>
+    {% include "sidebar.html" %}
+    <main>
+      <section>
+        <div class="page-header">
+          <h1 class="project-header">
+            <a href="{{ owner.uri() }}">{{ owner.name }}</a> /
+            <a href="{{ project.uri() }}">{{ project.name }}</a>
+          </h1>
+        </div>
+
+        {% include "project_tabs.html" %}
+
+        <div class="card">
+          <div class="repo-bar">
+            {% if summary.branches.len() > 0 %}
+            <select name="branch-name" class="branch-switcher" data-base-suffix="tree" data-current-path="{{ current_path }}" data-base-href="{{ project.uri() }}">
+              {% for branch in summary.branches %}
+              <option value="{{ branch }}" {% if branch==selected_branch.as_str() %}selected{% endif %}>{{ branch }}</option>
+              {% endfor %}
+            </select>
+            {% else %}
+            <select name="branch-name" disabled>
+              <option selected>Empty Repo</option>
+            </select>
+            {% endif %}
+
+            <span class="repo-branches">
+              <a href="{{ project.uri_branches() }}">
+                ⎇ {{ summary.branches.len() }} branch{% if summary.branches.len() != 1 %}es{% endif %}
+              </a>
+            </span>
+
+            <span class="repo-tags">
+              <a href="{{ project.uri_tags() }}">
+                🏷 {{ summary.tags.len() }} tag{% if summary.tags.len() != 1 %}s{% endif %}
+              </a>
+            </span>
+
+            <div class="flex-gap"> </div>
+
+            {% include "project_clone_url.html" %}
+          </div>
+
+          {% if let Some(info) = info %}
+          <div class="commit-bar">
+            {% if let Some(commit) = info.commits.first() %}
+            <div class="commit">
+              <span class="commit-author" title="{{ commit.author }}">{{ commit.author }}</span>
+              <span class="commit-message" title="{{ commit.message }}">{{ commit.message }}</span>
+              <span class="commit-id">{{ commit.id }}</span>
+              <span class="commit-time">{{ commit.relative_time() }}</span>
+              <a href="{{ project.uri_log(&selected_branch, 0) }}" class="commit-count">⟲ {{ info.commit_count }} Commit{% if info.commit_count != 1 %}s{% endif %}</a>
+            </div>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          <div class="file-browser">
+            {% if path_parts.len() > 0 %}
+            <div class="path-breadcrumb">
+              <a href="{{ project.uri_tree(&selected_branch, "") }}">{{ project.slug }}</a>
+              {% for (i, part) in path_parts.iter().enumerate() %}
+                / <a href="{{ project.uri_tree(&selected_branch, &path_parts[..=i].join("/")) }}">{{ part }}</a>
+              {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if let Some(parent) = parent_path %}
+            <div class="tree-item parent">
+              <a href="{{ project.uri_tree(&selected_branch, &parent) }}">
+                <span class="icon">📁</span>
+                <span class="name">..</span>
+              </a>
+            </div>
+            {% endif %}
+
+            {% for entry in tree_entries %}
+            <div class="tree-item {% if entry.kind == EntryKind::Tree %}directory{% else %}file{% endif %} {% if entry.filename.starts_with(".") %}dotfile{% endif %}">
+              {% if entry.kind == EntryKind::Tree %}
+                <a href="{{ entry.uri_tree(&owner.slug, &project.slug, &selected_branch, &current_path) }}">
+                  <span class="icon">📁</span>
+                  <span class="name">{{ entry.filename }}</span>
+                </a>
+              {% else %}
+                <a href="{{ entry.uri_blob(&owner.slug, &project.slug, &selected_branch, &current_path) }}">
+                  <span class="icon">📄</span>
+                  <span class="name">{{ entry.filename }}</span>
+                </a>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+
+          {% if let Some(readme_html) = readme_html %}
+          <div class="readme-section">
+            <h2>README.md</h2>
+            <div class="markdown">{{- readme_html|safe -}}</div>
+          </div>
+          {% endif %}
+        </div>
+      </section>
+    </main>
+  </body>
+
+</html>

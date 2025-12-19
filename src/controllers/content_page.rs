@@ -1,9 +1,14 @@
 use askama::Template;
-use axum::{body::Body, extract::State, http::{StatusCode, header}, response::Response};
+use axum::{
+    body::Body,
+    extract::State,
+    http::{StatusCode, header},
+    response::Response,
+};
 use tower_cookies::Cookies;
 
 use crate::{
-    models::ContentPage, services::session, views::ThemedRender, GlobalState, Project, User,
+    GlobalState, Project, User, models::ContentPage, services::session, views::ThemedRender,
 };
 
 #[derive(Template)]

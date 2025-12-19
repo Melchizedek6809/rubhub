@@ -15,9 +15,6 @@
             <a href="{{ project.uri() }}">{{ project.name }}</a> /
             <a href="{{ project.uri_branches() }}">branches</a>
           </h1>
-          {% if access_level == AccessType::Admin %}
-          <a class="btn" href="{{ project.uri_settings() }}">Edit project</a>
-          {% endif %}
         </div>
 
         <div class="card">

@@ -6,7 +6,9 @@ use axum::{
 };
 use serde::Deserialize;
 
-use crate::{models::ContentPage, services::session, views::ThemedRender, GlobalState, Project, User};
+use crate::{
+    GlobalState, Project, User, models::ContentPage, services::session, views::ThemedRender,
+};
 
 #[derive(Debug, Deserialize)]
 pub struct LoginForm {

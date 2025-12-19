@@ -1,7 +1,7 @@
 use axum::{
     body::Body,
     extract::{Query, State},
-    http::{header, StatusCode},
+    http::{StatusCode, header},
     response::Response,
 };
 use futures::stream;
@@ -10,9 +10,7 @@ use tokio::io::AsyncReadExt;
 use tokio::process::Command;
 use tower_cookies::Cookies;
 
-use crate::{
-    AccessType, GlobalState, extractors::PathUserProject, services::session,
-};
+use crate::{AccessType, GlobalState, extractors::PathUserProject, services::session};
 
 #[derive(Debug, Deserialize)]
 pub struct GitServiceQuery {
@@ -43,11 +41,7 @@ pub async fn git_info_refs(
     }
 
     // Build repository path
-    let repo_path = state
-        .config
-        .git_root
-        .join(&owner.slug)
-        .join(&project.slug);
+    let repo_path = state.config.git_root.join(&owner.slug).join(&project.slug);
 
     if !repo_path.exists() {
         return Err(StatusCode::NOT_FOUND);
@@ -90,7 +84,10 @@ pub async fn git_info_refs(
 
     Ok(Response::builder()
         .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "application/x-git-upload-pack-advertisement")
+        .header(
+            header::CONTENT_TYPE,
+            "application/x-git-upload-pack-advertisement",
+        )
         .header(header::CACHE_CONTROL, "no-cache")
         .body(Body::from(response_body))
         .unwrap())
@@ -115,11 +112,7 @@ pub async fn git_upload_pack(
     }
 
     // Build repository path
-    let repo_path = state
-        .config
-        .git_root
-        .join(&owner.slug)
-        .join(&project.slug);
+    let repo_path = state.config.git_root.join(&owner.slug).join(&project.slug);
 
     if !repo_path.exists() {
         return Err(StatusCode::NOT_FOUND);

@@ -5,7 +5,7 @@ use tower_cookies::Cookies;
 use crate::{
     AccessType, GlobalState, Project, User,
     controllers::not_found,
-    extractors::{PathUserProject, PathUserProjectBranch},
+    extractors::PathUserProject,
     models::ContentPage,
     services::{
         repository::{GitRefInfo, GitSummary, get_git_file, get_git_info, get_git_summary},
@@ -29,6 +29,7 @@ struct ProjectTemplate<'a> {
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
+    active_tab: &'static str,
 }
 
 async fn render_project_page(
@@ -104,16 +105,9 @@ async fn render_project_page(
         logged_in_user: logged_in_user.as_ref(),
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
+        active_tab: "overview",
     };
     template.response()
-}
-
-pub async fn project_overview_tree_get(
-    State(state): State<GlobalState>,
-    cookies: Cookies,
-    PathUserProjectBranch(owner, project, branch): PathUserProjectBranch,
-) -> Response<Body> {
-    render_project_page(&state, cookies, owner, project, Some(branch)).await
 }
 
 pub async fn project_overview_get(

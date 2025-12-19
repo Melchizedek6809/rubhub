@@ -15,9 +15,6 @@
             <a href="{{ project.uri() }}">{{ project.name }}</a> /
             <a href="{{ project.uri_log(selected_branch, 0) }}">log {{ selected_branch }}</a>
           </h1>
-          {% if access_level == AccessType::Admin %}
-          <a class="btn" href="{{ project.uri_settings() }}">Edit project</a>
-          {% endif %}
         </div>
 
         <div class="card">
@@ -61,7 +58,7 @@
             <div class="commit">
               <span class="commit-author" title="{{ commit.author }}">{{ commit.author }}</span>
               <span class="commit-message" title="{{ commit.message }}">{{ commit.message }}</span>
-              <span class="commit-id">{{ commit.id }}</span>
+              <a href="{{ project.uri_tree(&commit.id, "") }}" class="commit-id">{{ commit.id }}</a>
               <span class="commit-time">{{ commit.relative_time() }}</span>
             </div>
             {% endfor %}

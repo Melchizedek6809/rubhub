@@ -130,11 +130,7 @@ impl AppConfig {
     }
 
     /// Update bind addresses and derived URLs after binding
-    pub fn update_bound_addresses(
-        mut self,
-        http_addr: SocketAddr,
-        ssh_addr: SocketAddr,
-    ) -> Self {
+    pub fn update_bound_addresses(mut self, http_addr: SocketAddr, ssh_addr: SocketAddr) -> Self {
         self.http_bind_addr = http_addr;
         self.base_url = format!("http://{}", http_addr);
 
@@ -228,7 +224,10 @@ fn parse_featured_projects(spec: &str) -> Result<Vec<String>> {
         .map(|s| {
             // Enforce ~ prefix for user projects
             if !s.starts_with('~') {
-                anyhow::bail!("Featured project '{}' must start with ~ prefix (e.g., ~username/project)", s);
+                anyhow::bail!(
+                    "Featured project '{}' must start with ~ prefix (e.g., ~username/project)",
+                    s
+                );
             }
             // Strip the ~ prefix and store just the path
             Ok(s[1..].to_string())

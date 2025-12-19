@@ -19,7 +19,6 @@ use crate::{
 struct ProjectTagsTemplate<'a> {
     owner: &'a User,
     project: &'a Project,
-    access_level: AccessType,
     tags: Vec<GitRefInfo>,
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
@@ -60,7 +59,6 @@ pub async fn project_tags_get(
     let template = ProjectTagsTemplate {
         owner: &owner,
         project: &project,
-        access_level,
         tags,
         logged_in_user: logged_in_user.as_ref(),
         sidebar_projects,

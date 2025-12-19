@@ -25,10 +25,13 @@ use crate::{
 struct ProjectSettingsTemplate<'a> {
     owner: &'a User,
     project: &'a Project,
+    access_level: AccessType,
     message: Option<&'a str>,
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
+    active_tab: &'static str,
+    selected_branch: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -146,10 +149,13 @@ async fn render_project_settings_page(
     let template = ProjectSettingsTemplate {
         owner: &owner,
         project: &project,
+        access_level: AccessType::Admin, // Only admins can access settings
         message,
         logged_in_user: Some(logged_in_user),
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
+        active_tab: "settings",
+        selected_branch: project.main_branch.clone(),
     };
     template.response()
 }

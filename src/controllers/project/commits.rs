@@ -30,7 +30,6 @@ struct ProjectCommitsTemplate<'a> {
     owner: &'a User,
     project: &'a Project,
     selected_branch: String,
-    access_level: AccessType,
     ssh_clone_url: String,
     http_clone_url: String,
     summary: GitSummary,
@@ -103,7 +102,6 @@ pub async fn project_commits_get(
     let template = ProjectCommitsTemplate {
         owner: &owner,
         project: &project,
-        access_level,
         ssh_clone_url,
         http_clone_url,
         summary,

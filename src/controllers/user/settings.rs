@@ -9,13 +9,13 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
+    GlobalState, Project, User,
     models::ContentPage,
     services::{
         session as session_service,
         validation::{validate_uri, validate_username},
     },
     views::ThemedRender,
-    GlobalState, Project, User,
 };
 
 #[derive(Debug, Deserialize)]

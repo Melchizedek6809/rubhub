@@ -8,13 +8,13 @@ use axum::{
 use serde::Deserialize;
 
 use crate::{
+    GlobalState, Project, User,
     models::ContentPage,
     services::{
         session,
         validation::{slugify, validate_password, validate_username},
     },
     views::ThemedRender,
-    GlobalState, Project, User,
 };
 
 #[derive(Debug, Deserialize)]

@@ -1,6 +1,6 @@
 use crate::{
-    models::ContentPage, services::session, views::ThemedRender, GlobalState, Project,
-    ProjectSummary, User,
+    GlobalState, Project, ProjectSummary, User, models::ContentPage, services::session,
+    views::ThemedRender,
 };
 use askama::Template;
 use axum::{extract::State, response::Html};

@@ -16,6 +16,9 @@
             <a href="{{ project.uri_settings() }}">settings</a>
           </h1>
         </div>
+
+        {% include "project_tabs.html" %}
+
         {% if let Some(msg) = message %}
         <div class="message" role="status">{{ msg }}</div>
         {% endif %}

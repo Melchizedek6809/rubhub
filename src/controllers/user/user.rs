@@ -3,8 +3,8 @@ use axum::{body::Body, extract::State, http::Response, response::Html};
 use tower_cookies::Cookies;
 
 use crate::{
-    controllers::not_found, extractors::PathUser, models::ContentPage, services::session,
-    views::ThemedRender, GlobalState, Project, ProjectSummary, User,
+    GlobalState, Project, ProjectSummary, User, controllers::not_found, extractors::PathUser,
+    models::ContentPage, services::session, views::ThemedRender,
 };
 
 #[derive(Template)]
@@ -40,7 +40,10 @@ pub async fn user_page(
         Ok(projects) => projects,
         Err(e) => {
             eprintln!("{:?}", e);
-            return Err(not_found(logged_in_user, state.config.content_pages.clone()));
+            return Err(not_found(
+                logged_in_user,
+                state.config.content_pages.clone(),
+            ));
         }
     };
 
