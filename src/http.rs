@@ -42,7 +42,8 @@ pub async fn http_server(
         .route(
             "/projects/new",
             get(controllers::project_new_get).post(controllers::project_new_post),
-        );
+        )
+        .route("/projects", get(controllers::all_projects_list));
 
     // Dynamically register content page routes
     for page in &state.config.content_pages {

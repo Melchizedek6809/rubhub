@@ -12,7 +12,8 @@
         <div class="page-header">
           <h1 class="project-header">
             <a href="{{ owner.uri() }}">{{ owner.name }}</a> /
-            <a href="{{ project.uri() }}">{{ project.name }}</a>
+            <a href="{{ project.uri() }}">{{ project.name }}</a> /
+            <a href="{{ project.uri_tree(selected_branch, "") }}">Code</a>
           </h1>
         </div>
 

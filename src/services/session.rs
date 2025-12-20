@@ -3,13 +3,11 @@ use axum::response::Redirect;
 use serde::{Deserialize, Serialize};
 use time::{Duration as CookieDuration, OffsetDateTime};
 use tower_cookies::{Cookie, Cookies, cookie::SameSite};
-use urlencoding;
 use uuid::Uuid;
 
 use crate::{GlobalState, User, services::fs::atomic_write};
 
 pub const SESSION_COOKIE: &str = "session_id";
-pub const SESSION_USER_COOKIE: &str = "session_user";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Session {
@@ -31,15 +29,6 @@ pub async fn logout(state: &GlobalState, cookies: Cookies) -> Redirect {
 
         cookies.remove(
             Cookie::build((SESSION_COOKIE, ""))
-                .path("/")
-                .max_age(CookieDuration::seconds(0))
-                .build(),
-        );
-    }
-
-    if cookies.get(SESSION_USER_COOKIE).is_some() {
-        cookies.remove(
-            Cookie::build((SESSION_USER_COOKIE, ""))
                 .path("/")
                 .max_age(CookieDuration::seconds(0))
                 .build(),
@@ -82,26 +71,6 @@ pub async fn current_user(state: &GlobalState, cookies: &Cookies) -> Result<User
     Ok(user)
 }
 
-pub fn set_user_cookie(cookies: &Cookies, user_id: Uuid, username: &str) {
-    let user_info = serde_json::json!({
-        "id": user_id,
-        "username": username,
-    })
-    .to_string();
-
-    let encoded_user_info = urlencoding::encode(&user_info).into_owned();
-
-    let user_cookie = Cookie::build((SESSION_USER_COOKIE, encoded_user_info))
-        .path("/")
-        .http_only(false)
-        .same_site(SameSite::Lax)
-        .secure(true)
-        .max_age(CookieDuration::days(90))
-        .build();
-
-    cookies.add(user_cookie);
-}
-
 pub async fn create_session(
     state: &GlobalState,
     cookies: &Cookies,
@@ -131,6 +100,5 @@ pub async fn create_session(
         .build();
 
     cookies.add(cookie);
-    set_user_cookie(cookies, user_id, user_slug);
     Ok(())
 }

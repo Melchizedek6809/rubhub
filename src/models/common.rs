@@ -39,4 +39,8 @@ impl AccessType {
             _ => Err("Invalid access level."),
         }
     }
+
+    pub fn is_allowed(&self, required_level: AccessType) -> bool {
+        (*self as u8) >= (required_level as u8)
+    }
 }

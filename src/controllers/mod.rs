@@ -3,6 +3,7 @@ mod content_page;
 mod landing;
 mod not_found;
 mod project;
+mod projects_list;
 mod user;
 
 pub use auth::{handle_login, handle_registration, login_page, logout, registration_page};
@@ -15,4 +16,5 @@ pub use project::{
     project_settings_get, project_settings_post, project_tags_get, project_tree_get,
     project_tree_root_get,
 };
+pub use projects_list::all_projects_list;
 pub use user::{handle_settings, settings_page, user_page};

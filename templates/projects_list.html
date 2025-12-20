@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Browse All Projects</title>
+  </head>
+  <body>
+    {% include "sidebar.html" %}
+    <main>
+      <section>
+        <div class="page-header">
+          <h1 class="project-header">Browse All Projects</h1>
+        </div>
+        {% if projects.len() > 0 %}
+        <div class="card-grid">
+          {% for project in projects %}
+          {% include "project_card.html" %}
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="card">
+          <p>No public projects found.</p>
+        </div>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+</html>

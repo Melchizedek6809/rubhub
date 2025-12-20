@@ -118,7 +118,6 @@ pub enum AccessType {
 4. Result: Server-rendered HTML with client-side interactivity
 
 **Client-Side Features:**
-- Session detection via `session_user` cookie (JSON)
 - Branch switcher dropdown
 - Sidebar toggle for mobile
 - Progressive enhancement (works without JS)
@@ -170,8 +169,7 @@ Use the `services/repository.rs` module which wraps `gix` crate. All repository 
 ### Session Management
 
 Sessions are file-based with 30-day expiration:
-- `session_id` cookie: HTTP-only, secure
-- `session_user` cookie: Readable by client JS (JSON with user data)
+- `session_id` cookie: HTTP-only, secure (used for server-side authentication)
 
 ### Validation
 

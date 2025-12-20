@@ -27,12 +27,12 @@
   </div>
 
   {% if let Some(user) = logged_in_user %}
-  <a href="/~{{ user.slug }}" class="nav-btn" id="browse-link">Browse</a>
+  <a href="/projects" class="nav-btn" id="browse-link">Browse</a>
 
   {# User's projects #}
   {% if !sidebar_projects.is_empty() %}
     <div class="nav-section-header">
-      <span class="nav-section-heading">Projects</span>
+      <a href="/~{{ user.slug }}" class="nav-section-heading">Projects</a>
       <a href="/projects/new" class="nav-section-action" title="New Project">+</a>
     </div>
     {% for project in sidebar_projects %}

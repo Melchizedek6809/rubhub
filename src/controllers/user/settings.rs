@@ -132,8 +132,6 @@ pub async fn handle_settings(
         );
     }
 
-    session_service::set_user_cookie(&cookies, current_user.id, &current_user.slug);
-
     Ok(render_settings_page(
         &cookies,
         &state,
