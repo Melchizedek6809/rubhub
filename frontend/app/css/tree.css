@@ -55,7 +55,7 @@
 .tree-item {
 	display: flex;
 	align-items: center;
-	padding: var(--space-s) var(--space-m);
+	padding: var(--space-s) 0;
 	border-bottom: 1px solid var(--background-color);
 	transition: background-color 150ms;
 }
