@@ -1,3 +1,4 @@
+mod blob;
 mod branches;
 mod commits;
 mod delete;
@@ -8,6 +9,7 @@ mod settings;
 mod tags;
 mod tree;
 
+pub use blob::project_blob_get;
 pub use branches::project_branches_get;
 pub use commits::project_commits_get;
 pub use delete::project_delete_post;
@@ -16,4 +18,4 @@ pub use new::{project_new_get, project_new_post};
 pub use overview::project_overview_get;
 pub use settings::{project_settings_get, project_settings_post};
 pub use tags::project_tags_get;
-pub use tree::{project_blob_get, project_tree_get, project_tree_root_get};
+pub use tree::{project_tree_get, project_tree_root_get};

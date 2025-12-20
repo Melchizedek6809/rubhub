@@ -209,8 +209,6 @@ async fn my_test() {
 }
 ```
 
-Tests use fixed ports (32323 for HTTP, 32324 for SSH) to avoid conflicts.
-
 ## Build Pipeline
 
 1. **Frontend**: Vite builds HTML/TS/CSS → `dist/` directory

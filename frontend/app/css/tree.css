@@ -104,9 +104,34 @@
 }
 
 .file-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
 	padding: var(--space-m);
 	background: var(--background-color-bright);
 	border-bottom: 1px solid var(--background-color);
+}
+
+.file-actions {
+	display: flex;
+	gap: var(--space-m);
+}
+
+.file-action-link {
+	padding: var(--space-xs) var(--space-s);
+	text-decoration: none;
+	color: var(--primary-color);
+	border: 1px solid var(--primary-color);
+	border-radius: 4px;
+	font-size: 0.85rem;
+	transition:
+		background-color 150ms,
+		color 150ms;
+}
+
+.file-action-link:hover {
+	background-color: var(--primary-color);
+	color: var(--background-color);
 }
 
 .file-content {

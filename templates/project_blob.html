@@ -74,12 +74,20 @@
                   {% endif %}
                 {% endfor %}
               </div>
+              <div class="file-actions">
+                <a href="{{ raw_url }}" class="file-action-link">Raw</a>
+                {% if let Some(src_url) = source_url %}
+                <a href="{{ src_url }}" class="file-action-link">Source</a>
+                {% endif %}
+              </div>
             </div>
 
             {% if is_binary %}
             <div class="binary-notice">
               <p>Binary file</p>
             </div>
+            {% elif is_rendered_markdown %}
+            <div class="markdown">{{ file_content|safe }}</div>
             {% else %}
             <pre class="file-content"><code>{{ file_content }}</code></pre>
             {% endif %}

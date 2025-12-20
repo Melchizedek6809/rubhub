@@ -1,11 +1,6 @@
 use askama::Template;
-use axum::{
-    body::Body,
-    extract::{Query, State},
-    http::Response,
-};
+use axum::{body::Body, extract::State, http::Response};
 use gix::objs::tree::EntryKind;
-use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
@@ -43,33 +38,6 @@ struct ProjectTreeTemplate<'a> {
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
     active_tab: &'static str,
-}
-
-#[derive(Template)]
-#[template(path = "project_blob.html")]
-struct ProjectBlobTemplate<'a> {
-    owner: &'a User,
-    project: &'a Project,
-    access_level: AccessType,
-    ssh_clone_url: String,
-    http_clone_url: String,
-    selected_branch: String,
-    summary: GitSummary,
-    info: Option<GitRefInfo>,
-    file_path: String,
-    path_parts: Vec<String>,
-    file_content: String,
-    is_binary: bool,
-    logged_in_user: Option<&'a User>,
-    sidebar_projects: Vec<Project>,
-    content_pages: Vec<ContentPage>,
-    active_tab: &'static str,
-}
-
-#[derive(Deserialize)]
-pub struct BlobParams {
-    #[allow(dead_code)] // Reserved for future ?raw query param support
-    pub raw: Option<String>,
 }
 
 /// Helper to calculate parent path
@@ -196,85 +164,6 @@ async fn render_tree_page(
         path_parts,
         readme_html,
         parent_path,
-        logged_in_user: logged_in_user.as_ref(),
-        sidebar_projects,
-        content_pages: state.config.content_pages.clone(),
-        active_tab: "code",
-    };
-    template.response()
-}
-
-pub async fn project_blob_get(
-    State(state): State<GlobalState>,
-    cookies: Cookies,
-    Query(_params): Query<BlobParams>, // Extract for future ?raw support
-    PathUserProjectRefPath(owner, project, git_ref, path): PathUserProjectRefPath,
-) -> Response<Body> {
-    let logged_in_user = session::current_user(&state, &cookies).await.ok();
-
-    let sidebar_projects = if let Some(ref user) = logged_in_user {
-        user.sidebar_projects(&state).await
-    } else {
-        vec![]
-    };
-
-    let access_level = project
-        .access_level(logged_in_user.as_ref().map(|user| user.slug.clone()))
-        .await;
-
-    if access_level == AccessType::None {
-        return not_found(logged_in_user, vec![]);
-    }
-
-    let Some(summary) = get_git_summary(&state, &owner.slug, &project.slug).await else {
-        return not_found(logged_in_user, vec![]);
-    };
-
-    // Get file content
-    let file_result = get_git_file(&state, &owner.slug, &project.slug, &git_ref, &path).await;
-    let file_obj = match file_result {
-        Ok(obj) => obj,
-        Err(_) => return not_found(logged_in_user, vec![]),
-    };
-
-    let git_user = logged_in_user
-        .as_ref()
-        .map(|u| u.slug.clone())
-        .unwrap_or("anon".to_string());
-
-    let ssh_clone_url = project.ssh_clone_url(&state.config.ssh_public_host, &git_user);
-    let http_clone_url = project.http_clone_url(&state.config.base_url);
-
-    let info = get_git_info(&state, &owner.slug, &project.slug, &git_ref, 1, 0).await;
-
-    let selected_branch = info
-        .as_ref()
-        .map(|i| i.branch_name.to_string())
-        .unwrap_or_else(|| git_ref.clone());
-
-    // Check if binary
-    let is_binary = file_obj.data.contains(&0u8);
-    let file_content = if is_binary {
-        String::from("Binary file")
-    } else {
-        String::from_utf8_lossy(&file_obj.data).to_string()
-    };
-
-    let path_parts: Vec<String> = path.split('/').map(|s| s.to_string()).collect();
-
-    let template = ProjectBlobTemplate {
-        owner: &owner,
-        project: &project,
-        access_level,
-        ssh_clone_url,
-        http_clone_url,
-        summary,
-        info,
-        selected_branch,
-        file_path: path.clone(),
-        path_parts,
-        file_content,
-        is_binary,
         logged_in_user: logged_in_user.as_ref(),
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
