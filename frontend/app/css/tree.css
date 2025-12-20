@@ -112,6 +112,26 @@
 	border-bottom: 1px solid var(--background-color);
 }
 
+.file-metadata {
+	display: flex;
+	align-items: center;
+	gap: var(--space-s);
+	padding: var(--space-s) var(--space-m);
+	background: var(--background-color-bright);
+	border-bottom: 1px solid var(--background-color);
+	font-size: 0.85rem;
+	color: var(--text-color);
+	opacity: 0.7;
+}
+
+.file-meta-item {
+	white-space: nowrap;
+}
+
+.file-meta-separator {
+	opacity: 0.5;
+}
+
 .file-actions {
 	display: flex;
 	gap: var(--space-m);
@@ -149,4 +169,18 @@
 	text-align: center;
 	color: var(--text-color);
 	opacity: 0.6;
+}
+
+.image-view {
+	padding: var(--space-l);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background: var(--background-color-bright);
+}
+
+.image-view img {
+	max-width: 100%;
+	max-height: var(--max-content-width);
+	object-fit: contain;
 }

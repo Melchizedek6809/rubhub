@@ -57,6 +57,7 @@
               <span class="commit-message" title="{{ commit.message }}">{{ commit.message }}</span>
               <span class="commit-id">{{ commit.id }}</span>
               <span class="commit-time">{{ commit.relative_time() }}</span>
+              <a href="{{ project.uri_log(&selected_branch, 0) }}" class="commit-count">⟲ {{ info.commit_count }} Commit{% if info.commit_count != 1 %}s{% endif %}</a>
             </div>
             {% endif %}
           </div>
@@ -81,8 +82,21 @@
                 {% endif %}
               </div>
             </div>
+            <div class="file-metadata">
+              <span class="file-meta-item">{{ mime_type }}</span>
+              <span class="file-meta-separator">•</span>
+              <span class="file-meta-item">{{ human_readable_size }}</span>
+              {% if let Some(lines) = line_count %}
+              <span class="file-meta-separator">•</span>
+              <span class="file-meta-item">{{ *lines }} line{% if *lines != 1 %}s{% endif %}</span>
+              {% endif %}
+            </div>
 
-            {% if is_binary %}
+            {% if is_image %}
+            <div class="image-view">
+              <img src="{{ raw_url }}" alt="{{ file_path }}" />
+            </div>
+            {% elif is_binary %}
             <div class="binary-notice">
               <p>Binary file</p>
             </div>
