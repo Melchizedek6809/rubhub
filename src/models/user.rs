@@ -78,7 +78,13 @@ impl User {
             return Err(anyhow!("Invalid username"));
         }
         let path = state.config.git_root.join(format!("!{slug}.json"));
-        let data = tokio::fs::read(path).await?;
+        let data = tokio::fs::read(path).await.map_err(|e| {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                anyhow!("No such user")
+            } else {
+                anyhow!(e)
+            }
+        })?;
         let data = String::from_utf8_lossy(&data);
         let user: User = serde_json::from_str(&data)?;
 
