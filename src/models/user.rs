@@ -54,19 +54,12 @@ impl User {
         }
     }
 
-    // ToDo: should probably double/triple check this implementation
     pub fn validate_ssh_key(&self, ssh_key: &ssh_key::PublicKey) -> Result<()> {
-        let Ok(ssh_key) = ssh_key.to_openssh() else {
-            return Err(anyhow!("Invalid ssh_key"));
-        };
         for key in &self.ssh_keys {
-            let Ok(mut key) = ssh_key::PublicKey::from_openssh(key) else {
+            let Ok(key) = ssh_key::PublicKey::from_openssh(key) else {
                 continue;
             };
-            key.set_comment("");
-            if let Ok(key) = key.to_openssh()
-                && key == ssh_key
-            {
+            if key.key_data() == ssh_key.key_data() {
                 return Ok(());
             }
         }
