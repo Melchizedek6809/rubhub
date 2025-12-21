@@ -17,6 +17,8 @@ async fn ensure_host_key(path: &PathBuf, key_type: &str) -> Result<(), io::Error
 
     println!("Generating missing {key_type} host key");
     let status = Command::new("ssh-keygen")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .arg("-t")
         .arg(key_type)
         .arg("-N")

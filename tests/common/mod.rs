@@ -1,9 +1,11 @@
+mod api;
+
 use std::future::Future;
 
-use anyhow::{Result, anyhow};
-use reqwest::Client;
 use rubhub::{AppConfig, GlobalState, create_listeners, run};
 use tempfile::TempDir;
+
+pub use api::Api;
 
 /// Helper function to run integration tests with a temporary backend
 ///
@@ -50,41 +52,4 @@ where
     run(state.clone(), http_listener, ssh_listener, test(state)).await;
 
     std::fs::remove_dir_all(path).expect("Couldn't clean up TempDir");
-}
-
-/// Helper function to assert that an HTTP response contains a specific string
-pub async fn response_contains(client: &Client, url: &str, needle: &str) -> Result<()> {
-    let body = client
-        .get(url)
-        .send()
-        .await?
-        .error_for_status()?
-        .text()
-        .await?;
-
-    if body.contains(needle) {
-        Ok(())
-    } else {
-        eprintln!("{body}");
-        Err(anyhow!(format!("{url} is missing {:?}", needle)))
-    }
-}
-
-/// Helper function to create a reqwest client with cookie store enabled
-pub fn test_client() -> Client {
-    reqwest::Client::builder()
-        .cookie_store(true)
-        .build()
-        .expect("Couldn't initialize reqwest client")
-}
-
-/// Helper function to extract CSRF token from HTML response
-/// Looks for: <input type="hidden" name="_csrf_token" value="TOKEN">
-pub fn extract_csrf_token(html: &str) -> Option<String> {
-    // Simple regex-like extraction using string searching
-    let needle = r#"name="_csrf_token" value=""#;
-    let start = html.find(needle)? + needle.len();
-    let rest = &html[start..];
-    let end = rest.find('"')?;
-    Some(rest[..end].to_string())
 }

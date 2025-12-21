@@ -1,71 +1,87 @@
 mod common;
 
-use std::collections::HashMap;
-
-use common::{extract_csrf_token, response_contains, test_client, with_backend};
+use common::{Api, with_backend};
 
 #[tokio::test(flavor = "current_thread")]
-async fn basic_workflow() {
+async fn auth_workflow() {
     with_backend(|state| async move {
-        let base_url = &state.config.base_url;
-        let client = test_client();
+        let api = Api::new(&state.config.base_url);
 
-        response_contains(&client, &format!("{base_url}/"), "RubHub")
+        api.assert_contains("/", "RubHub").await.unwrap();
+
+        api.register("t", "test@rubhub.net", "12345678901234567890")
+            .await
+            .expect_err("Registration should fail for short username");
+
+        api.register("test", "", "12345678901234567890")
+            .await
+            .expect_err("Registration should fail for missing emails");
+
+        api.register("test", "asdqwezxc", "12345678901234567890")
+            .await
+            .expect_err("Registration should fail for invalid emails");
+
+        api.register("test", "test@rubhub.net", "123")
+            .await
+            .expect_err("Registration should fail for short passwords");
+
+        api.register("test", "test@rubhub.net", "12345678901234567890")
             .await
             .unwrap();
 
-        // First GET the registration page to get CSRF token
-        let registration_page = client
-            .get(format!("{base_url}/registration"))
-            .send()
-            .await
-            .expect("GET registration failed")
-            .text()
-            .await
-            .expect("Failed to get registration page body");
+        api.assert_contains("/~test", "Settings").await.unwrap();
 
-        let csrf_token = extract_csrf_token(&registration_page)
-            .expect("Failed to extract CSRF token from registration page");
+        api.logout().await.unwrap();
 
-        let mut form = HashMap::new();
-        let pw = "12345678901234567890";
-        form.insert("username", "t");
-        form.insert("email", "test@rubhub.net");
-        form.insert("password", pw);
-        form.insert("_csrf_token", &csrf_token);
+        api.assert_contains("/~test", "Settings").await.unwrap_err();
+        api.login("test", "zxc").await.unwrap_err();
 
-        // First we try to register with a username that's too short
-        client
-            .post(format!("{base_url}/registration"))
-            .form(&form)
-            .send()
-            .await
-            .expect("Registration failed")
-            .error_for_status()
-            .expect_err("Registration request should fail for short username");
+        api.login("test", "12345678901234567890").await.unwrap();
 
-        // Now we use the full username
-        form.insert("username", "test");
-        client
-            .post(format!("{base_url}/registration"))
-            .form(&form)
-            .send()
-            .await
-            .expect("Registration failed")
-            .error_for_status()
-            .expect("Registration request failed");
+        api.assert_contains("/~test", "Settings").await.unwrap();
+    })
+    .await;
+}
 
-        response_contains(&client, &format!("{base_url}/~test"), "test")
+#[tokio::test(flavor = "current_thread")]
+async fn test_create_project() {
+    with_backend(|state| async move {
+        let api = Api::new(&state.config.base_url);
+
+        api.register("testuser", "test@example.com", "password123456789")
             .await
             .unwrap();
 
-        client
-            .get(format!("{base_url}/logout"))
-            .send()
+        api.create_project("Test Project", "A test project")
             .await
-            .expect("Logout failed")
-            .error_for_status()
-            .expect("Logout status failed");
+            .unwrap();
+
+        api.assert_contains("/~testuser/test-project", "Test Project")
+            .await
+            .unwrap();
+    })
+    .await;
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn test_project_visibility() {
+    with_backend(|state| async move {
+        let api = Api::new(&state.config.base_url);
+
+        api.register("alice", "alice@example.com", "alicepassword123")
+            .await
+            .unwrap();
+
+        api.create_project("Alice Project", "Alice's project")
+            .await
+            .unwrap();
+
+        api.logout().await.unwrap();
+
+        // Verify project is still accessible when logged out (public by default)
+        api.assert_contains("/~alice/alice-project", "Alice Project")
+            .await
+            .unwrap();
     })
     .await;
 }

@@ -1,3 +1,5 @@
+use validator::ValidateEmail;
+
 /// Ensures a slug-like value only includes safe URL characters.
 /// Allowed: lowercase ASCII letters, digits, dash, underscore, period (not leading).
 pub fn validate_slug(value: &str) -> Result<(), &'static str> {
@@ -47,6 +49,18 @@ pub fn validate_username(username: &str) -> Result<(), &'static str> {
         Ok(())
     } else {
         Err("Only letters, numbers, dashes, underscores, and periods are allowed.")
+    }
+}
+
+pub fn validate_email(email: &str) -> Result<(), &'static str> {
+    if email.len() < 3 {
+        return Err("E-Mail must be at least 3 characters.");
+    }
+
+    if email.validate_email() {
+        Ok(())
+    } else {
+        Err("Invalid E-Mail, all adresses must conform to the HTML5 E-Mail spec")
     }
 }
 

@@ -13,7 +13,7 @@ use crate::{
     models::ContentPage,
     services::{
         csrf, session,
-        validation::{slugify, validate_password, validate_username},
+        validation::{slugify, validate_email, validate_password, validate_username},
     },
     views::ThemedRender,
 };
@@ -87,6 +87,13 @@ async fn handle_registration_action(
     ));
 
     if let Err(msg) = validate_username(username) {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            render_registration_page(Some(msg), csrf_token_field),
+        ));
+    }
+
+    if let Err(msg) = validate_email(email) {
         return Err((
             StatusCode::BAD_REQUEST,
             render_registration_page(Some(msg), csrf_token_field),
