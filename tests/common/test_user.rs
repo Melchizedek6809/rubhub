@@ -40,8 +40,15 @@ impl TestUser {
         let ssh_key = TestSshKey::generate(temp_dir, username, key_type)?;
 
         api.register(username, &email, "password123456789").await?;
-        api.update_settings(username, &email, "", "", "main", &ssh_key.public_key_content)
-            .await?;
+        api.update_settings(
+            username,
+            &email,
+            "",
+            "",
+            "main",
+            &ssh_key.public_key_content,
+        )
+        .await?;
 
         Ok(Self {
             username: username.to_string(),

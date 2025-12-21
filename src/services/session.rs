@@ -95,7 +95,7 @@ pub async fn create_session(
         .path("/")
         .http_only(true)
         .same_site(SameSite::Lax)
-        .secure(true)
+        .secure(cfg!(not(debug_assertions)))
         .max_age(CookieDuration::days(30))
         .build();
 

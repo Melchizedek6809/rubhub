@@ -29,12 +29,7 @@ impl GitHelper {
     /// - Disable strict host key checking (test server generates new keys each run)
     /// - Use /dev/null as known_hosts file (ephemeral test)
     /// - Suppress SSH warnings
-    pub fn new(
-        work_dir: PathBuf,
-        ssh_key_path: &Path,
-        user_name: &str,
-        user_email: &str,
-    ) -> Self {
+    pub fn new(work_dir: PathBuf, ssh_key_path: &Path, user_name: &str, user_email: &str) -> Self {
         let ssh_command = format!(
             "ssh -i {} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR",
             ssh_key_path.display()

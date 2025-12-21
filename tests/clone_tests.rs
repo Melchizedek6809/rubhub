@@ -2,7 +2,7 @@
 
 mod common;
 
-use common::{assertions::*, with_backend, Api, KeyType, TestUser};
+use common::{Api, KeyType, TestUser, assertions::*, with_backend};
 use tokio::process::Command;
 
 /// Test that an owner can clone their private repo via SSH with an Ed25519 key.
@@ -12,8 +12,9 @@ async fn test_ssh_clone_private_repo_owner_ed25519() {
         let api = Api::new(&state.config.base_url);
         let temp_dir = state.config.dir_root.as_path();
 
-        let user =
-            TestUser::create(&api, temp_dir, "alice", &state.config.ssh_public_host).await.unwrap();
+        let user = TestUser::create(&api, temp_dir, "alice", &state.config.ssh_public_host)
+            .await
+            .unwrap();
 
         api.create_project_with_access("My Private Project", "A private project", "none")
             .await
@@ -71,8 +72,9 @@ async fn test_ssh_commit_and_push() {
         let api = Api::new(&state.config.base_url);
         let temp_dir = state.config.dir_root.as_path();
 
-        let user =
-            TestUser::create(&api, temp_dir, "alice", &state.config.ssh_public_host).await.unwrap();
+        let user = TestUser::create(&api, temp_dir, "alice", &state.config.ssh_public_host)
+            .await
+            .unwrap();
 
         // Create project (public read so we can verify on web)
         api.create_project_with_access("Push Test", "Testing push", "read")
@@ -114,8 +116,9 @@ async fn test_anonymous_ssh_clone_public_repo() {
         let temp_dir = state.config.dir_root.as_path();
 
         // Alice creates a public project and pushes content
-        let alice =
-            TestUser::create(&api, temp_dir, "alice", &state.config.ssh_public_host).await.unwrap();
+        let alice = TestUser::create(&api, temp_dir, "alice", &state.config.ssh_public_host)
+            .await
+            .unwrap();
 
         api.create_project_with_access("Public Project", "A public project", "read")
             .await
@@ -171,8 +174,9 @@ async fn test_http_clone_public_repo() {
         let temp_dir = state.config.dir_root.as_path();
 
         // Create user and public project with content
-        let alice =
-            TestUser::create(&api, temp_dir, "alice", &state.config.ssh_public_host).await.unwrap();
+        let alice = TestUser::create(&api, temp_dir, "alice", &state.config.ssh_public_host)
+            .await
+            .unwrap();
 
         api.create_project_with_access("Public Repo", "A public project", "read")
             .await

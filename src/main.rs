@@ -8,7 +8,5 @@ fn main() {
 
     // We do this two-step approach to make it easier to do integration tests.
     let config = rubhub::AppConfig::new().expect("Error creating AppConfig");
-    eprintln!("{:?}", config);
-
     rubhub::run_single_thread(config, start)
 }

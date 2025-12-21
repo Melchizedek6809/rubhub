@@ -2,7 +2,7 @@
 
 mod common;
 
-use common::{assertions::*, with_backend, Api, TestSshKey};
+use common::{Api, TestSshKey, assertions::*, with_backend};
 
 /// Test that SSH keys can be set via the settings page.
 #[tokio::test(flavor = "current_thread")]

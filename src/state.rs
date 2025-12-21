@@ -19,6 +19,7 @@ pub struct AppConfig {
     pub ssh_bind_addr: SocketAddr,
     pub ssh_public_host: String,
     pub base_url: String,
+    pub base_url_is_set: bool,
     pub reuse_port: bool,
     pub content_pages: Vec<ContentPage>,
     pub index_content: Option<ContentPage>,
@@ -65,6 +66,7 @@ impl Default for AppConfig {
             ssh_bind_addr,
             ssh_public_host,
             base_url,
+            base_url_is_set: false,
             reuse_port: false,
             content_pages: vec![],
             index_content: None,
@@ -92,7 +94,9 @@ impl AppConfig {
         let addr = bind_addr.parse::<SocketAddr>()?;
 
         self.http_bind_addr = addr;
-        self.base_url = format!("http://{addr}");
+        if !self.base_url_is_set {
+            self.base_url = format!("http://{addr}");
+        }
 
         Ok(self)
     }
@@ -112,6 +116,7 @@ impl AppConfig {
 
     pub fn set_base_url(mut self, base_url: &str) -> Self {
         self.base_url = base_url.to_string();
+        self.base_url_is_set = true;
         self
     }
 
@@ -148,7 +153,9 @@ impl AppConfig {
     /// Update bind addresses and derived URLs after binding
     pub fn update_bound_addresses(mut self, http_addr: SocketAddr, ssh_addr: SocketAddr) -> Self {
         self.http_bind_addr = http_addr;
-        self.base_url = format!("http://{}", http_addr);
+        if !self.base_url_is_set {
+            self.base_url = format!("http://{}", http_addr);
+        }
 
         self.ssh_bind_addr = ssh_addr;
         self.ssh_public_host = if ssh_addr.port() == 22 {
@@ -171,9 +178,13 @@ impl AppConfig {
             Ok(addr) => config.set_http_bind_addr(&addr)?,
             _ => config,
         };
-        let config = match env::var("BASE_URL") {
-            Ok(uri) => config.set_base_url(&uri),
-            _ => config,
+        let base_url_env = env::var("BASE_URL");
+        let config = match &base_url_env {
+            Ok(uri) if !uri.trim().is_empty() => config.set_base_url(uri),
+            Ok(_) => {
+                anyhow::bail!("BASE_URL cannot be empty");
+            }
+            Err(_) => config,
         };
         let config = match env::var("SSH_BIND_ADDRESS") {
             Ok(addr) => config.set_ssh_bind_addr(&addr)?,
@@ -211,14 +222,20 @@ impl AppConfig {
             }
             _ => config,
         };
-        let config = match env::var("CSRF_SECRET") {
+        let csrf_secret_env = env::var("CSRF_SECRET");
+        let config = match &csrf_secret_env {
             Ok(hex) => {
                 let secret = parse_csrf_secret(&hex)
                     .context("Failed to parse CSRF_SECRET environment variable")?;
                 config.set_csrf_secret(secret)
             }
-            _ => config,
+            Err(_) => config,
         };
+
+        #[cfg(not(debug_assertions))]
+        {
+            validate_release_requirements(base_url_env.is_ok(), csrf_secret_env.is_ok())?;
+        }
 
         Ok(config)
     }
@@ -302,10 +319,43 @@ fn parse_csrf_secret(input: &str) -> Result<[u8; 32]> {
     Ok(hash.into())
 }
 
+#[cfg_attr(debug_assertions, allow(dead_code))]
+fn validate_release_requirements(base_url_set: bool, csrf_secret_set: bool) -> Result<()> {
+    if !base_url_set {
+        anyhow::bail!("BASE_URL must be set in release builds");
+    }
+    if !csrf_secret_set {
+        anyhow::bail!("CSRF_SECRET must be set in release builds");
+    }
+    Ok(())
+}
+
 #[derive(Debug, Clone)]
 pub struct GlobalState {
     pub config: Arc<AppConfig>,
     pub process_start: Instant,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::validate_release_requirements;
+
+    #[test]
+    fn validate_release_requirements_fails_without_base_url() {
+        let err = validate_release_requirements(false, true).unwrap_err();
+        assert_eq!(err.to_string(), "BASE_URL must be set in release builds");
+    }
+
+    #[test]
+    fn validate_release_requirements_fails_without_csrf_secret() {
+        let err = validate_release_requirements(true, false).unwrap_err();
+        assert_eq!(err.to_string(), "CSRF_SECRET must be set in release builds");
+    }
+
+    #[test]
+    fn validate_release_requirements_ok_when_present() {
+        assert!(validate_release_requirements(true, true).is_ok());
+    }
 }
 
 impl GlobalState {

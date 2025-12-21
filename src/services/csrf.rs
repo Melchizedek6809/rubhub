@@ -46,7 +46,7 @@ pub fn set_csrf_cookie(cookies: &Cookies, token: &str) {
     let cookie = Cookie::build((CSRF_COOKIE, token.to_string()))
         .path("/")
         .same_site(SameSite::Strict)
-        .secure(true)
+        .secure(cfg!(not(debug_assertions)))
         .http_only(false) // Must be readable to include in forms
         .max_age(CookieDuration::hours(24))
         .build();
