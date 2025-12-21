@@ -1,13 +1,17 @@
 use askama::Template;
 use axum::{
-    Form,
     extract::State,
     response::{Html, Redirect},
 };
 use serde::Deserialize;
+use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, Project, User, models::ContentPage, services::session, views::ThemedRender,
+    GlobalState, Project, User,
+    extractors::CsrfForm,
+    models::ContentPage,
+    services::{csrf, session},
+    views::ThemedRender,
 };
 
 #[derive(Debug, Deserialize)]
@@ -23,33 +27,40 @@ struct LoginTemplate<'a> {
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
+    csrf_token_field: String,
 }
 
-async fn render_login_page(message: Option<&str>) -> Html<String> {
+fn render_login_page(message: Option<&str>, csrf_token_field: String) -> Html<String> {
     let template = LoginTemplate {
         message,
         logged_in_user: None,
         sidebar_projects: vec![],
         content_pages: vec![],
+        csrf_token_field,
     };
     Html(template.render_with_theme())
 }
 
-async fn internal_error<E: std::fmt::Display>(err: E) -> (axum::http::StatusCode, Html<String>) {
+fn internal_error<E: std::fmt::Display>(
+    err: E,
+    csrf_token_field: String,
+) -> (axum::http::StatusCode, Html<String>) {
     (
         axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-        render_login_page(Some(&format!("{err}"))).await,
+        render_login_page(Some(&format!("{err}")), csrf_token_field),
     )
 }
 
-pub async fn login_page() -> Html<String> {
-    render_login_page(None).await
+pub async fn login_page(State(state): State<GlobalState>, cookies: Cookies) -> Html<String> {
+    let token = csrf::get_or_create_token(&state.config.csrf_secret, &cookies);
+    let csrf_token_field = csrf::hidden_field(&token);
+    render_login_page(None, csrf_token_field)
 }
 
 pub async fn handle_login(
     State(state): State<GlobalState>,
-    cookies: tower_cookies::Cookies,
-    Form(form): Form<LoginForm>,
+    cookies: Cookies,
+    CsrfForm(form): CsrfForm<LoginForm>,
 ) -> Result<Redirect, (axum::http::StatusCode, Html<String>)> {
     let username = form.username.trim();
     let password = form.password.trim();
@@ -59,20 +70,25 @@ pub async fn handle_login(
 
 async fn handle_login_action(
     state: &GlobalState,
-    cookies: tower_cookies::Cookies,
+    cookies: Cookies,
     username: &str,
     password: &str,
 ) -> Result<Redirect, (axum::http::StatusCode, Html<String>)> {
+    let csrf_token_field = csrf::hidden_field(&csrf::get_or_create_token(
+        &state.config.csrf_secret,
+        &cookies,
+    ));
+
     match User::login(state, username, password).await {
         Ok(user) => {
             if let Err(err) = session::create_session(state, &cookies, user.id, &user.slug).await {
-                return Err(internal_error(err).await);
+                return Err(internal_error(err, csrf_token_field));
             }
             Ok(Redirect::to(&user.uri()))
         }
         Err(err) => Err((
             axum::http::StatusCode::UNAUTHORIZED,
-            render_login_page(Some(&format!("{err}"))).await,
+            render_login_page(Some(&format!("{err}")), csrf_token_field),
         )),
     }
 }

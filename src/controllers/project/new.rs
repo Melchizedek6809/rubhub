@@ -1,6 +1,5 @@
 use askama::Template;
 use axum::{
-    Form,
     body::Body,
     extract::State,
     http::Response,
@@ -11,8 +10,9 @@ use tower_cookies::Cookies;
 
 use crate::{
     AccessType, GlobalState, Project, User,
+    extractors::CsrfForm,
     models::ContentPage,
-    services::{repository::create_bare_repo, session, validation::validate_project_name},
+    services::{csrf, repository::create_bare_repo, session, validation::validate_project_name},
     views::ThemedRender,
 };
 
@@ -29,6 +29,7 @@ struct NewProjectTemplate<'a> {
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
+    csrf_token_field: String,
 }
 
 pub async fn project_new_get(
@@ -39,11 +40,12 @@ pub async fn project_new_get(
         Ok(user) => user,
         Err(_) => return Err(Redirect::to("/login")),
     };
-    Ok(render_new_project_page(&state, Some(&logged_in_user), None).await)
+    Ok(render_new_project_page(&state, &cookies, Some(&logged_in_user), None).await)
 }
 
 async fn render_new_project_page(
     state: &GlobalState,
+    cookies: &Cookies,
     logged_in_user: Option<&User>,
     message: Option<&str>,
 ) -> Html<String> {
@@ -53,11 +55,15 @@ async fn render_new_project_page(
         vec![]
     };
 
+    let token = csrf::get_or_create_token(&state.config.csrf_secret, cookies);
+    let csrf_token_field = csrf::hidden_field(&token);
+
     let template = NewProjectTemplate {
         message,
         logged_in_user,
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
+        csrf_token_field,
     };
     Html(template.render_with_theme())
 }
@@ -65,7 +71,7 @@ async fn render_new_project_page(
 pub async fn project_new_post(
     State(state): State<GlobalState>,
     cookies: Cookies,
-    Form(form): Form<NewProjectForm>,
+    CsrfForm(form): CsrfForm<NewProjectForm>,
 ) -> Response<Body> {
     let selected_public_access = form
         .public_access
@@ -80,13 +86,18 @@ pub async fn project_new_post(
 
     let name = form.name.trim();
     if name.is_empty() {
-        return render_new_project_page(&state, Some(&current_user), Some("Name is required."))
-            .await
-            .into_response();
+        return render_new_project_page(
+            &state,
+            &cookies,
+            Some(&current_user),
+            Some("Name is required."),
+        )
+        .await
+        .into_response();
     }
 
     if let Err(msg) = validate_project_name(name) {
-        return render_new_project_page(&state, Some(&current_user), Some(msg))
+        return render_new_project_page(&state, &cookies, Some(&current_user), Some(msg))
             .await
             .into_response();
     }
@@ -101,6 +112,7 @@ pub async fn project_new_post(
             {
                 return render_new_project_page(
                     &state,
+                    &cookies,
                     Some(&current_user),
                     Some("Project already exists"),
                 )
@@ -113,6 +125,7 @@ pub async fn project_new_post(
                         Ok(_) => Redirect::to(&project.uri()).into_response(),
                         Err(_) => render_new_project_page(
                             &state,
+                            &cookies,
                             Some(&current_user),
                             Some("Could not create project."),
                         )
@@ -120,15 +133,23 @@ pub async fn project_new_post(
                         .into_response(),
                     }
                 }
-                Err(msg) => {
-                    render_new_project_page(&state, Some(&current_user), Some(&msg.to_string()))
-                        .await
-                        .into_response()
-                }
+                Err(msg) => render_new_project_page(
+                    &state,
+                    &cookies,
+                    Some(&current_user),
+                    Some(&msg.to_string()),
+                )
+                .await
+                .into_response(),
             }
         }
-        Err(msg) => render_new_project_page(&state, Some(&current_user), Some(&msg.to_string()))
-            .await
-            .into_response(),
+        Err(msg) => render_new_project_page(
+            &state,
+            &cookies,
+            Some(&current_user),
+            Some(&msg.to_string()),
+        )
+        .await
+        .into_response(),
     }
 }

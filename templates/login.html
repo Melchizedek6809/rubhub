@@ -16,6 +16,7 @@
         <div class="auth-grid">
           <div class="auth-card">
             <form method="post" action="/login" class="stack">
+              {{ csrf_token_field|safe }}
               <label for="login-username">Username</label>
               <input autofocus id="login-username" name="username" type="text" autocomplete="username" required>
 

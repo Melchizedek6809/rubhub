@@ -12,6 +12,7 @@
         <div class="message" role="status">{{ msg }}</div>
         {% endif %}
         <form method="post" action="/projects/new" class="stack card simple-form">
+          {{ csrf_token_field|safe }}
           <label>
             Name
             <input type="text" autofocus label="Project name" name="name" autocomplete="off"></input>

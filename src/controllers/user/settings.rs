@@ -1,6 +1,5 @@
 use askama::Template;
 use axum::{
-    Form,
     extract::State,
     http::StatusCode,
     response::{Html, IntoResponse, Redirect, Response},
@@ -10,9 +9,10 @@ use tower_cookies::Cookies;
 
 use crate::{
     GlobalState, Project, User,
+    extractors::CsrfForm,
     models::ContentPage,
     services::{
-        session as session_service,
+        csrf, session as session_service,
         validation::{validate_uri, validate_username},
     },
     views::ThemedRender,
@@ -37,6 +37,7 @@ struct UserSettingsTemplate<'a> {
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
+    csrf_token_field: String,
 }
 
 pub async fn settings_page(
@@ -53,15 +54,15 @@ pub async fn settings_page(
 }
 
 async fn internal_error(
-    cookies: &tower_cookies::Cookies,
+    cookies: &Cookies,
     state: &GlobalState,
     user: User,
     ssh_keys: &[String],
     err: &str,
-) -> (axum::http::StatusCode, Html<String>) {
+) -> (StatusCode, Html<String>) {
     eprintln!("auth error: {err}");
     (
-        axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+        StatusCode::INTERNAL_SERVER_ERROR,
         render_settings_page(cookies, state, user, ssh_keys, Some(err)).await,
     )
 }
@@ -69,8 +70,8 @@ async fn internal_error(
 pub async fn handle_settings(
     State(state): State<GlobalState>,
     cookies: Cookies,
-    Form(form): Form<UserSettingsForm>,
-) -> Result<Response, (axum::http::StatusCode, Html<String>)> {
+    CsrfForm(form): CsrfForm<UserSettingsForm>,
+) -> Result<Response, (StatusCode, Html<String>)> {
     let mut current_user = match session_service::current_user(&state, &cookies).await {
         Ok(user) => user,
         Err(_) => return Ok(Redirect::to("/login").into_response()),
@@ -144,13 +145,15 @@ pub async fn handle_settings(
 }
 
 async fn render_settings_page(
-    _cookies: &tower_cookies::Cookies,
+    cookies: &Cookies,
     state: &GlobalState,
     user: User,
     ssh_keys: &[String],
     message: Option<&str>,
 ) -> Html<String> {
     let sidebar_projects = user.sidebar_projects(state).await;
+    let token = csrf::get_or_create_token(&state.config.csrf_secret, cookies);
+    let csrf_token_field = csrf::hidden_field(&token);
 
     let template = UserSettingsTemplate {
         user: &user,
@@ -159,6 +162,7 @@ async fn render_settings_page(
         logged_in_user: Some(&user),
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
+        csrf_token_field,
     };
     Html(template.render_with_theme())
 }

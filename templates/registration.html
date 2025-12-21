@@ -16,6 +16,7 @@
         <div class="auth-grid">
           <div class="auth-card">
             <form method="post" action="/registration" class="stack">
+              {{ csrf_token_field|safe }}
               <input type="hidden" name="action" value="register">
 
               <label for="register-username">Username</label>

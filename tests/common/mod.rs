@@ -77,3 +77,14 @@ pub fn test_client() -> Client {
         .build()
         .expect("Couldn't initialize reqwest client")
 }
+
+/// Helper function to extract CSRF token from HTML response
+/// Looks for: <input type="hidden" name="_csrf_token" value="TOKEN">
+pub fn extract_csrf_token(html: &str) -> Option<String> {
+    // Simple regex-like extraction using string searching
+    let needle = r#"name="_csrf_token" value=""#;
+    let start = html.find(needle)? + needle.len();
+    let rest = &html[start..];
+    let end = rest.find('"')?;
+    Some(rest[..end].to_string())
+}

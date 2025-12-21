@@ -23,11 +23,21 @@ pub struct AppConfig {
     pub content_pages: Vec<ContentPage>,
     pub index_content: Option<ContentPage>,
     pub featured_projects: Vec<String>,
+    pub csrf_secret: [u8; 32],
 }
 
 impl Default for AppConfig {
     fn default() -> Self {
         let dir_root = PathBuf::from("./data/");
+
+        // In debug mode, use a hardcoded secret for convenience
+        // In release mode, this will be overwritten by CSRF_SECRET env var (required)
+        #[cfg(debug_assertions)]
+        let csrf_secret = *b"rubhub-dev-csrf-secret-not-prod!";
+
+        #[cfg(not(debug_assertions))]
+        let csrf_secret = [0u8; 32]; // Will be set from env var
+
         let git_root = dir_root.join("git");
         let session_root = dir_root.join("sessions");
 
@@ -59,6 +69,7 @@ impl Default for AppConfig {
             content_pages: vec![],
             index_content: None,
             featured_projects: vec![],
+            csrf_secret,
         }
     }
 }
@@ -129,6 +140,11 @@ impl AppConfig {
         self
     }
 
+    pub fn set_csrf_secret(mut self, secret: [u8; 32]) -> Self {
+        self.csrf_secret = secret;
+        self
+    }
+
     /// Update bind addresses and derived URLs after binding
     pub fn update_bound_addresses(mut self, http_addr: SocketAddr, ssh_addr: SocketAddr) -> Self {
         self.http_bind_addr = http_addr;
@@ -192,6 +208,14 @@ impl AppConfig {
                 let projects = parse_featured_projects(&spec)
                     .context("Failed to parse FEATURED_PROJECTS environment variable")?;
                 config.set_featured_projects(projects)
+            }
+            _ => config,
+        };
+        let config = match env::var("CSRF_SECRET") {
+            Ok(hex) => {
+                let secret = parse_csrf_secret(&hex)
+                    .context("Failed to parse CSRF_SECRET environment variable")?;
+                config.set_csrf_secret(secret)
             }
             _ => config,
         };
@@ -264,6 +288,18 @@ fn parse_index_content(spec: &str) -> Result<ContentPage> {
         repo_slug: repo_slug.to_string(),
         file_path,
     })
+}
+
+fn parse_csrf_secret(input: &str) -> Result<[u8; 32]> {
+    use sha2::{Digest, Sha256};
+
+    let input = input.trim();
+    if input.is_empty() {
+        anyhow::bail!("CSRF_SECRET cannot be empty");
+    }
+
+    let hash = Sha256::digest(input.as_bytes());
+    Ok(hash.into())
 }
 
 #[derive(Debug, Clone)]

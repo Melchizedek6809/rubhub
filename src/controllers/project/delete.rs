@@ -1,5 +1,4 @@
 use axum::{
-    Form,
     body::Body,
     extract::State,
     http::Response,
@@ -8,7 +7,11 @@ use axum::{
 use serde::Deserialize;
 use tower_cookies::Cookies;
 
-use crate::{AccessType, GlobalState, extractors::PathUserProject, services::session};
+use crate::{
+    AccessType, GlobalState,
+    extractors::{CsrfForm, PathUserProject},
+    services::session,
+};
 
 #[derive(Debug, Deserialize)]
 pub struct ProjectDeleteForm {
@@ -19,7 +22,7 @@ pub async fn project_delete_post(
     State(state): State<GlobalState>,
     cookies: Cookies,
     PathUserProject(owner, project): PathUserProject,
-    Form(form): Form<ProjectDeleteForm>,
+    CsrfForm(form): CsrfForm<ProjectDeleteForm>,
 ) -> Response<Body> {
     // Authenticate user
     let current_user = match session::current_user(&state, &cookies).await {

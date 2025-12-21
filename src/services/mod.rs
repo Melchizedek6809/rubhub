@@ -1,3 +1,4 @@
+pub mod csrf;
 pub mod fs;
 pub mod password;
 pub mod repository;

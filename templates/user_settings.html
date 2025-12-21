@@ -18,6 +18,7 @@
         {% when None %}
         {% endmatch %}
         <form method="post" action="/settings" class="stack card simple-form">
+          {{ csrf_token_field|safe }}
           <div class="form-row">
             <label>
               ID (can't be changed)
