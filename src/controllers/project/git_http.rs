@@ -70,7 +70,13 @@ pub async fn git_info_refs(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     // Wait for child to complete
-    let _ = child.wait().await;
+    let status = child
+        .wait()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    if !status.success() {
+        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    }
 
     // Prepend the service advertisement packet-line
     let service_line = format!("# service={}\n", query.service);
@@ -148,15 +154,25 @@ pub async fn git_upload_pack(
         .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let stream = stream::unfold(
-        (stdout, vec![0u8; 8192]),
-        |(mut stdout, mut buf)| async move {
+        (stdout, Some(child), vec![0u8; 8192]),
+        |(mut stdout, mut child, mut buf)| async move {
             match stdout.read(&mut buf).await {
-                Ok(0) => None, // EOF
+                Ok(0) => {
+                    if let Some(mut child) = child {
+                        let _ = child.wait().await;
+                    }
+                    None // EOF
+                }
                 Ok(n) => {
                     let bytes = axum::body::Bytes::copy_from_slice(&buf[..n]);
-                    Some((Ok::<_, std::io::Error>(bytes), (stdout, buf)))
+                    Some((Ok::<_, std::io::Error>(bytes), (stdout, child, buf)))
                 }
-                Err(e) => Some((Err(e), (stdout, buf))),
+                Err(e) => {
+                    if let Some(mut child) = child.take() {
+                        let _ = child.wait().await;
+                    }
+                    Some((Err(e), (stdout, None, buf)))
+                }
             }
         },
     );

@@ -86,9 +86,12 @@ async fn handle_login_action(
             }
             Ok(Redirect::to(&user.uri()))
         }
-        Err(err) => Err((
-            axum::http::StatusCode::UNAUTHORIZED,
-            render_login_page(Some(&format!("{err}")), csrf_token_field),
-        )),
+        Err(err) => {
+            eprintln!("Login failed for '{username}': {err}");
+            Err((
+                axum::http::StatusCode::UNAUTHORIZED,
+                render_login_page(Some("Invalid username or password."), csrf_token_field),
+            ))
+        }
     }
 }

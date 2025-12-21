@@ -180,8 +180,14 @@ impl Connection {
                     break;
                 }
             }
+            let exit_code = child
+                .wait()
+                .await
+                .ok()
+                .and_then(|status| status.code())
+                .unwrap_or(1);
             let _ = handle.eof(id).await;
-            let _ = handle.exit_status_request(id, 0).await.ok();
+            let _ = handle.exit_status_request(id, exit_code as u32).await.ok();
             let _ = handle.close(id).await;
         });
 
