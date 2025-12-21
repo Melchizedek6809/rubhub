@@ -146,6 +146,7 @@ impl Connection {
             .arg(path)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .spawn()?;
 
         let mut git_stdin = child.stdin.take().ok_or(russh::Error::SendError)?;
@@ -158,6 +159,28 @@ impl Connection {
                 }
             }
             let _ = git_stdin.shutdown().await;
+        });
+
+        // task: git stderr → SSH (extended data)
+        let mut git_stderr = child.stderr.take().ok_or(russh::Error::SendError)?;
+        let stderr_handle = handle.clone();
+        let stderr_id = id;
+        tokio::spawn(async move {
+            let mut buf = [0u8; 8192];
+            loop {
+                let n = match git_stderr.read(&mut buf).await {
+                    Ok(0) => break,
+                    Ok(n) => n,
+                    Err(_) => break,
+                };
+                if stderr_handle
+                    .extended_data(stderr_id, 1, CryptoVec::from_slice(&buf[..n]))
+                    .await
+                    .is_err()
+                {
+                    break;
+                }
+            }
         });
 
         // task: git stdout → SSH
