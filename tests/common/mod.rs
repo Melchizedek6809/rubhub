@@ -1,4 +1,9 @@
+#![allow(dead_code, unused_imports)]
+
 mod api;
+mod git;
+mod ssh;
+mod test_user;
 
 use std::future::Future;
 
@@ -6,6 +11,9 @@ use rubhub::{AppConfig, GlobalState, create_listeners, run};
 use tempfile::TempDir;
 
 pub use api::Api;
+pub use git::GitHelper;
+pub use ssh::{KeyType, TestSshKey};
+pub use test_user::{TestUser, assertions};
 
 /// Helper function to run integration tests with a temporary backend
 ///

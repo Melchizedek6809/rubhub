@@ -85,3 +85,67 @@ async fn test_project_visibility() {
     })
     .await;
 }
+
+/// Test that CSRF protection rejects requests without valid tokens.
+#[tokio::test(flavor = "current_thread")]
+async fn test_csrf_protection() {
+    with_backend(|state| async move {
+        let api = Api::new(&state.config.base_url);
+
+        // First register a user normally (with CSRF token)
+        api.register("alice", "alice@test.com", "password123456789")
+            .await
+            .unwrap();
+
+        // Try to create a project without CSRF token - should fail
+        let response = api
+            .post_without_csrf(
+                "/projects/new",
+                &[("name", "Hacked Project"), ("description", "No CSRF")],
+            )
+            .await
+            .unwrap();
+
+        // Should return 403 Forbidden for missing CSRF token
+        assert_eq!(
+            response.status().as_u16(),
+            403,
+            "Request without CSRF token should be rejected with 403"
+        );
+
+        // Try login without CSRF token - should also fail
+        let login_response = api
+            .post_without_csrf(
+                "/login",
+                &[("username", "alice"), ("password", "password123456789")],
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(
+            login_response.status().as_u16(),
+            403,
+            "Login without CSRF token should be rejected with 403"
+        );
+
+        // Try registration without CSRF token - should fail
+        let reg_response = api
+            .post_without_csrf(
+                "/registration",
+                &[
+                    ("username", "hacker"),
+                    ("email", "hacker@evil.com"),
+                    ("password", "hackerpassword123"),
+                ],
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(
+            reg_response.status().as_u16(),
+            403,
+            "Registration without CSRF token should be rejected with 403"
+        );
+    })
+    .await;
+}
