@@ -4,11 +4,15 @@ use axum::{
     http::header,
     response::IntoResponse,
     routing::get,
-    serve::Serve,
 };
 use rust_embed::Embed;
+use std::net::SocketAddr;
+use std::time::Duration;
 use tokio::net::TcpListener;
 use tower_cookies::{CookieManagerLayer, Cookies};
+use tower_governor::{
+    GovernorLayer, governor::GovernorConfigBuilder, key_extractor::SmartIpKeyExtractor,
+};
 
 use crate::{GlobalState, controllers, services::session};
 
@@ -19,21 +23,32 @@ struct EmbeddedDist;
 pub async fn http_server(
     state: GlobalState,
     listener: TcpListener,
-) -> anyhow::Result<Serve<TcpListener, Router<()>, Router<()>>> {
+) -> anyhow::Result<impl std::future::IntoFuture<Output = Result<(), std::io::Error>>> {
     let bind_addr = listener.local_addr()?;
     let process_start = state.process_start;
+
+    // Rate limiting for auth POST routes: 10 requests per 60 seconds per IP
+    let auth_rate_limit = GovernorConfigBuilder::default()
+        .key_extractor(SmartIpKeyExtractor)
+        .period(Duration::from_secs(60))
+        .burst_size(10)
+        .finish()
+        .expect("Failed to build rate limiter config");
+
+    let auth_post_routes = Router::new()
+        .route("/login", axum::routing::post(controllers::handle_login))
+        .route(
+            "/registration",
+            axum::routing::post(controllers::handle_registration),
+        )
+        .layer(GovernorLayer::new(auth_rate_limit));
 
     // build our application with a single route
     let mut app = Router::new()
         .route("/", get(controllers::index))
-        .route(
-            "/login",
-            get(controllers::login_page).post(controllers::handle_login),
-        )
-        .route(
-            "/registration",
-            get(controllers::registration_page).post(controllers::handle_registration),
-        )
+        .route("/login", get(controllers::login_page))
+        .route("/registration", get(controllers::registration_page))
+        .merge(auth_post_routes)
         .route("/logout", get(controllers::logout))
         .route(
             "/settings",
@@ -136,5 +151,8 @@ pub async fn http_server(
         process_start.elapsed()
     );
 
-    Ok(axum::serve(listener, app))
+    Ok(axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    ))
 }
