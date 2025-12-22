@@ -306,9 +306,10 @@ impl GitTreeEntry {
         current_path: &str,
     ) -> String {
         let full_path = self.full_path(current_path);
+        let encoded_ref = urlencoding::encode(git_ref);
         format!(
             "/~{}/{}/tree/{}/{}",
-            project_owner, project_slug, git_ref, full_path
+            project_owner, project_slug, encoded_ref, full_path
         )
     }
 
@@ -320,9 +321,10 @@ impl GitTreeEntry {
         current_path: &str,
     ) -> String {
         let full_path = self.full_path(current_path);
+        let encoded_ref = urlencoding::encode(git_ref);
         format!(
             "/~{}/{}/blob/{}/{}",
-            project_owner, project_slug, git_ref, full_path
+            project_owner, project_slug, encoded_ref, full_path
         )
     }
 }

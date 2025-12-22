@@ -51,18 +51,20 @@
               {{ csrf_token_field|safe }}
               <label>
                 Comment
-                <textarea name="content" rows="6" required placeholder="Write your comment here..."></textarea>
+                <textarea name="content" rows="6" placeholder="Write your comment here..."></textarea>
               </label>
-              <label>
-                Status (optional)
-                <select name="status">
-                  <option value="">No change</option>
-                  <option value="open">Reopen</option>
-                  <option value="completed">Mark as completed</option>
-                  <option value="cancelled">Mark as cancelled</option>
-                </select>
-              </label>
-              <button type="submit">Submit</button>
+              <div class="comment-actions">
+                <button type="submit" name="status" value="">Comment</button>
+                {% match issue.status %}
+                {% when IssueStatus::Open %}
+                <button type="submit" name="status" value="completed" class="button-secondary">Complete</button>
+                <button type="submit" name="status" value="cancelled" class="button-secondary">Close</button>
+                {% when IssueStatus::Completed %}
+                <button type="submit" name="status" value="open" class="button-secondary">Reopen</button>
+                {% when IssueStatus::Cancelled %}
+                <button type="submit" name="status" value="open" class="button-secondary">Reopen</button>
+                {% endmatch %}
+              </div>
             </form>
           </div>
           {% endif %}

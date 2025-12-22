@@ -21,11 +21,22 @@
 
         <div class="card">
           <div class="repo-bar">
-            {% if summary.branches.len() > 0 %}
+            {% if summary.branches.len() > 0 || summary.tags.len() > 0 %}
             <select name="branch-name" class="branch-switcher" data-base-suffix="tree" data-current-path="{{ current_path }}" data-base-href="{{ project.uri() }}">
-              {% for branch in summary.branches %}
-              <option value="{{ branch }}" {% if branch==selected_branch.as_str() %}selected{% endif %}>{{ branch }}</option>
-              {% endfor %}
+              {% if summary.branches.len() > 0 %}
+              <optgroup label="Branches">
+                {% for branch in summary.branches %}
+                <option value="{{ branch }}" {% if branch==selected_branch.as_str() %}selected{% endif %}>{{ branch }}</option>
+                {% endfor %}
+              </optgroup>
+              {% endif %}
+              {% if summary.tags.len() > 0 %}
+              <optgroup label="Tags">
+                {% for tag in summary.tags %}
+                <option value="{{ tag }}" {% if tag==selected_branch.as_str() %}selected{% endif %}>{{ tag }}</option>
+                {% endfor %}
+              </optgroup>
+              {% endif %}
             </select>
             {% else %}
             <select name="branch-name" disabled>

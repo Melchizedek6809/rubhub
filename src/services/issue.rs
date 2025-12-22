@@ -44,15 +44,17 @@ fn parse_frontmatter(content: &str) -> Result<(CommentFrontmatter, String)> {
     Ok((frontmatter, body.to_string()))
 }
 
-/// Generate timestamp prefix for filenames: YYYY-MM-DD-HH-MM
+/// Generate timestamp prefix for filenames: YYYY-MM-DD-HH-MM-SS-mmm
 fn timestamp_prefix(dt: OffsetDateTime) -> String {
     format!(
-        "{:04}-{:02}-{:02}-{:02}-{:02}",
+        "{:04}-{:02}-{:02}-{:02}-{:02}-{:02}-{:03}",
         dt.year(),
         dt.month() as u8,
         dt.day(),
         dt.hour(),
-        dt.minute()
+        dt.minute(),
+        dt.second(),
+        dt.millisecond()
     )
 }
 
@@ -251,8 +253,6 @@ pub async fn get_issue(
 
     let mut comments = vec![];
     let mut title = String::new();
-    let mut created_at = OffsetDateTime::UNIX_EPOCH;
-    let mut author = String::new();
 
     for (i, filename) in md_files.iter().enumerate() {
         let path = format!("{}/{}", issue_path, filename);
@@ -261,14 +261,12 @@ pub async fn get_issue(
 
         let (frontmatter, body) = parse_frontmatter(&content_str)?;
 
-        // First comment provides issue metadata
+        // First comment provides issue title
         if i == 0 {
             title = frontmatter
                 .title
                 .clone()
                 .unwrap_or_else(|| "(No title)".to_string());
-            created_at = frontmatter.date;
-            author = frontmatter.author.clone();
         }
 
         // Render markdown to HTML
@@ -277,11 +275,8 @@ pub async fn get_issue(
         let html = ammonia::clean(&html);
 
         comments.push(IssueComment {
-            filename: filename.clone(),
             date: frontmatter.date,
             author: frontmatter.author,
-            email: frontmatter.email,
-            content: body,
             content_html: html,
             status_change: frontmatter.status,
         });
@@ -292,8 +287,6 @@ pub async fn get_issue(
     Ok(Issue {
         dir_name: issue_dir_name.to_string(),
         title,
-        created_at,
-        author,
         status,
         comments,
     })

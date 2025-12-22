@@ -21,7 +21,7 @@
           <div class="branch-list">
             {% if tags.len() > 0 %}
             {% for info in tags %}
-            <h5>{{ info.branch_name }}</h5>
+            <h5><a href="{{ project.uri_tree(info.branch_name, "") }}">{{ info.branch_name }}</a></h5>
             <div class="commit-bar">
               {% if let Some(commit) = info.commits.first() %}
               <div class="commit">

@@ -307,17 +307,18 @@ pub async fn issue_comment_post(
     }
 
     let content = form.content.trim();
-    if content.is_empty() {
-        let uri = format!("/~{}/{}/issues/{}", owner.slug, project.slug, issue_dir);
-        return Redirect::to(&uri).into_response();
-    }
-
     let status = form.status.as_deref().and_then(|s| match s {
         "completed" => Some(IssueStatus::Completed),
         "cancelled" => Some(IssueStatus::Cancelled),
         "open" => Some(IssueStatus::Open),
         _ => None,
     });
+
+    // Require either content or a status change
+    if content.is_empty() && status.is_none() {
+        let uri = format!("/~{}/{}/issues/{}", owner.slug, project.slug, issue_dir);
+        return Redirect::to(&uri).into_response();
+    }
 
     if let Err(e) =
         issue::add_comment(&state, &current_user, &project, &issue_dir, content, status).await

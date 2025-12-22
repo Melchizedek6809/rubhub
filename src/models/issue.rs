@@ -12,14 +12,6 @@ pub enum IssueStatus {
 }
 
 impl IssueStatus {
-    pub fn from_str(s: &str) -> Self {
-        match s.to_lowercase().as_str() {
-            "completed" => Self::Completed,
-            "cancelled" => Self::Cancelled,
-            _ => Self::Open,
-        }
-    }
-
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Open => "open",
@@ -45,11 +37,8 @@ pub struct CommentFrontmatter {
 /// A single comment on an issue
 #[derive(Debug, Clone)]
 pub struct IssueComment {
-    pub filename: String,
     pub date: OffsetDateTime,
     pub author: String,
-    pub email: String,
-    pub content: String,
     pub content_html: String,
     pub status_change: Option<IssueStatus>,
 }
@@ -59,8 +48,6 @@ pub struct IssueComment {
 pub struct Issue {
     pub dir_name: String,
     pub title: String,
-    pub created_at: OffsetDateTime,
-    pub author: String,
     pub status: IssueStatus,
     pub comments: Vec<IssueComment>,
 }
@@ -77,11 +64,6 @@ pub struct IssueSummary {
 }
 
 impl Issue {
-    /// URI for viewing this issue
-    pub fn uri(&self, owner: &str, project_slug: &str) -> String {
-        format!("/~{}/{}/issues/{}", owner, project_slug, self.dir_name)
-    }
-
     /// Determine current status from comments (last status-changing comment wins)
     pub fn compute_status(comments: &[IssueComment]) -> IssueStatus {
         comments

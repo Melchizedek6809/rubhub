@@ -31,7 +31,8 @@
 
 .repo-branches a,
 .repo-tags a,
-a.commit-count {
+a.commit-count,
+.branch-list h5 a {
 	color: var(--text-color);
 	text-decoration: none;
 }

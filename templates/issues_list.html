@@ -23,7 +23,7 @@
           <div class="issues-header">
             <h2>Issues</h2>
             {% if logged_in_user.is_some() %}
-            <a href="/~{{ owner.slug }}/{{ project.slug }}/issues/new" class="button">
+            <a href="/~{{ owner.slug }}/{{ project.slug }}/issues/new" class="btn">
               New Issue
             </a>
             {% endif %}

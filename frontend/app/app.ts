@@ -16,14 +16,16 @@ const initBranchSwitcher = () => {
 				return;
 			}
 
+			const encodedValue = encodeURIComponent(newValue);
+
 			// Handle tree/blob views: preserve current path
 			if (baseSuffix === "tree" || baseSuffix === "blob") {
 				const pathSuffix = currentPath ? `/${currentPath}` : "";
-				document.location = `${base}/${baseSuffix}/${newValue}${pathSuffix}`;
+				document.location = `${base}/${baseSuffix}/${encodedValue}${pathSuffix}`;
 			} else if (newValue === mainBranch) {
 				document.location = `${base}`;
 			} else {
-				document.location = `${base}/${baseSuffix}/${newValue}`;
+				document.location = `${base}/${baseSuffix}/${encodedValue}`;
 			}
 		};
 	}

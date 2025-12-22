@@ -153,26 +153,35 @@ impl Project {
     }
 
     pub fn uri_log(&self, branch: &str, page: i32) -> String {
+        let encoded_branch = urlencoding::encode(branch);
         if page > 0 {
             format!(
                 "/~{}/{}/log/{}?page={}",
-                self.owner, self.slug, branch, page
+                self.owner, self.slug, encoded_branch, page
             )
         } else {
-            format!("/~{}/{}/log/{}", self.owner, self.slug, branch)
+            format!("/~{}/{}/log/{}", self.owner, self.slug, encoded_branch)
         }
     }
 
     pub fn uri_tree(&self, git_ref: &str, path: &str) -> String {
+        let encoded_ref = urlencoding::encode(git_ref);
         if path.is_empty() {
-            format!("/~{}/{}/tree/{}", self.owner, self.slug, git_ref)
+            format!("/~{}/{}/tree/{}", self.owner, self.slug, encoded_ref)
         } else {
-            format!("/~{}/{}/tree/{}/{}", self.owner, self.slug, git_ref, path)
+            format!(
+                "/~{}/{}/tree/{}/{}",
+                self.owner, self.slug, encoded_ref, path
+            )
         }
     }
 
     pub fn uri_blob(&self, git_ref: &str, path: &str) -> String {
-        format!("/~{}/{}/blob/{}/{}", self.owner, self.slug, git_ref, path)
+        let encoded_ref = urlencoding::encode(git_ref);
+        format!(
+            "/~{}/{}/blob/{}/{}",
+            self.owner, self.slug, encoded_ref, path
+        )
     }
 
     pub async fn load_by_path(state: &GlobalState, path: String) -> Result<(User, Project)> {

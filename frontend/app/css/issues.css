@@ -1,0 +1,154 @@
+.issues-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: var(--space-l);
+}
+
+.issues-header h2 {
+	margin: 0;
+}
+
+.issues-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-s);
+}
+
+.issue-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: var(--space-m);
+	border-radius: 4px;
+	background: var(--background-color);
+}
+
+.issue-item:hover {
+	background: var(--background-color-bright);
+}
+
+.issue-link {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-xs);
+	text-decoration: none;
+	flex: 1;
+}
+
+.issue-title {
+	color: var(--text-color);
+	font-weight: 500;
+}
+
+.issue-meta {
+	color: var(--text-color-subdued);
+	font-size: 0.85rem;
+}
+
+.issue-status {
+	padding: var(--space-xs) var(--space-m);
+	border-radius: 12px;
+	font-size: 0.75rem;
+	font-weight: 500;
+	text-transform: uppercase;
+}
+
+.status-open {
+	background: var(--success-color);
+	color: var(--success-color-dark);
+}
+
+.status-completed {
+	background: var(--primary-color);
+	color: var(--white);
+}
+
+.status-cancelled {
+	background: var(--text-color-subdued);
+	color: var(--background-color);
+}
+
+.empty-state {
+	color: var(--text-color-subdued);
+	text-align: center;
+	padding: var(--space-xl);
+}
+
+.issue-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: var(--space-l);
+	padding-bottom: var(--space-m);
+	border-bottom: 1px solid var(--text-color-subdued);
+}
+
+.issue-header h2 {
+	margin: 0;
+}
+
+.comments {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-l);
+	margin-bottom: var(--space-xl);
+}
+
+.comment {
+	padding: var(--space-m);
+	border-radius: 4px;
+	background: var(--background-color);
+}
+
+.comment-opening {
+	border-left: 3px solid var(--primary-color);
+}
+
+.comment-header {
+	display: flex;
+	gap: var(--space-m);
+	align-items: center;
+	margin-bottom: var(--space-m);
+	font-size: 0.9rem;
+}
+
+.comment-date {
+	color: var(--text-color-subdued);
+}
+
+.status-change {
+	color: var(--primary-color);
+	font-style: italic;
+}
+
+.comment-body {
+	line-height: 1.6;
+}
+
+.add-comment {
+	border-top: 1px solid var(--text-color-subdued);
+	padding-top: var(--space-l);
+}
+
+.add-comment h3 {
+	margin-top: 0;
+	margin-bottom: var(--space-m);
+}
+
+.comment-actions {
+	display: flex;
+	gap: var(--space-m);
+	flex-wrap: wrap;
+}
+
+.button-secondary {
+	background: transparent;
+	border: 1px solid var(--text-color-subdued);
+	color: var(--text-color);
+}
+
+.button-secondary:hover {
+	background: var(--background-color);
+	border-color: var(--text-color);
+}
