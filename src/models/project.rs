@@ -137,6 +137,10 @@ impl Project {
         format!("/~{}/{}/tags", self.owner, self.slug)
     }
 
+    pub fn uri_issues(&self) -> String {
+        format!("/~{}/{}/issues", self.owner, self.slug)
+    }
+
     pub fn ssh_clone_url(&self, ssh_public_host: &str, git_user: &str) -> String {
         format!(
             "ssh://{}@{}/~{}/{}",

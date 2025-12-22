@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <title>{{ issue.title }} - {{ owner.name }}/{{ project.name }}</title>
+  </head>
+
+  <body>
+    {% include "sidebar.html" %}
+    <main>
+      <section>
+        <div class="page-header">
+          <h1 class="project-header">
+            <a href="{{ owner.uri() }}">{{ owner.name }}</a> /
+            <a href="{{ project.uri() }}">{{ project.name }}</a> /
+            <a href="{{ project.uri_issues() }}">issues</a>
+          </h1>
+        </div>
+
+        {% include "project_tabs.html" %}
+
+        <div class="card">
+          <div class="issue-header">
+            <h2>{{ issue.title }}</h2>
+            <span class="issue-status status-{{ issue.status.as_str() }}">
+              {{ issue.status.as_str() }}
+            </span>
+          </div>
+
+          <div class="comments">
+            {% for comment in issue.comments %}
+            <div class="comment {% if loop.first %}comment-opening{% endif %}">
+              <div class="comment-header">
+                <strong>{{ comment.author }}</strong>
+                <span class="comment-date">{{ comment.relative_time() }}</span>
+                {% if let Some(status) = comment.status_change %}
+                <span class="status-change">changed status to {{ status.as_str() }}</span>
+                {% endif %}
+              </div>
+              <div class="comment-body markdown">
+                {{ comment.content_html|safe }}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          {% if logged_in_user.is_some() %}
+          <div class="add-comment">
+            <h3>Add Comment</h3>
+            <form method="post" action="/~{{ owner.slug }}/{{ project.slug }}/issues/{{ issue.dir_name }}/comment" class="stack simple-form">
+              {{ csrf_token_field|safe }}
+              <label>
+                Comment
+                <textarea name="content" rows="6" required placeholder="Write your comment here..."></textarea>
+              </label>
+              <label>
+                Status (optional)
+                <select name="status">
+                  <option value="">No change</option>
+                  <option value="open">Reopen</option>
+                  <option value="completed">Mark as completed</option>
+                  <option value="cancelled">Mark as cancelled</option>
+                </select>
+              </label>
+              <button type="submit">Submit</button>
+            </form>
+          </div>
+          {% endif %}
+        </div>
+      </section>
+    </main>
+  </body>
+
+</html>

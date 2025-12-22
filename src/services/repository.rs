@@ -1,5 +1,7 @@
 use anyhow::{Result, anyhow};
+use gix::bstr::BString;
 use gix::{Commit, ObjectDetached, Repository, date::Time, objs::tree::EntryKind};
+use smallvec::smallvec;
 use std::{
     io,
     time::{SystemTime, UNIX_EPOCH},
@@ -398,4 +400,171 @@ impl GitCommitInfo {
         let diff = diff / (86400 * 365);
         format!("{} year{} ago", diff, if diff != 1 { "s" } else { "" })
     }
+}
+
+/// Check if a branch exists in the repository
+pub async fn branch_exists(
+    state: &GlobalState,
+    user_name: &str,
+    project_slug: &str,
+    branch: &str,
+) -> bool {
+    let state = state.clone();
+    let user_name = user_name.to_string();
+    let project_slug = project_slug.to_string();
+    let branch = branch.to_string();
+
+    let Ok(res) = tokio::task::spawn_blocking(move || {
+        let repo = get_git_repo(&state, &user_name, &project_slug)?;
+        let ref_name = format!("refs/heads/{}", branch);
+        Some(repo.find_reference(&ref_name).is_ok())
+    })
+    .await
+    else {
+        return false;
+    };
+    res.unwrap_or(false)
+}
+
+/// Create an orphan branch with an initial commit containing one file
+pub async fn create_orphan_branch(
+    state: &GlobalState,
+    user_name: &str,
+    project_slug: &str,
+    branch_name: &str,
+    file_path: &str,
+    file_content: &str,
+    commit_message: &str,
+    author_name: &str,
+    author_email: &str,
+) -> Result<()> {
+    let state = state.clone();
+    let user_name = user_name.to_string();
+    let project_slug = project_slug.to_string();
+    let branch_name = branch_name.to_string();
+    let file_path = file_path.to_string();
+    let file_content = file_content.to_string();
+    let commit_message = commit_message.to_string();
+    let author_name = author_name.to_string();
+    let author_email = author_email.to_string();
+
+    let res = tokio::task::spawn_blocking(move || -> Result<()> {
+        let repo = get_git_repo(&state, &user_name, &project_slug)
+            .ok_or_else(|| anyhow!("Could not open repository"))?;
+
+        // 1. Write blob
+        let blob_id = repo.write_blob(file_content.as_bytes())?;
+
+        // 2. Build tree using tree editor starting from empty tree
+        let empty_tree = gix::ObjectId::empty_tree(repo.object_hash());
+        let mut editor = repo.edit_tree(empty_tree)?;
+        editor.upsert(&file_path, EntryKind::Blob, blob_id)?;
+        let tree_id = editor.write()?;
+
+        // 3. Create signature
+        let time = gix::date::Time::now_local_or_utc();
+        let signature = gix::actor::Signature {
+            name: BString::from(author_name),
+            email: BString::from(author_email),
+            time,
+        };
+
+        // 4. Create commit object (no parents = orphan)
+        let commit = gix::objs::Commit {
+            tree: tree_id.detach(),
+            parents: smallvec![],
+            author: signature.clone(),
+            committer: signature,
+            encoding: None,
+            message: BString::from(commit_message.as_str()),
+            extra_headers: vec![],
+        };
+        let commit_id = repo.write_object(&commit)?;
+
+        // 5. Create reference
+        let ref_name = format!("refs/heads/{}", branch_name);
+        repo.reference(
+            ref_name,
+            commit_id,
+            gix::refs::transaction::PreviousValue::MustNotExist,
+            "Create issues branch",
+        )?;
+
+        Ok(())
+    })
+    .await
+    .map_err(|e| anyhow!("Task join error: {}", e))??;
+
+    Ok(res)
+}
+
+/// Add a file to a branch and create a commit
+pub async fn add_file_to_branch(
+    state: &GlobalState,
+    user_name: &str,
+    project_slug: &str,
+    branch_name: &str,
+    file_path: &str,
+    file_content: &str,
+    commit_message: &str,
+    author_name: &str,
+    author_email: &str,
+) -> Result<()> {
+    let state = state.clone();
+    let user_name = user_name.to_string();
+    let project_slug = project_slug.to_string();
+    let branch_name = branch_name.to_string();
+    let file_path = file_path.to_string();
+    let file_content = file_content.to_string();
+    let commit_message = commit_message.to_string();
+    let author_name = author_name.to_string();
+    let author_email = author_email.to_string();
+
+    let res = tokio::task::spawn_blocking(move || -> Result<()> {
+        let repo = get_git_repo(&state, &user_name, &project_slug)
+            .ok_or_else(|| anyhow!("Could not open repository"))?;
+
+        // 1. Get current branch tip and its tree
+        let ref_name = format!("refs/heads/{}", branch_name);
+        let mut reference = repo.find_reference(&ref_name)?;
+        let parent_commit = reference.peel_to_commit()?;
+        let tree_id = parent_commit.tree_id()?;
+
+        // 2. Write new blob
+        let blob_id = repo.write_blob(file_content.as_bytes())?;
+
+        // 3. Edit tree to add/update file
+        let mut editor = repo.edit_tree(tree_id)?;
+        editor.upsert(&file_path, EntryKind::Blob, blob_id)?;
+        let new_tree_id = editor.write()?;
+
+        // 4. Create signature
+        let time = gix::date::Time::now_local_or_utc();
+        let signature = gix::actor::Signature {
+            name: BString::from(author_name),
+            email: BString::from(author_email),
+            time,
+        };
+
+        // 5. Create commit object with parent
+        let commit = gix::objs::Commit {
+            tree: new_tree_id.detach(),
+            parents: smallvec![parent_commit.id().detach()],
+            author: signature.clone(),
+            committer: signature,
+            encoding: None,
+            message: BString::from(commit_message.as_str()),
+            extra_headers: vec![],
+        };
+        let new_commit_id = repo.write_object(&commit)?;
+
+        // 6. Update reference
+        reference.set_target_id(new_commit_id, commit_message)?;
+
+        Ok(())
+    })
+    .await
+    .map_err(|e| anyhow!("Task join error: {}", e))??;
+
+    Ok(res)
 }

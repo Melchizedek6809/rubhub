@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <title>{{ owner.name }}/{{ project.name }} - Issues</title>
+  </head>
+
+  <body>
+    {% include "sidebar.html" %}
+    <main>
+      <section>
+        <div class="page-header">
+          <h1 class="project-header">
+            <a href="{{ owner.uri() }}">{{ owner.name }}</a> /
+            <a href="{{ project.uri() }}">{{ project.name }}</a> /
+            <a href="{{ project.uri_issues() }}">issues</a>
+          </h1>
+        </div>
+
+        {% include "project_tabs.html" %}
+
+        <div class="card">
+          <div class="issues-header">
+            <h2>Issues</h2>
+            {% if logged_in_user.is_some() %}
+            <a href="/~{{ owner.slug }}/{{ project.slug }}/issues/new" class="button">
+              New Issue
+            </a>
+            {% endif %}
+          </div>
+
+          {% if issues.is_empty() %}
+          <p class="empty-state">No issues yet.</p>
+          {% else %}
+          <div class="issues-list">
+            {% for issue in issues %}
+            <div class="issue-item issue-{{ issue.status.as_str() }}">
+              <a href="{{ issue.uri(&owner.slug, &project.slug) }}" class="issue-link">
+                <span class="issue-title">{{ issue.title }}</span>
+                <span class="issue-meta">
+                  opened by {{ issue.author }} -
+                  {{ issue.comment_count }} comment{% if issue.comment_count != 1 %}s{% endif %}
+                </span>
+              </a>
+              <span class="issue-status status-{{ issue.status.as_str() }}">{{ issue.status.as_str() }}</span>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </section>
+    </main>
+  </body>
+
+</html>
