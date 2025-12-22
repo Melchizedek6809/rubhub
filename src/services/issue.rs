@@ -119,8 +119,8 @@ pub async fn ensure_issues_branch(
     }
 
     let readme_content = format!(
-        "# Issues\n\nThis branch contains issues for the {} project.\n\n\
-        Do not modify this branch directly - use the web interface.\n",
+        "# RubHub Issues\n\nThis branch contains issues for the {} project.\n\n\
+        To create a new issue you must create a new directory in `issues/` containing a single markdown file with the initial comment (must also contain a title in the frontmatter).\n",
         project.name
     );
 
