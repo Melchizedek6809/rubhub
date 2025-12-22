@@ -19,10 +19,13 @@ use crate::{
 struct ProjectTagsTemplate<'a> {
     owner: &'a User,
     project: &'a Project,
+    access_level: AccessType,
+    selected_branch: &'a str,
     tags: Vec<GitRefInfo>,
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
+    active_tab: &'static str,
 }
 
 pub async fn project_tags_get(
@@ -59,10 +62,13 @@ pub async fn project_tags_get(
     let template = ProjectTagsTemplate {
         owner: &owner,
         project: &project,
+        access_level,
+        selected_branch: &project.main_branch,
         tags,
         logged_in_user: logged_in_user.as_ref(),
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
+        active_tab: "",
     };
     template.response()
 }
