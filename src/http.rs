@@ -20,6 +20,30 @@ use crate::{GlobalState, controllers, services::session};
 #[folder = "dist/"]
 struct EmbeddedDist;
 
+#[derive(Embed)]
+#[folder = "public/"]
+struct EmbeddedPublic;
+
+fn serve_public_asset(path: &str) -> impl IntoResponse {
+    match EmbeddedPublic::get(path) {
+        Some(asset) => {
+            let mime = mime_guess::from_path(path).first_or_octet_stream();
+            (
+                [(header::CONTENT_TYPE, mime.as_ref())],
+                asset.data.into_owned(),
+            )
+                .into_response()
+        }
+        None => {
+            (
+                axum::http::StatusCode::NOT_FOUND,
+                "Asset not found",
+            )
+                .into_response()
+        }
+    }
+}
+
 pub async fn http_server(
     state: GlobalState,
     listener: TcpListener,
@@ -46,6 +70,12 @@ pub async fn http_server(
     // build our application with a single route
     let mut app = Router::new()
         .route("/", get(controllers::index))
+        .route("/favicon.ico", get(|| async {
+            serve_public_asset("favicon.ico")
+        }))
+        .route("/favicon.png", get(|| async {
+            serve_public_asset("favicon.png")
+        }))
         .route("/login", get(controllers::login_page))
         .route("/registration", get(controllers::registration_page))
         .merge(auth_post_routes)
