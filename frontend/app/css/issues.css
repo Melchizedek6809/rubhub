@@ -9,6 +9,12 @@
 	margin: 0;
 }
 
+.issues-actions {
+	display: flex;
+	gap: var(--space-l);
+	align-items: center;
+}
+
 .issues-list {
 	display: flex;
 	flex-direction: column;

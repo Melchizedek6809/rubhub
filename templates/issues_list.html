@@ -22,11 +22,18 @@
         <div class="card">
           <div class="issues-header">
             <h2>Issues</h2>
-            {% if logged_in_user.is_some() %}
-            <a href="/~{{ owner.slug }}/{{ project.slug }}/issues/new" class="btn">
-              New Issue
-            </a>
-            {% endif %}
+            <div class="issues-actions">
+              {% if show_completed && show_cancelled %}
+              <a href="/~{{ owner.slug }}/{{ project.slug }}/issues" class="btn btn-outline">Show open only</a>
+              {% else %}
+              <a href="/~{{ owner.slug }}/{{ project.slug }}/issues?showCompleted=true&showCancelled=true" class="btn btn-outline">Show all</a>
+              {% endif %}
+              {% if logged_in_user.is_some() %}
+              <a href="/~{{ owner.slug }}/{{ project.slug }}/issues/new" class="btn">
+                New Issue
+              </a>
+              {% endif %}
+            </div>
           </div>
 
           {% if issues.is_empty() %}

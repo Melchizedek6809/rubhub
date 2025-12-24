@@ -215,6 +215,64 @@ impl Api {
         extract_csrf_token(&html)
             .ok_or_else(|| anyhow!("Failed to extract CSRF token from {}", path))
     }
+
+    /// Create a new issue in a project.
+    pub async fn create_issue(
+        &self,
+        owner: &str,
+        project: &str,
+        title: &str,
+        content: &str,
+    ) -> Result<Response> {
+        let path = format!("/~{}/{}/issues/new", owner, project);
+        let csrf_token = self.get_csrf_token(&path).await?;
+
+        let form = [
+            ("title", title),
+            ("content", content),
+            ("_csrf_token", &csrf_token),
+        ];
+
+        Ok(self
+            .client
+            .post(format!("{}{}", self.base_url, path))
+            .form(&form)
+            .send()
+            .await?
+            .error_for_status()?)
+    }
+
+    /// Add a comment to an issue, optionally changing its status.
+    ///
+    /// status can be: None, Some("open"), Some("completed"), Some("cancelled")
+    pub async fn add_issue_comment(
+        &self,
+        owner: &str,
+        project: &str,
+        issue_dir: &str,
+        content: &str,
+        status: Option<&str>,
+    ) -> Result<Response> {
+        let view_path = format!("/~{}/{}/issues/{}", owner, project, issue_dir);
+        let csrf_token = self.get_csrf_token(&view_path).await?;
+
+        let post_path = format!("{}/comment", view_path);
+        let status_value = status.unwrap_or("");
+
+        let form = [
+            ("content", content),
+            ("status", status_value),
+            ("_csrf_token", &csrf_token),
+        ];
+
+        Ok(self
+            .client
+            .post(format!("{}{}", self.base_url, post_path))
+            .form(&form)
+            .send()
+            .await?
+            .error_for_status()?)
+    }
 }
 
 /// Extract CSRF token from HTML response.

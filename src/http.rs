@@ -34,13 +34,7 @@ fn serve_public_asset(path: &str) -> impl IntoResponse {
             )
                 .into_response()
         }
-        None => {
-            (
-                axum::http::StatusCode::NOT_FOUND,
-                "Asset not found",
-            )
-                .into_response()
-        }
+        None => (axum::http::StatusCode::NOT_FOUND, "Asset not found").into_response(),
     }
 }
 
@@ -70,12 +64,14 @@ pub async fn http_server(
     // build our application with a single route
     let mut app = Router::new()
         .route("/", get(controllers::index))
-        .route("/favicon.ico", get(|| async {
-            serve_public_asset("favicon.ico")
-        }))
-        .route("/favicon.png", get(|| async {
-            serve_public_asset("favicon.png")
-        }))
+        .route(
+            "/favicon.ico",
+            get(|| async { serve_public_asset("favicon.ico") }),
+        )
+        .route(
+            "/favicon.png",
+            get(|| async { serve_public_asset("favicon.png") }),
+        )
         .route("/login", get(controllers::login_page))
         .route("/registration", get(controllers::registration_page))
         .merge(auth_post_routes)
