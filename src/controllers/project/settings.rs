@@ -152,7 +152,11 @@ pub async fn project_settings_post(
     project.main_branch = main_branch.to_owned();
     project.website = website.to_owned();
 
-    if project.save(&state).await.is_err() {
+    if project
+        .save(&state, &current_user.name, &current_user.email)
+        .await
+        .is_err()
+    {
         // A proper error message would be nicer here
         return Redirect::to(&project.uri()).into_response();
     }

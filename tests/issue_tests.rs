@@ -341,7 +341,10 @@ async fn test_issue_filter_counts() {
 
         // Verify counts are displayed (Open 3, Completed 2, Closed 1)
         assert!(issues_page.contains("Open"), "Should show Open filter");
-        assert!(issues_page.contains("Completed"), "Should show Completed filter");
+        assert!(
+            issues_page.contains("Completed"),
+            "Should show Completed filter"
+        );
         assert!(issues_page.contains("Closed"), "Should show Closed filter");
 
         // Only open issues should be visible by default

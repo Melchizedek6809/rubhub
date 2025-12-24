@@ -1,16 +1,15 @@
 use anyhow::{Result, anyhow};
-use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
 use crate::{
     AccessType, GlobalState, User,
     services::{
-        fs::atomic_write,
+        project_info::{self, load_project_info},
         validation::{slugify, validate_slug},
     },
 };
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Project {
     pub slug: String,
     pub owner: String,
@@ -32,32 +31,74 @@ impl Project {
         if validate_slug(project_slug).is_err() {
             return Err(anyhow!("Invalid projectname"));
         }
-        let filename = format!("!{project_slug}.json");
-        let path = state.config.git_root.join(user_slug).join(filename);
-        let data = tokio::fs::read(path).await?;
-        let data = String::from_utf8_lossy(&data);
-        let user: Project = serde_json::from_str(&data)?;
 
-        Ok(user)
+        // Check if repo directory exists (this confirms project exists)
+        let repo_path = state.config.git_root.join(user_slug).join(project_slug);
+        if !tokio::fs::metadata(&repo_path)
+            .await
+            .map(|m| m.is_dir())
+            .unwrap_or(false)
+        {
+            return Err(anyhow!("Project not found"));
+        }
+
+        // Try to load from rubhub/info branch
+        let (frontmatter, description) = load_project_info(state, user_slug, project_slug).await?;
+
+        // Apply defaults for missing fields
+        let name = frontmatter.name.unwrap_or_else(|| project_slug.to_string());
+
+        let public_access = frontmatter
+            .public_access
+            .as_ref()
+            .and_then(|s| AccessType::parse_public_access(s).ok())
+            .unwrap_or(AccessType::None);
+
+        let main_branch = match frontmatter.default_branch {
+            Some(branch) => branch,
+            None => project_info::detect_default_branch(state, user_slug, project_slug).await,
+        };
+
+        let website = frontmatter.website.unwrap_or_default();
+        let created_at = frontmatter
+            .created_at
+            .unwrap_or_else(OffsetDateTime::now_utc);
+
+        Ok(Self {
+            slug: project_slug.to_string(),
+            owner: user_slug.to_string(),
+            created_at,
+            public_access,
+            name,
+            description,
+            website,
+            main_branch,
+        })
     }
 
-    pub async fn save(&self, state: &GlobalState) -> Result<()> {
+    pub async fn save(
+        &self,
+        state: &GlobalState,
+        author_name: &str,
+        author_email: &str,
+    ) -> Result<()> {
         if validate_slug(&self.owner).is_err() {
             return Err(anyhow!("Invalid username"));
         }
         if validate_slug(&self.slug).is_err() {
             return Err(anyhow!("Invalid projectname"));
         }
-        let _user = User::load(state, &self.owner).await?;
 
-        let path = state.config.git_root.join(&self.owner);
-        tokio::fs::create_dir_all(&path).await?;
-        let filename = format!("!{}.json", self.slug);
-        let path = path.join(filename);
-        let data = serde_json::to_string(&self)?;
-        atomic_write(path, data).await?;
-
-        Ok(())
+        // Save to rubhub/info branch
+        project_info::save_project_info(
+            state,
+            &self.owner,
+            &self.slug,
+            self,
+            author_name,
+            author_email,
+        )
+        .await
     }
 
     pub async fn delete(&self, state: &GlobalState) -> Result<()> {
@@ -69,22 +110,8 @@ impl Project {
             return Err(anyhow!("Invalid projectname"));
         }
 
-        // Verify user exists (safety check)
-        let _user = User::load(state, &self.owner).await?;
-
-        // Construct paths
-        let metadata_path = state
-            .config
-            .git_root
-            .join(&self.owner)
-            .join(format!("!{}.json", self.slug));
-
+        // Delete the git repository directory (metadata is stored within)
         let repo_path = state.config.git_root.join(&self.owner).join(&self.slug);
-
-        // Delete metadata first (safer failure mode)
-        tokio::fs::remove_file(&metadata_path).await?;
-
-        // Delete git repository directory
         tokio::fs::remove_dir_all(&repo_path).await?;
 
         Ok(())

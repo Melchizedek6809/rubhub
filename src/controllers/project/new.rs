@@ -104,52 +104,57 @@ pub async fn project_new_post(
 
     let user_slug = current_user.slug.clone();
 
-    match Project::new(&current_user, name, selected_public_access) {
-        Ok(project) => {
-            if Project::load(&state, &project.owner, &project.slug)
-                .await
-                .is_ok()
-            {
-                return render_new_project_page(
-                    &state,
-                    &cookies,
-                    Some(&current_user),
-                    Some("Project already exists"),
-                )
-                .await
-                .into_response();
-            };
-            match project.save(&state).await {
-                Ok(_) => {
-                    match create_bare_repo(&state, user_slug.clone(), project.slug.clone()).await {
-                        Ok(_) => Redirect::to(&project.uri()).into_response(),
-                        Err(_) => render_new_project_page(
-                            &state,
-                            &cookies,
-                            Some(&current_user),
-                            Some("Could not create project."),
-                        )
-                        .await
-                        .into_response(),
-                    }
-                }
-                Err(msg) => render_new_project_page(
-                    &state,
-                    &cookies,
-                    Some(&current_user),
-                    Some(&msg.to_string()),
-                )
-                .await
-                .into_response(),
-            }
+    let project = match Project::new(&current_user, name, selected_public_access) {
+        Ok(p) => p,
+        Err(msg) => {
+            return render_new_project_page(
+                &state,
+                &cookies,
+                Some(&current_user),
+                Some(&msg.to_string()),
+            )
+            .await
+            .into_response();
         }
-        Err(msg) => render_new_project_page(
+    };
+
+    // Check if repo directory already exists
+    let repo_path = state
+        .config
+        .git_root
+        .join(&project.owner)
+        .join(&project.slug);
+    if tokio::fs::metadata(&repo_path).await.is_ok() {
+        return render_new_project_page(
             &state,
             &cookies,
             Some(&current_user),
-            Some(&msg.to_string()),
+            Some("Project already exists"),
         )
         .await
-        .into_response(),
+        .into_response();
     }
+
+    // Create bare repo first (metadata is stored within)
+    if let Err(_) = create_bare_repo(&state, user_slug.clone(), project.slug.clone()).await {
+        return render_new_project_page(
+            &state,
+            &cookies,
+            Some(&current_user),
+            Some("Could not create project."),
+        )
+        .await
+        .into_response();
+    }
+
+    // Save metadata to rubhub/info branch
+    if let Err(msg) = project
+        .save(&state, &current_user.name, &current_user.email)
+        .await
+    {
+        // Log error but don't fail - project was created, just no metadata yet
+        eprintln!("Warning: Could not save project metadata: {}", msg);
+    }
+
+    Redirect::to(&project.uri()).into_response()
 }
