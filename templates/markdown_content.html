@@ -1,0 +1,13 @@
+{% macro render(frontmatter, html) %}
+{% if !frontmatter.is_empty() %}
+<dl class="frontmatter">
+  {% for (key, value) in frontmatter %}
+  <div class="frontmatter-item">
+    <dt>{{ key }}</dt>
+    <dd>{{ value }}</dd>
+  </div>
+  {% endfor %}
+</dl>
+{% endif %}
+<div class="markdown">{{- html|safe -}}</div>
+{% endmacro %}

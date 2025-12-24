@@ -99,3 +99,34 @@
 	border-top: 2px solid var(--background-color);
 	margin: 2em 0;
 }
+
+/* Frontmatter styling */
+.frontmatter {
+	margin: 0;
+	padding: var(--space-m);
+	border-bottom: 1px solid var(--background-color);
+}
+
+.frontmatter-item {
+	display: flex;
+	gap: var(--space-s);
+	margin-bottom: var(--space-xs);
+}
+
+.frontmatter-item:last-child {
+	margin-bottom: 0;
+}
+
+.frontmatter dt {
+	color: var(--text-color-subdued);
+	min-width: 120px;
+}
+
+.frontmatter dt::after {
+	content: ":";
+}
+
+.frontmatter dd {
+	margin: 0;
+	color: var(--text-color);
+}

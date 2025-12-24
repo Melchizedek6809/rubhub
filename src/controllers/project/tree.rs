@@ -9,6 +9,7 @@ use crate::{
     extractors::{PathUserProjectRef, PathUserProjectRefPath},
     models::ContentPage,
     services::{
+        markdown::{self, Frontmatter},
         repository::{
             GitRefInfo, GitSummary, GitTreeEntry, get_git_file, get_git_info, get_git_summary,
             get_git_tree,
@@ -33,6 +34,7 @@ struct ProjectTreeTemplate<'a> {
     current_path: String,
     path_parts: Vec<String>,
     readme_html: Option<String>,
+    readme_frontmatter: Frontmatter,
     parent_path: Option<String>,
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
@@ -127,8 +129,9 @@ async fn render_tree_page(
         format!("{}/README.md", path)
     };
 
-    let readme_html = get_git_file(state, &owner.slug, &project.slug, &git_ref, &readme_path).await;
-    let readme_html = readme_html
+    let readme_result =
+        get_git_file(state, &owner.slug, &project.slug, &git_ref, &readme_path).await;
+    let (readme_html, readme_frontmatter) = readme_result
         .ok()
         .filter(|_| {
             // Check if README exists in current directory tree
@@ -137,11 +140,11 @@ async fn render_tree_page(
                 .any(|e| e.filename == "README.md" && e.kind == EntryKind::Blob)
         })
         .map(|b| {
-            let str = String::from_utf8_lossy(&b.data);
-            let html =
-                markdown::to_html_with_options(&str, &markdown::Options::gfm()).unwrap_or_default();
-            ammonia::clean(&html)
-        });
+            let content = String::from_utf8_lossy(&b.data);
+            let (frontmatter, html) = markdown::parse_and_render(&content);
+            (Some(html), frontmatter)
+        })
+        .unwrap_or((None, vec![]));
 
     let parent_path = get_parent_path(&path);
     let path_parts: Vec<String> = if path.is_empty() {
@@ -163,6 +166,7 @@ async fn render_tree_page(
         current_path: path,
         path_parts,
         readme_html,
+        readme_frontmatter,
         parent_path,
         logged_in_user: logged_in_user.as_ref(),
         sidebar_projects,

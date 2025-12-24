@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 RubHub is a federated git forge written in Rust with a TypeScript frontend. It uses git itself as the storage backend (no external database) and compiles to a single executable that handles both HTTP and SSH servers.
 
-**Key Philosophy**: Git as the single source of truth. Everything is stored as JSON files within the git directory structure, enabling federation through git remotes.
+**Key Philosophy**: Git as the single source of truth. Data is stored within git repositories using special orphan branches (`rubhub/info`, `rubhub/issues`), enabling federation through git remotes.
 
 ## Development Commands
 
@@ -80,17 +80,33 @@ Both frontend and backend changes are automatically picked up and served at `htt
 - `ssh.rs` - SSH server implementation using russh
 - `state.rs` - AppConfig and GlobalState (shared between servers)
 - `controllers/` - MVC-style route handlers (auth, project, user)
-- `models/` - Data structures (User, Project) with JSON persistence
-- `services/` - Business logic (session, repository, password, validation)
+- `models/` - Data structures (User, Project) with file/git persistence
+- `services/` - Business logic (session, repository, password, validation, project_info, issue)
 - `extractors/` - Custom Axum path extractors for typed URL parameters
 - `views/` - Response rendering with theme injection system
 
 **Data Persistence Pattern:**
-- **No database**: All data stored as JSON files
-- Users: `data/git/!{username}.json` (special `!` prefix for metadata)
-- Projects: `data/git/{username}/!{project_slug}.json`
+- **No database**: All data stored in files or git branches
+- Users: `data/git/!{username}.json` (special `!` prefix for metadata files)
+- Projects: Stored in `rubhub/info` branch within each repository as `README.md` with YAML frontmatter
+- Issues: Stored in `rubhub/issues` branch as markdown files with YAML frontmatter
 - Sessions: `data/sessions/{session_id}.json`
 - Git repos: Bare repositories at `data/git/{username}/{project_slug}`
+
+**Project Metadata Format** (`rubhub/info` branch `README.md`):
+```markdown
+---
+name: My Project
+public_access: read
+default_branch: main
+website: https://example.com
+created_at: 2025-01-15T10:30:00Z
+---
+
+Project description in markdown.
+```
+
+If the `rubhub/info` branch doesn't exist, defaults are used (name from slug, private access, auto-detected default branch).
 
 **Request Path Extraction:**
 Custom extractors (`PathUser`, `PathUserProject`, etc.) automatically load entities from storage. Uses `~` prefix for user paths: `/~{username}` → loads User, `/~{username}/{project}` → loads User + Project. Returns 404 if loading fails.

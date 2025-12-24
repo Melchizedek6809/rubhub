@@ -13,6 +13,7 @@ use crate::{
     extractors::PathUserProjectRefPath,
     models::ContentPage,
     services::{
+        markdown::{self, Frontmatter},
         repository::{GitRefInfo, GitSummary, get_git_file, get_git_info, get_git_summary},
         session,
     },
@@ -36,6 +37,7 @@ struct ProjectBlobTemplate<'a> {
     is_binary: bool,
     is_image: bool,
     is_rendered_markdown: bool,
+    markdown_frontmatter: Frontmatter,
     raw_url: String,
     source_url: Option<String>,
     logged_in_user: Option<&'a User>,
@@ -167,6 +169,7 @@ pub async fn project_blob_get(
             is_binary,
             is_image: true,
             is_rendered_markdown: false,
+            markdown_frontmatter: vec![],
             raw_url,
             source_url: None,
             logged_in_user: logged_in_user.as_ref(),
@@ -199,6 +202,7 @@ pub async fn project_blob_get(
             is_binary: true,
             is_image: false,
             is_rendered_markdown: false,
+            markdown_frontmatter: vec![],
             raw_url,
             source_url: None,
             logged_in_user: logged_in_user.as_ref(),
@@ -218,13 +222,13 @@ pub async fn project_blob_get(
     let line_count = text_content.lines().count();
 
     // Render markdown if it's a .md file and ?source is not specified
-    let (file_content, is_rendered_markdown) = if is_markdown && params.source.is_none() {
-        let html = markdown::to_html_with_options(&text_content, &markdown::Options::gfm())
-            .unwrap_or_else(|_| text_content.clone());
-        (ammonia::clean(&html), true)
-    } else {
-        (text_content, false)
-    };
+    let (file_content, is_rendered_markdown, markdown_frontmatter) =
+        if is_markdown && params.source.is_none() {
+            let (frontmatter, html) = markdown::parse_and_render(&text_content);
+            (html, true, frontmatter)
+        } else {
+            (text_content, false, vec![])
+        };
 
     let path_parts: Vec<String> = path.split('/').map(|s| s.to_string()).collect();
 
@@ -243,6 +247,7 @@ pub async fn project_blob_get(
         is_binary: false,
         is_image: false,
         is_rendered_markdown,
+        markdown_frontmatter,
         raw_url,
         source_url,
         logged_in_user: logged_in_user.as_ref(),

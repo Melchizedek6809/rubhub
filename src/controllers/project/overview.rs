@@ -8,6 +8,7 @@ use crate::{
     extractors::PathUserProject,
     models::ContentPage,
     services::{
+        markdown::{self, Frontmatter},
         repository::{GitRefInfo, GitSummary, get_git_file, get_git_info, get_git_summary},
         session,
     },
@@ -26,6 +27,7 @@ struct ProjectTemplate<'a> {
     summary: GitSummary,
     info: Option<GitRefInfo>,
     readme_html: Option<String>,
+    readme_frontmatter: Frontmatter,
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
@@ -73,16 +75,15 @@ async fn render_project_page(
     };
     let info = get_git_info(state, &owner.slug, &project.slug, &current, 1, 0).await;
 
-    let readme_html = get_git_file(state, &owner.slug, &project.slug, &current, "README.md").await;
-    let readme_html = readme_html
+    let readme_result =
+        get_git_file(state, &owner.slug, &project.slug, &current, "README.md").await;
+    let (readme_html, readme_frontmatter) = readme_result
         .map(|b| {
-            let str = String::from_utf8_lossy(&b.data);
-            let html =
-                markdown::to_html_with_options(&str, &markdown::Options::gfm()).unwrap_or_default();
-
-            ammonia::clean(&html)
+            let content = String::from_utf8_lossy(&b.data);
+            let (frontmatter, html) = markdown::parse_and_render(&content);
+            (Some(html), frontmatter)
         })
-        .ok();
+        .unwrap_or((None, vec![]));
 
     let selected_branch = info
         .as_ref()
@@ -102,6 +103,7 @@ async fn render_project_page(
         info,
         selected_branch,
         readme_html,
+        readme_frontmatter,
         logged_in_user: logged_in_user.as_ref(),
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),

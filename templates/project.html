@@ -1,3 +1,4 @@
+{% import "markdown_content.html" as md %}
 <!DOCTYPE html>
 <html>
 
@@ -67,7 +68,7 @@
 
           {% if let Some(readme_html) = readme_html %}
           <br/>
-          <div class="markdown">{{- readme_html|safe -}}</div>
+          {% call md::render(readme_frontmatter, readme_html) %}
           {% endif %}
         </div>
       </section>

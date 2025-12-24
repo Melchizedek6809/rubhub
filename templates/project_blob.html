@@ -1,3 +1,4 @@
+{% import "markdown_content.html" as md %}
 <!DOCTYPE html>
 <html>
 
@@ -112,7 +113,7 @@
               <p>Binary file</p>
             </div>
             {% elif is_rendered_markdown %}
-            <div class="markdown">{{ file_content|safe }}</div>
+            {% call md::render(markdown_frontmatter, file_content) %}
             {% else %}
             <pre class="file-content"><code>{{ file_content }}</code></pre>
             {% endif %}
