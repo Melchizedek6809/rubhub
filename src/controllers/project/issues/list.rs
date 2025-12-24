@@ -16,9 +16,15 @@ use crate::{
     views::ThemedRender,
 };
 
+fn default_show_open() -> bool {
+    true
+}
+
 #[derive(Debug, Deserialize, Default)]
 #[serde(default)]
 pub struct IssueFilters {
+    #[serde(rename = "showOpen", default = "default_show_open")]
+    pub show_open: bool,
     #[serde(rename = "showCompleted")]
     pub show_completed: bool,
     #[serde(rename = "showCancelled")]
@@ -37,8 +43,12 @@ struct IssuesListTemplate<'a> {
     content_pages: Vec<ContentPage>,
     active_tab: &'static str,
     selected_branch: String,
+    show_open: bool,
     show_completed: bool,
     show_cancelled: bool,
+    count_open: usize,
+    count_completed: usize,
+    count_cancelled: usize,
 }
 
 pub async fn issues_list_get(
@@ -67,11 +77,25 @@ pub async fn issues_list_get(
         .await
         .unwrap_or_default();
 
-    // Filter issues based on query params (open issues always shown)
+    // Count issues by status
+    let count_open = all_issues
+        .iter()
+        .filter(|i| i.status == IssueStatus::Open)
+        .count();
+    let count_completed = all_issues
+        .iter()
+        .filter(|i| i.status == IssueStatus::Completed)
+        .count();
+    let count_cancelled = all_issues
+        .iter()
+        .filter(|i| i.status == IssueStatus::Cancelled)
+        .count();
+
+    // Filter issues based on query params
     let issues: Vec<IssueSummary> = all_issues
         .into_iter()
         .filter(|issue| match issue.status {
-            IssueStatus::Open => true,
+            IssueStatus::Open => filters.show_open,
             IssueStatus::Completed => filters.show_completed,
             IssueStatus::Cancelled => filters.show_cancelled,
         })
@@ -87,8 +111,12 @@ pub async fn issues_list_get(
         content_pages: state.config.content_pages.clone(),
         active_tab: "issues",
         selected_branch: project.main_branch.clone(),
+        show_open: filters.show_open,
         show_completed: filters.show_completed,
         show_cancelled: filters.show_cancelled,
+        count_open,
+        count_completed,
+        count_cancelled,
     };
     Html(template.render_with_theme()).into_response()
 }

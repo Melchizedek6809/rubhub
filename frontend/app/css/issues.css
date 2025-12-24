@@ -15,6 +15,78 @@
 	align-items: center;
 }
 
+.issue-filters {
+	display: flex;
+	gap: var(--space-s);
+}
+
+.btn-filter {
+	background: transparent;
+	padding: var(--space-xs) var(--space-m);
+	border-radius: 4px;
+	font-size: 0.875rem;
+	text-decoration: none;
+	border: 1px solid;
+}
+
+.btn-filter.issue-open {
+	border-color: var(--primary-color);
+	color: var(--primary-color);
+}
+
+.btn-filter.issue-open:hover {
+	background: var(--background-color-bright);
+}
+
+.btn-filter.issue-open.active {
+	background: var(--primary-color);
+	color: var(--white);
+}
+
+.btn-filter.issue-open.active:hover {
+	background: var(--primary-color-dark);
+	border-color: var(--primary-color-dark);
+}
+
+.btn-filter.issue-completed {
+	border-color: var(--success-color-dark);
+	color: var(--success-color-dark);
+}
+
+.btn-filter.issue-completed:hover {
+	background: var(--background-color-bright);
+}
+
+.btn-filter.issue-completed.active {
+	background: var(--success-color);
+	border-color: var(--success-color);
+	color: var(--success-color-dark);
+}
+
+.btn-filter.issue-completed.active:hover {
+	background: var(--success-color);
+	border-color: var(--success-color-dark);
+}
+
+.btn-filter.issue-cancelled {
+	border-color: var(--secondary-color);
+	color: var(--secondary-color);
+}
+
+.btn-filter.issue-cancelled:hover {
+	background: var(--background-color-bright);
+}
+
+.btn-filter.issue-cancelled.active {
+	background: var(--secondary-color);
+	color: var(--white);
+}
+
+.btn-filter.issue-cancelled.active:hover {
+	background: var(--secondary-color-dark);
+	border-color: var(--secondary-color-dark);
+}
+
 .issues-list {
 	display: flex;
 	flex-direction: column;

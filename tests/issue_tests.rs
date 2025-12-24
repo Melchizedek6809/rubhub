@@ -112,14 +112,20 @@ async fn test_issue_workflow() {
             !issues_page.contains("First Issue"),
             "Completed issue should not appear in default list view"
         );
+        // Open filter should be active by default
         assert!(
-            issues_page.contains("Show all"),
-            "Should show 'Show all' button when filtering"
+            issues_page.contains(r#"class="btn btn-filter issue-open active">Open"#),
+            "Open filter should be active by default"
+        );
+        // Completed filter should not be active (has issue-completed but not active)
+        assert!(
+            issues_page.contains(r#"class="btn btn-filter issue-completed">Completed"#),
+            "Completed filter should not be active by default"
         );
 
         // With showCompleted=true, the issue should appear
         let issues_page = api
-            .get_text("/~alice/test-project/issues?showCompleted=true&showCancelled=true")
+            .get_text("/~alice/test-project/issues?showCompleted=true")
             .await
             .unwrap();
         assert!(
@@ -130,9 +136,10 @@ async fn test_issue_workflow() {
             issues_page.contains("status-completed"),
             "List should show completed status"
         );
+        // Completed filter should now be active
         assert!(
-            issues_page.contains("Show open only"),
-            "Should show 'Show open only' button when showing all"
+            issues_page.contains(r#"class="btn btn-filter issue-completed active">Completed"#),
+            "Completed filter should be active when showCompleted=true"
         );
     })
     .await;
@@ -264,6 +271,138 @@ async fn test_issue_cancelled() {
         assert!(
             issues_page.contains("status-cancelled"),
             "List should show cancelled status"
+        );
+    })
+    .await;
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn test_issue_filter_counts() {
+    with_backend(|state| async move {
+        let api = Api::new(&state.config.base_url);
+
+        api.register("dave", "dave@example.com", "password123456789")
+            .await
+            .unwrap();
+
+        api.create_project("Filter Test", "Testing issue filter counts")
+            .await
+            .unwrap();
+
+        // Create 3 open issues
+        for i in 1..=3 {
+            api.create_issue(
+                "dave",
+                "filter-test",
+                &format!("Open Issue {}", i),
+                "An open issue.",
+            )
+            .await
+            .unwrap();
+        }
+
+        // Create 2 completed issues
+        for i in 1..=2 {
+            api.create_issue(
+                "dave",
+                "filter-test",
+                &format!("Completed Issue {}", i),
+                "Will be completed.",
+            )
+            .await
+            .unwrap();
+
+            let issues_page = api.get_text("/~dave/filter-test/issues").await.unwrap();
+            let issue_dir = extract_issue_dir(&issues_page, &format!("Completed Issue {}", i))
+                .expect("Should find issue");
+
+            api.add_issue_comment(
+                "dave",
+                "filter-test",
+                &issue_dir,
+                "Done!",
+                Some("completed"),
+            )
+            .await
+            .unwrap();
+        }
+
+        // Create 1 cancelled issue
+        api.create_issue(
+            "dave",
+            "filter-test",
+            "Cancelled Issue",
+            "Will be cancelled.",
+        )
+        .await
+        .unwrap();
+
+        let issues_page = api.get_text("/~dave/filter-test/issues").await.unwrap();
+        let issue_dir =
+            extract_issue_dir(&issues_page, "Cancelled Issue").expect("Should find issue");
+
+        api.add_issue_comment(
+            "dave",
+            "filter-test",
+            &issue_dir,
+            "Won't fix.",
+            Some("cancelled"),
+        )
+        .await
+        .unwrap();
+
+        // Check filter counts on the issues list page
+        let issues_page = api.get_text("/~dave/filter-test/issues").await.unwrap();
+
+        // Verify counts are displayed
+        assert!(
+            issues_page.contains(">Open 3</a>"),
+            "Should show Open count of 3"
+        );
+        assert!(
+            issues_page.contains(">Completed 2</a>"),
+            "Should show Completed count of 2"
+        );
+        assert!(
+            issues_page.contains(">Closed 1</a>"),
+            "Should show Closed count of 1"
+        );
+
+        // Only open issues should be visible by default
+        assert!(
+            issues_page.contains("Open Issue 1"),
+            "Open issue 1 should be visible"
+        );
+        assert!(
+            !issues_page.contains("Completed Issue 1"),
+            "Completed issue should not be visible by default"
+        );
+        assert!(
+            !issues_page.contains("Cancelled Issue"),
+            "Cancelled issue should not be visible by default"
+        );
+
+        // Test showOpen=false hides open issues
+        let issues_page = api
+            .get_text("/~dave/filter-test/issues?showOpen=false&showCompleted=true")
+            .await
+            .unwrap();
+        assert!(
+            !issues_page.contains("Open Issue 1"),
+            "Open issue should not be visible when showOpen=false"
+        );
+        assert!(
+            issues_page.contains("Completed Issue 1"),
+            "Completed issue should be visible when showCompleted=true"
+        );
+        // Open button should not be active (has issue-open but not active)
+        assert!(
+            issues_page.contains(r#"class="btn btn-filter issue-open">Open"#),
+            "Open filter should have issue-open class but not active when showOpen=false"
+        );
+        assert!(
+            !issues_page.contains(r#"class="btn btn-filter issue-open active">Open"#),
+            "Open filter should not have active class when showOpen=false"
         );
     })
     .await;
