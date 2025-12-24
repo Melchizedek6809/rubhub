@@ -22,35 +22,33 @@
         <div class="card">
           <div class="issues-header">
             <h2>Issues</h2>
-            <div class="issues-actions">
-              <div class="issue-filters">
-                {# Open button - toggle showOpen #}
-                {% if show_open %}
-                <a href="{{ project.uri_issues() }}?showOpen=false{% if show_completed %}&showCompleted=true{% endif %}{% if show_cancelled %}&showCancelled=true{% endif %}" class="btn btn-filter issue-open active">Open {{ count_open }}</a>
-                {% else %}
-                <a href="{{ project.uri_issues() }}{% if show_completed || show_cancelled %}?{% endif %}{% if show_completed %}showCompleted=true{% endif %}{% if show_cancelled %}{% if show_completed %}&{% endif %}showCancelled=true{% endif %}" class="btn btn-filter issue-open">Open {{ count_open }}</a>
-                {% endif %}
+            <div class="issue-filters">
+            {# Open button - toggle showOpen #}
+            {% if show_open %}
+            <a href="{{ project.uri_issues() }}?showOpen=false{% if show_completed %}&showCompleted=true{% endif %}{% if show_cancelled %}&showCancelled=true{% endif %}" class="btn btn-filter issue-open active"><span class="filter-icon">●</span><span class="filter-label">Open</span> {{ count_open }}</a>
+            {% else %}
+            <a href="{{ project.uri_issues() }}{% if show_completed || show_cancelled %}?{% endif %}{% if show_completed %}showCompleted=true{% endif %}{% if show_cancelled %}{% if show_completed %}&{% endif %}showCancelled=true{% endif %}" class="btn btn-filter issue-open"><span class="filter-icon">●</span><span class="filter-label">Open</span> {{ count_open }}</a>
+            {% endif %}
 
-                {# Completed button - toggle showCompleted #}
-                {% if show_completed %}
-                <a href="{{ project.uri_issues() }}{% if !show_open || show_cancelled %}?{% endif %}{% if !show_open %}showOpen=false{% endif %}{% if show_cancelled %}{% if !show_open %}&{% endif %}showCancelled=true{% endif %}" class="btn btn-filter issue-completed active">Completed {{ count_completed }}</a>
-                {% else %}
-                <a href="{{ project.uri_issues() }}?{% if !show_open %}showOpen=false&{% endif %}showCompleted=true{% if show_cancelled %}&showCancelled=true{% endif %}" class="btn btn-filter issue-completed">Completed {{ count_completed }}</a>
-                {% endif %}
+            {# Completed button - toggle showCompleted #}
+            {% if show_completed %}
+            <a href="{{ project.uri_issues() }}{% if !show_open || show_cancelled %}?{% endif %}{% if !show_open %}showOpen=false{% endif %}{% if show_cancelled %}{% if !show_open %}&{% endif %}showCancelled=true{% endif %}" class="btn btn-filter issue-completed active"><span class="filter-icon">✓</span><span class="filter-label">Completed</span> {{ count_completed }}</a>
+            {% else %}
+            <a href="{{ project.uri_issues() }}?{% if !show_open %}showOpen=false&{% endif %}showCompleted=true{% if show_cancelled %}&showCancelled=true{% endif %}" class="btn btn-filter issue-completed"><span class="filter-icon">✓</span><span class="filter-label">Completed</span> {{ count_completed }}</a>
+            {% endif %}
 
-                {# Closed button - toggle showCancelled #}
-                {% if show_cancelled %}
-                <a href="{{ project.uri_issues() }}{% if !show_open || show_completed %}?{% endif %}{% if !show_open %}showOpen=false{% endif %}{% if show_completed %}{% if !show_open %}&{% endif %}showCompleted=true{% endif %}" class="btn btn-filter issue-cancelled active">Closed {{ count_cancelled }}</a>
-                {% else %}
-                <a href="{{ project.uri_issues() }}?{% if !show_open %}showOpen=false&{% endif %}{% if show_completed %}showCompleted=true&{% endif %}showCancelled=true" class="btn btn-filter issue-cancelled">Closed {{ count_cancelled }}</a>
-                {% endif %}
-              </div>
-              {% if logged_in_user.is_some() %}
-              <a href="/~{{ owner.slug }}/{{ project.slug }}/issues/new" class="btn">
-                New Issue
-              </a>
-              {% endif %}
+            {# Closed button - toggle showCancelled #}
+            {% if show_cancelled %}
+            <a href="{{ project.uri_issues() }}{% if !show_open || show_completed %}?{% endif %}{% if !show_open %}showOpen=false{% endif %}{% if show_completed %}{% if !show_open %}&{% endif %}showCompleted=true{% endif %}" class="btn btn-filter issue-cancelled active"><span class="filter-icon">✕</span><span class="filter-label">Closed</span> {{ count_cancelled }}</a>
+            {% else %}
+            <a href="{{ project.uri_issues() }}?{% if !show_open %}showOpen=false&{% endif %}{% if show_completed %}showCompleted=true&{% endif %}showCancelled=true" class="btn btn-filter issue-cancelled"><span class="filter-icon">✕</span><span class="filter-label">Closed</span> {{ count_cancelled }}</a>
+            {% endif %}
             </div>
+            {% if logged_in_user.is_some() %}
+            <a href="/~{{ owner.slug }}/{{ project.slug }}/issues/new" class="btn">
+              New Issue
+            </a>
+            {% endif %}
           </div>
 
           {% if issues.is_empty() %}
