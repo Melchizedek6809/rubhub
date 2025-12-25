@@ -1,0 +1,98 @@
+/* Import Prism base theme and plugins */
+@import "prismjs/themes/prism.css";
+@import "prismjs/plugins/line-numbers/prism-line-numbers.css";
+@import "prismjs/plugins/match-braces/prism-match-braces.css";
+@import "prismjs/plugins/inline-color/prism-inline-color.css";
+
+/* Override background to match our theme */
+code[class*="language-"],
+pre[class*="language-"] {
+	background: none;
+	text-shadow: none;
+	font-family: var(--code-font);
+}
+
+/* Never change background on tokens, only foreground */
+code[class*="language-"] .token,
+pre[class*="language-"] .token {
+	background: none !important;
+}
+
+/* Dark mode - apply Tomorrow Night theme colors */
+@media (prefers-color-scheme: dark) {
+	code[class*="language-"],
+	pre[class*="language-"] {
+		color: #ccc;
+	}
+
+	.token.comment,
+	.token.block-comment,
+	.token.prolog,
+	.token.doctype,
+	.token.cdata {
+		color: #999;
+	}
+
+	.token.punctuation {
+		color: #ccc;
+	}
+
+	.token.tag,
+	.token.attr-name,
+	.token.namespace,
+	.token.deleted {
+		color: #e2777a;
+	}
+
+	.token.function-name {
+		color: #6196cc;
+	}
+
+	.token.boolean,
+	.token.number,
+	.token.function {
+		color: #f08d49;
+	}
+
+	.token.property,
+	.token.class-name,
+	.token.constant,
+	.token.symbol {
+		color: #f8c555;
+	}
+
+	.token.selector,
+	.token.important,
+	.token.atrule,
+	.token.keyword,
+	.token.builtin {
+		color: #cc99cd;
+	}
+
+	.token.string,
+	.token.char,
+	.token.attr-value,
+	.token.regex,
+	.token.variable {
+		color: #7ec699;
+	}
+
+	.token.operator,
+	.token.entity,
+	.token.url {
+		color: #67cdcc;
+	}
+
+	.token.inserted {
+		color: green;
+	}
+
+	/* Line numbers dark mode */
+	.line-numbers .line-numbers-rows {
+		border-right-color: #444;
+	}
+
+	.line-numbers-rows > span::before {
+		color: #666;
+	}
+}

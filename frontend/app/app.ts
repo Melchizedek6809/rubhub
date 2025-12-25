@@ -1,3 +1,7 @@
+import { initSyntaxHighlighting } from "./syntax";
+
+setTimeout(initSyntaxHighlighting, 0);
+
 const initBranchSwitcher = () => {
 	for (const ele of document.querySelectorAll<HTMLSelectElement>(
 		"select.branch-switcher",
@@ -72,9 +76,7 @@ const initSidebar = () => {
 setTimeout(initSidebar, 0);
 
 const initCopyButtons = () => {
-	console.log("buttons");
 	for (const b of document.querySelectorAll<HTMLElement>(".copy-button")) {
-		console.log(b);
 		b.onclick = async () => {
 			const value = b.getAttribute("copy-value");
 			if (!value) {

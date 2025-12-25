@@ -164,6 +164,16 @@
 	line-height: 1.5;
 }
 
+.file-content code {
+	display: block;
+	font-family: inherit;
+	font-size: inherit;
+	line-height: inherit;
+	background: none;
+	padding: 0;
+	margin: 0;
+}
+
 .binary-notice {
 	padding: var(--space-l);
 	text-align: center;
