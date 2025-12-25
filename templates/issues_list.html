@@ -60,10 +60,12 @@
               <a href="{{ issue.uri(&owner.slug, &project.slug) }}" class="issue-link">
                 <span class="issue-title">{{ issue.title }}</span>
                 <span class="issue-meta">
-                  opened by {{ issue.author }} -
-                  {{ issue.comment_count }} comment{% if issue.comment_count != 1 %}s{% endif %}
+                  opened by {{ issue.author }} {{ issue.relative_time() }}
                 </span>
               </a>
+              {% if issue.comment_count > 0 %}
+              <span class="issue-comment-count">{{ issue.comment_count }}</span>
+              {% endif %}
               <span class="issue-status status-{{ issue.status.as_str() }}">{{ issue.status.as_str() }}</span>
             </div>
             {% endfor %}

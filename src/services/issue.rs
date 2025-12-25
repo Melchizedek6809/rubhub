@@ -218,7 +218,7 @@ pub async fn list_issues(
                 created_at: frontmatter.date,
                 author: frontmatter.author,
                 status,
-                comment_count: md_files.len(),
+                comment_count: md_files.len().saturating_sub(1),
             });
         }
     }

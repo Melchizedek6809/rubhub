@@ -8,7 +8,9 @@ use std::{
 };
 use tokio::{fs, process::Command};
 
-use crate::{GlobalState, services::validation::validate_slug};
+use crate::{
+    GlobalState, models::common::format_relative_time, services::validation::validate_slug,
+};
 
 fn ensure_safe_component(value: &str) -> io::Result<()> {
     if value.is_empty() {
@@ -380,27 +382,7 @@ impl GitCommitInfo {
             .as_secs() as i64;
 
         let diff = now - self.time.seconds;
-        if diff < 60 {
-            return format!("{} second{} ago", diff, if diff != 1 { "s" } else { "" });
-        }
-        if diff < 3600 {
-            let diff = diff / 60;
-            return format!("{} minute{} ago", diff, if diff != 1 { "s" } else { "" });
-        }
-        if diff < 86400 {
-            let diff = diff / 3600;
-            return format!("{} hour{} ago", diff, if diff != 1 { "s" } else { "" });
-        }
-        if diff < 86400 * 30 {
-            let diff = diff / 86400;
-            return format!("{} day{} ago", diff, if diff != 1 { "s" } else { "" });
-        }
-        if diff < 86400 * 365 {
-            let diff = diff / (86400 * 30);
-            return format!("{} month{} ago", diff, if diff != 1 { "s" } else { "" });
-        }
-        let diff = diff / (86400 * 365);
-        format!("{} year{} ago", diff, if diff != 1 { "s" } else { "" })
+        format_relative_time(diff)
     }
 }
 

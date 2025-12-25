@@ -168,6 +168,21 @@
 	font-size: 0.85rem;
 }
 
+.issue-comment-count {
+	padding: var(--space-xs) var(--space-s);
+	border-radius: 12px;
+	font-size: 0.85rem;
+	font-weight: 500;
+	background: var(--background-color-bright);
+	color: var(--text-color-subdued);
+	margin-right: var(--space-s);
+}
+
+.issue-comment-count::before {
+	content: "\1F4AC";
+	margin-right: var(--space-xs);
+}
+
 .issue-status {
 	padding: var(--space-xs) var(--space-m);
 	border-radius: 12px;
