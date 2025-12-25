@@ -1,6 +1,8 @@
+import { initMarkdownEditors } from "./easymde";
 import { initSyntaxHighlighting } from "./syntax";
 
 setTimeout(initSyntaxHighlighting, 0);
+setTimeout(initMarkdownEditors, 0);
 
 const initBranchSwitcher = () => {
 	for (const ele of document.querySelectorAll<HTMLSelectElement>(

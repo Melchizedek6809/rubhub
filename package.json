@@ -18,6 +18,7 @@
 	},
 	"dependencies": {
 		"@types/prismjs": "^1.26.5",
+		"easymde": "^2.20.0",
 		"prismjs": "^1.30.0",
 		"uuid": "^13.0.0",
 		"zod": "^4.1.13"
