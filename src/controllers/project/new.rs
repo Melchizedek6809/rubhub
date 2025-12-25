@@ -12,7 +12,7 @@ use crate::{
     AccessType, GlobalState, Project, User,
     extractors::CsrfForm,
     models::ContentPage,
-    services::{csrf, repository::create_bare_repo, session, validation::validate_project_name},
+    services::{csrf, repository::create_bare_repo, session, validation::{is_reserved_project_name, validate_project_name}},
     views::ThemedRender,
 };
 
@@ -98,6 +98,12 @@ pub async fn project_new_post(
 
     if let Err(msg) = validate_project_name(name) {
         return render_new_project_page(&state, &cookies, Some(&current_user), Some(msg))
+            .await
+            .into_response();
+    }
+
+    if is_reserved_project_name(name) {
+        return render_new_project_page(&state, &cookies, Some(&current_user), Some("That project name is reserved."))
             .await
             .into_response();
     }

@@ -185,7 +185,7 @@ async fn test_ssh_key_removal() {
     .await;
 }
 
-/// Test that invalid SSH key formats are handled gracefully.
+/// Test that invalid SSH key formats are rejected at save time.
 #[tokio::test(flavor = "current_thread")]
 async fn test_invalid_ssh_key_format() {
     with_backend(|state| async move {
@@ -196,44 +196,29 @@ async fn test_invalid_ssh_key_format() {
             .await
             .unwrap();
 
-        // Set an invalid SSH key (garbage data)
-        api.update_settings(
-            "alice",
-            "alice@test.com",
-            "",
-            "",
-            "main",
-            "this-is-not-a-valid-ssh-key",
-        )
-        .await
-        .unwrap();
+        // Try to set an invalid SSH key - should be rejected with a 400 error
+        let result = api
+            .update_settings(
+                "alice",
+                "alice@test.com",
+                "",
+                "",
+                "main",
+                "this-is-not-a-valid-ssh-key",
+            )
+            .await;
 
-        api.create_project_with_access("Invalid Key Test", "Testing invalid keys", "none")
-            .await
-            .unwrap();
-
-        // Try to clone with a valid key that doesn't match the invalid stored key
-        let real_key = TestSshKey::generate_ed25519(temp_dir, "real_key").unwrap();
-        let work_dir = temp_dir.join("work");
-        std::fs::create_dir_all(&work_dir).unwrap();
-
-        let git = common::GitHelper::new(
-            work_dir.clone(),
-            &real_key.private_key_path,
-            "Alice",
-            "alice@test.com",
+        // Should fail with BAD_REQUEST (400)
+        assert!(result.is_err(), "Invalid SSH key should be rejected");
+        let err = result.unwrap_err();
+        assert!(
+            err.to_string().contains("400"),
+            "Expected 400 status code, got: {}",
+            err
         );
-
-        let ssh_url = format!(
-            "ssh://alice@{}/~alice/invalid-key-test",
-            state.config.ssh_public_host
-        );
-
-        // Should fail because the stored key is invalid/doesn't match
-        let result = git.clone_ssh(&ssh_url, "repo").await.unwrap();
-        assert_clone_failure(&result);
 
         // Now set a valid key and verify it works
+        let real_key = TestSshKey::generate_ed25519(temp_dir, "real_key").unwrap();
         api.update_settings(
             "alice",
             "alice@test.com",
@@ -245,18 +230,28 @@ async fn test_invalid_ssh_key_format() {
         .await
         .unwrap();
 
-        let work_dir2 = temp_dir.join("work2");
-        std::fs::create_dir_all(&work_dir2).unwrap();
+        // Create a project and verify SSH works with valid key
+        api.create_project_with_access("SSH Test", "Testing valid key", "none")
+            .await
+            .unwrap();
 
-        let git2 = common::GitHelper::new(
-            work_dir2.clone(),
+        let work_dir = temp_dir.join("work");
+        std::fs::create_dir_all(&work_dir).unwrap();
+
+        let git = common::GitHelper::new(
+            work_dir.clone(),
             &real_key.private_key_path,
             "Alice",
             "alice@test.com",
         );
 
-        let result2 = git2.clone_ssh(&ssh_url, "repo").await.unwrap();
-        assert_clone_success(&result2);
+        let ssh_url = format!(
+            "ssh://alice@{}/~alice/ssh-test",
+            state.config.ssh_public_host
+        );
+
+        let result = git.clone_ssh(&ssh_url, "repo").await.unwrap();
+        assert_clone_success(&result);
     })
     .await;
 }

@@ -60,6 +60,12 @@ cargo test -- --nocapture
 
 Both frontend and backend changes are automatically picked up and served at `http://localhost:3000/`, so focus on validation rather than rebuilding.
 
+**After completing work on a feature**, always run these commands to verify everything works:
+```bash
+npm run check   # TypeScript type checking
+cargo test      # Run all integration tests
+```
+
 ## Architecture Overview
 
 ### Monorepo Structure

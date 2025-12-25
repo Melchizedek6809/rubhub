@@ -13,6 +13,7 @@ use crate::{
     models::ContentPage,
     services::{
         csrf, session as session_service,
+        user_profile::find_invalid_ssh_keys,
         validation::{validate_uri, validate_username},
     },
     views::ThemedRender,
@@ -89,6 +90,28 @@ pub async fn handle_settings(
         .filter(|line| !line.is_empty())
         .map(ToOwned::to_owned)
         .collect();
+
+    // Validate SSH keys
+    let invalid_keys = find_invalid_ssh_keys(&ssh_keys);
+    if !invalid_keys.is_empty() {
+        let first_invalid = &invalid_keys[0];
+        let preview = if first_invalid.len() > 40 {
+            format!("{}...", &first_invalid[..40])
+        } else {
+            first_invalid.clone()
+        };
+        return Err((
+            StatusCode::BAD_REQUEST,
+            render_settings_page(
+                &cookies,
+                &state,
+                current_user,
+                &ssh_keys,
+                Some(&format!("Invalid SSH key format: {}", preview)),
+            )
+            .await,
+        ));
+    }
 
     if default_main_branch.is_empty() {
         return Err((

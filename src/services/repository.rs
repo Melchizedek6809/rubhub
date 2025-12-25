@@ -6,7 +6,7 @@ use std::{
     io,
     time::{SystemTime, UNIX_EPOCH},
 };
-use tokio::{fs, process::Command};
+use tokio::fs;
 
 use crate::{
     GlobalState, models::common::format_relative_time, services::validation::validate_slug,
@@ -35,23 +35,20 @@ pub async fn create_bare_repo(
     ensure_safe_component(&user)?;
     ensure_safe_component(&project)?;
 
-    let path = state.config.git_root.join(user);
+    let path = state.config.git_root.join(&user);
     fs::create_dir_all(&path).await?;
 
     let path = path.join(project);
-    let status = Command::new("git")
-        .arg("init")
-        .arg("--bare")
-        .arg(path)
-        .kill_on_drop(true) // makes shutdowns cleaner
-        .status()
-        .await?;
 
-    if status.success() {
-        Ok(())
-    } else {
-        Err(std::io::Error::other("git init --bare failed"))
-    }
+    // Use gix to create bare repo (faster and quieter than shelling out to git)
+    tokio::task::spawn_blocking(move || {
+        gix::init_bare(&path).map_err(|e| io::Error::other(e.to_string()))?;
+        Ok::<_, io::Error>(())
+    })
+    .await
+    .map_err(|e| io::Error::other(e.to_string()))??;
+
+    Ok(())
 }
 
 fn get_git_repo(state: &GlobalState, user_name: &str, project_slug: &str) -> Option<Repository> {
