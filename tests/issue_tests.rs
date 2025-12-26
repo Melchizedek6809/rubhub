@@ -113,14 +113,14 @@ async fn test_issue_workflow() {
             "Completed issue should not appear in default list view"
         );
 
-        // With showCompleted=true, the issue should appear
+        // With status=completed, the issue should appear
         let issues_page = api
-            .get_text("/~alice/test-project/issues?showCompleted=true")
+            .get_text("/~alice/test-project/issues?status=completed")
             .await
             .unwrap();
         assert!(
             issues_page.contains("First Issue"),
-            "Completed issue should appear when showCompleted=true"
+            "Completed issue should appear when status=completed"
         );
         assert!(
             issues_page.contains("status-completed"),
@@ -244,14 +244,14 @@ async fn test_issue_cancelled() {
             "Cancelled issue should not appear in default list view"
         );
 
-        // With showCancelled=true, the issue should appear
+        // With status=cancelled, the issue should appear
         let issues_page = api
-            .get_text("/~carol/cancel-test/issues?showCancelled=true")
+            .get_text("/~carol/cancel-test/issues?status=cancelled")
             .await
             .unwrap();
         assert!(
             issues_page.contains("Wont Fix"),
-            "Cancelled issue should appear when showCancelled=true"
+            "Cancelled issue should appear when status=cancelled"
         );
         assert!(
             issues_page.contains("status-cancelled"),
@@ -361,18 +361,18 @@ async fn test_issue_filter_counts() {
             "Cancelled issue should not be visible by default"
         );
 
-        // Test showOpen=false hides open issues
+        // Test status=completed shows only completed issues
         let issues_page = api
-            .get_text("/~dave/filter-test/issues?showOpen=false&showCompleted=true")
+            .get_text("/~dave/filter-test/issues?status=completed")
             .await
             .unwrap();
         assert!(
             !issues_page.contains("Open Issue 1"),
-            "Open issue should not be visible when showOpen=false"
+            "Open issue should not be visible when status=completed"
         );
         assert!(
             issues_page.contains("Completed Issue 1"),
-            "Completed issue should be visible when showCompleted=true"
+            "Completed issue should be visible when status=completed"
         );
     })
     .await;

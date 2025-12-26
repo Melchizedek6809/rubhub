@@ -16,19 +16,12 @@ use crate::{
     views::ThemedRender,
 };
 
-fn default_show_open() -> bool {
-    true
-}
-
 #[derive(Debug, Deserialize, Default)]
 #[serde(default)]
 pub struct IssueFilters {
-    #[serde(rename = "showOpen", default = "default_show_open")]
-    pub show_open: bool,
-    #[serde(rename = "showCompleted")]
-    pub show_completed: bool,
-    #[serde(rename = "showCancelled")]
-    pub show_cancelled: bool,
+    /// Filter to show only issues with this status. Defaults to "open".
+    #[serde(default)]
+    pub status: Option<String>,
 }
 
 #[derive(Template)]
@@ -43,9 +36,7 @@ struct IssuesListTemplate<'a> {
     content_pages: Vec<ContentPage>,
     active_tab: &'static str,
     selected_branch: String,
-    show_open: bool,
-    show_completed: bool,
-    show_cancelled: bool,
+    current_status: String,
     count_open: usize,
     count_completed: usize,
     count_cancelled: usize,
@@ -91,14 +82,18 @@ pub async fn issues_list_get(
         .filter(|i| i.status == IssueStatus::Cancelled)
         .count();
 
-    // Filter issues based on query params
+    // Determine which status to filter by (default: open)
+    let current_status = filters.status.unwrap_or_else(|| "open".to_string());
+    let filter_status = match current_status.as_str() {
+        "completed" => IssueStatus::Completed,
+        "cancelled" => IssueStatus::Cancelled,
+        _ => IssueStatus::Open,
+    };
+
+    // Filter issues to show only the selected status
     let issues: Vec<IssueSummary> = all_issues
         .into_iter()
-        .filter(|issue| match issue.status {
-            IssueStatus::Open => filters.show_open,
-            IssueStatus::Completed => filters.show_completed,
-            IssueStatus::Cancelled => filters.show_cancelled,
-        })
+        .filter(|issue| issue.status == filter_status)
         .collect();
 
     let template = IssuesListTemplate {
@@ -111,9 +106,7 @@ pub async fn issues_list_get(
         content_pages: state.config.content_pages.clone(),
         active_tab: "issues",
         selected_branch: project.main_branch.clone(),
-        show_open: filters.show_open,
-        show_completed: filters.show_completed,
-        show_cancelled: filters.show_cancelled,
+        current_status,
         count_open,
         count_completed,
         count_cancelled,
