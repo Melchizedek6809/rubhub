@@ -26,7 +26,7 @@ smallvec = "1"
 russh = "0.55"
 argon2 = { version = "0.5", features = ["password-hash"] }
 time = { version = "0.3", features = ["serde", "macros", "formatting", "parsing"] }
-tokio = { version = "1.48", features = ["macros", "process", "signal"] }
+tokio = { version = "1.48", features = ["macros", "process", "signal", "rt-multi-thread", "rt"] }
 futures = "0.3"
 tower = "0.5"
 tower-cookies = "0.11"

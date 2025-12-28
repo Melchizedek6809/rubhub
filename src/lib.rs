@@ -128,19 +128,8 @@ pub async fn run<T: Future>(
     }
 }
 
-// I'd recommend using the single threaded runtime for running RubHub and
-// use multiple replicas/processes, since the backend doesn't need
-// shared memory it just adds complexity and less isolation for errors, since
-// a single panic crashes every thread. With multiple processes the other
-// processes can keep processing requests.
-//
-// Additionally a single worker allows us to easily detect a worker
-// that is stuck in an infinite loop (of course this should never happen,
-// but I'd rather make it impossible). Since with a single worker if a promise
-// ever gets stuck in an infinite loop without yielding we'll trigger the
-// watchdog and systemd will kill the process.
-pub fn run_single_thread(config: AppConfig, process_start: std::time::Instant) {
-    let runtime = Builder::new_current_thread()
+pub fn run_multi_thread(config: AppConfig, process_start: std::time::Instant) {
+    let runtime = Builder::new_multi_thread()
         .enable_all()
         .build()
         .expect("Couldn't start tokio runtime");

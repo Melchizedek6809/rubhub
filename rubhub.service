@@ -1,5 +1,5 @@
 [Unit]
-Description=RubHub instance %i
+Description=RubHub
 After=network.target
 Wants=network.target
 
@@ -16,7 +16,6 @@ Group=rubhub
 
 WorkingDirectory=/var/lib/rubhub
 
-Environment=RUBHUB_INSTANCE=%i
 Environment=RUST_LOG=info
 
 EnvironmentFile=-/etc/rubhub/rubhub.env

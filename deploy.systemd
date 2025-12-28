@@ -6,11 +6,6 @@ npm run build
 cargo build --release
 install -Dm0755 target/release/rubhub /usr/local/bin/rubhub
 
-install -Dm0644 rubhub@.service /etc/systemd/system/rubhub@.service
+install -Dm0644 rubhub.service /etc/systemd/system/rubhub.service
 systemctl daemon-reload
-
-for i in 1 2 3; do
-    echo "Restarting replica #$i"
-    systemctl restart rubhub@$i
-    sleep 0.05
-done
+systemctl restart rubhub
