@@ -1,11 +1,8 @@
 use axum::{
-    Router,
-    extract::{Path, State},
-    http::header,
-    response::IntoResponse,
-    routing::get,
+    extract::{Path, State}, http::{header, HeaderName, HeaderValue}, response::IntoResponse, routing::get, Router
 };
 use rust_embed::Embed;
+use tower_http::set_header::SetResponseHeaderLayer;
 use std::net::SocketAddr;
 use std::time::Duration;
 use tokio::net::TcpListener;
@@ -186,8 +183,13 @@ pub async fn http_server(
                 ),
             )
             .fallback(controllers::not_found_get)
-            .layer(CookieManagerLayer::new())
-            .with_state(state.clone());
+        .layer(CookieManagerLayer::new())
+        .layer(SetResponseHeaderLayer::overriding(
+            HeaderName::from_static("content-security-policy"),
+            HeaderValue::from_static("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' blob: data: https:; connect-src 'self'; form-action 'self'; upgrade-insecure-requests; block-all-mixed-content;")
+        ))
+        .with_state(state.clone());
+
 
     println!(
         "[{:?}] - RubHub HTTP ready on {bind_addr}",
