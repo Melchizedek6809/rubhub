@@ -20,9 +20,9 @@ function preservePlaceholders(): Plugin {
 			},
 		},
 		closeBundle() {
-			// Move app.html from dist/frontend/app/ to dist/
-			const src = "dist/frontend/app/app.html";
-			const dest = "dist/app.html";
+			// Move app.html from dist/frontend/ to dist/
+			const src = "dist/frontend/index.html";
+			const dest = "dist/index.html";
 			copyFileSync(src, dest);
 			// Remove the frontend directory
 			rmSync("dist/frontend", { recursive: true, force: true });
@@ -35,6 +35,7 @@ export default defineConfig({
 	base: "/dist/",
 	build: {
 		outDir: "dist",
+		target: "es2020",
 		emptyOutDir: true,
 		reportCompressedSize: process.env.NODE_ENV === "production",
 		minify: process.env.NODE_ENV === "production",
@@ -43,14 +44,14 @@ export default defineConfig({
 		},
 		rollupOptions: {
 			input: {
-				app: resolve(__dirname, "frontend/app/app.html"),
+				app: resolve(__dirname, "frontend/index.html"),
 			},
 			output: {
-				entryFileNames: "app-[hash].js",
-				chunkFileNames: "app-[hash].js",
+				entryFileNames: "main.[hash].js",
+				chunkFileNames: "main.[hash].js",
 				assetFileNames: (assetInfo) => {
 					if (assetInfo.name?.endsWith(".css")) {
-						return "app-[hash].css";
+						return "main.[hash].css";
 					}
 					return "assets/[name]-[hash][extname]";
 				},
