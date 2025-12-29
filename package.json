@@ -18,13 +18,10 @@
 	},
 	"dependencies": {
 		"@types/prismjs": "^1.26.5",
-		"prismjs": "^1.30.0",
-		"uuid": "^13.0.0",
-		"zod": "^4.1.13"
+		"prismjs": "^1.30.0"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.8",
-		"@types/node": "^24.9.0",
 		"typescript": "^5.9.3",
 		"vite": "^7.3.0"
 	}
