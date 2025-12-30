@@ -1,5 +1,9 @@
+.commit-bar + .markdown {
+	margin-top: var(--space-l);
+}
+
 .markdown {
-	padding: var(--space-m);
+	padding: var(--space-m) 0;
 	line-height: 1.6;
 	overflow-x: auto;
 }

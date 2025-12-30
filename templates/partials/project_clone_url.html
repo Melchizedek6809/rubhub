@@ -21,7 +21,8 @@
     <button
       class="copy-button"
       type="button"
+      title="Copy to clipboard"
       copy-value="{% if logged_in_user.is_some() %}{{ ssh_clone_url }}{% else %}{{ http_clone_url }}{% endif %}"
-    >Copy</button>
+    ><span class="icon i-clipboard-copy"></span></button>
   </div>
 </div>

@@ -33,12 +33,12 @@
   {% if !sidebar_projects.is_empty() %}
     <div class="nav-section-header">
       <a href="/~{{ user.slug }}" class="nav-section-heading">Projects</a>
-      <a href="/projects/new" class="nav-section-action" title="New Project">+</a>
+      <a href="/projects/new" class="nav-section-action" title="New Project"><span class="icon i-plus"></span></a>
     </div>
     {% for project in sidebar_projects %}
     <div class="nav-project-item">
       <a href="{{ project.uri() }}" class="nav-btn-secondary">{{ project.name }}</a>
-      <a href="{{ project.uri_settings() }}" class="nav-project-settings" title="{{ project.name }} Settings">⚙</a>
+      <a href="{{ project.uri_settings() }}" class="nav-project-settings" title="{{ project.name }} Settings"><span class="icon i-settings"></span></a>
     </div>
     {% endfor %}
   {% endif %}
@@ -57,9 +57,9 @@
   <div class="actions">
     {% if let Some(user) = logged_in_user %}
     <a href="/~{{ user.slug }}" class="username-link">{{ user.slug }}</a>
-    <a href="/logout" class="btn btn-outline">Logout</a>
+    <a href="/logout" class="btn btn-outline"><span class="icon i-log-out"></span> Logout</a>
     {% else %}
-    <a href="/login" class="btn">Login</a>
+    <a href="/login" class="btn"><span class="icon i-log-in"></span> Login</a>
     {% endif %}
   </div>
 </aside>

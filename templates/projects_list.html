@@ -1,10 +1,10 @@
-<!DOCTYPE html>
 <html>
   <head>
     <title>Browse All Projects</title>
   </head>
+  
   <body>
-    {% include "sidebar.html" %}
+    {% include "partials/sidebar.html" %}
     <main>
       <section>
         <div class="page-header">
@@ -13,7 +13,7 @@
         {% if projects.len() > 0 %}
         <div class="card-grid">
           {% for project in projects %}
-          {% include "project_card.html" %}
+          {% include "partials/project_card.html" %}
           {% endfor %}
         </div>
         {% else %}

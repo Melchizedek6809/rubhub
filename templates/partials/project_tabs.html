@@ -1,20 +1,20 @@
 <div class="project-tabs">
 	<a href="{{ project.uri() }}" class="tab {% if active_tab == "overview" %}active{% endif %}">
-		Overview
+		<span class="icon i-book-open-text"></span> Overview
 	</a>
 	<a href="{{ project.uri_tree(&selected_branch, "") }}" class="tab {% if active_tab == "code" %}active{% endif %}">
-		Code
+		<span class="icon i-folder-tree"></span> Code
 	</a>
 	<a href="{{ project.uri_issues() }}" class="tab {% if active_tab == "issues" %}active{% endif %}">
-		Issues
+		<span class="icon i-message-square"></span> Issues
 	</a>
 	{% if access_level == AccessType::Admin %}
 		<a href="{{ project.uri_settings() }}" class="tab {% if active_tab == "settings" %}active{% endif %}">
-			Settings
+			<span class="icon i-settings"></span> Settings
 		</a>
 	{% else %}
 		<span class="tab disabled">
-			Settings
+			<span class="icon i-settings"></span> Settings
 		</span>
 	{% endif %}
 </div>

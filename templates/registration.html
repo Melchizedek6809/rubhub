@@ -1,13 +1,13 @@
-<!DOCTYPE html>
 <html>
   <head>
     <title>Login</title>
   </head>
+  
   <body>
-    {% include "sidebar.html" %}
+    {% include "partials/sidebar.html" %}
     <main>
       <section>
-        <h1>Register</h1>
+        <h1>Registration</h1>
         {% match message %}
         {% when Some with (msg) %}
         <div class="message" role="alert">{{ msg }}</div>
@@ -28,7 +28,7 @@
               <label for="register-password">Password</label>
               <input id="register-password" name="password" type="password" autocomplete="new-password" required>
 
-              <button type="submit">Create account</button>
+              <button type="submit"><span class="icon i-user-round-plus"></span> Create account</button>
             </form>
             <br/>
             <p>Already have an account? <a href="/login">Log in</a></p>

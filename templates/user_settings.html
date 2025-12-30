@@ -1,10 +1,10 @@
-<!DOCTYPE html>
 <html>
   <head>
     <title>{{ user.name }}/settings</title>
   </head>
+  
   <body>
-    {% include "sidebar.html" %}
+    {% include "partials/sidebar.html" %}
     <main>
       <section>
         <div class="page-header">
@@ -62,7 +62,7 @@
             <textarea name="ssh_keys" spellcheck="false">{% for key in ssh_keys %}{{ key }}
               {% endfor %}</textarea>
           </label>
-          <button type="submit">Save</button>
+          <button type="submit"><span class="icon i-save"></span> Save</button>
         </form>
       </section>
     </main>

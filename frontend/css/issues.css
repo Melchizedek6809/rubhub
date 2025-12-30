@@ -21,14 +21,6 @@
 	margin-left: auto;
 }
 
-.filter-icon {
-	margin-right: var(--space-xs);
-}
-
-.filter-label {
-	margin-right: var(--space-xs);
-}
-
 @media (max-width: 768px) {
 	.issues-header {
 		display: grid;
@@ -80,17 +72,13 @@
 }
 
 .btn-filter.issue-open:hover {
-	background: var(--background-color-bright);
+	background: var(--primary-color-dark);
+	color: var(--white);
 }
 
 .btn-filter.issue-open.active {
 	background: var(--primary-color);
 	color: var(--white);
-}
-
-.btn-filter.issue-open.active:hover {
-	background: var(--primary-color-dark);
-	border-color: var(--primary-color-dark);
 }
 
 .btn-filter.issue-completed {
@@ -99,18 +87,14 @@
 }
 
 .btn-filter.issue-completed:hover {
-	background: var(--background-color-bright);
+	background: var(--success-color-dark);
+	color: var(--white);
 }
 
 .btn-filter.issue-completed.active {
-	background: var(--success-color);
-	border-color: var(--success-color);
-	color: var(--success-color-dark);
-}
-
-.btn-filter.issue-completed.active:hover {
-	background: var(--success-color);
+	background: var(--success-color-dark);
 	border-color: var(--success-color-dark);
+	color: var(--white);
 }
 
 .btn-filter.issue-cancelled {
@@ -119,17 +103,14 @@
 }
 
 .btn-filter.issue-cancelled:hover {
-	background: var(--background-color-bright);
-}
-
-.btn-filter.issue-cancelled.active {
-	background: var(--secondary-color);
+	background: var(--secondary-color-dark);
 	color: var(--white);
 }
 
-.btn-filter.issue-cancelled.active:hover {
+.btn-filter.issue-cancelled.active {
 	background: var(--secondary-color-dark);
 	border-color: var(--secondary-color-dark);
+	color: var(--white);
 }
 
 .issues-list {
@@ -174,14 +155,7 @@
 	border-radius: 12px;
 	font-size: 0.85rem;
 	font-weight: 500;
-	background: var(--background-color-bright);
-	color: var(--text-color-subdued);
 	margin-right: var(--space-s);
-}
-
-.issue-comment-count::before {
-	content: "\1F4AC";
-	margin-right: var(--space-xs);
 }
 
 .issue-status {

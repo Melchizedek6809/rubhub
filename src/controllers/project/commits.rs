@@ -41,6 +41,8 @@ struct ProjectCommitsTemplate<'a> {
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
+    access_level: AccessType,
+    active_tab: &'static str,
 }
 
 pub async fn project_commits_get(
@@ -111,6 +113,8 @@ pub async fn project_commits_get(
         page_count,
         page_min,
         page_max,
+        access_level,
+        active_tab: "",
         logged_in_user: logged_in_user.as_ref(),
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),

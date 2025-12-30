@@ -1,8 +1,126 @@
 .icon {
 	display: inline-block;
-	width: 1em;
-	height: 1em;
+	width: 1.25rem;
+	height: 1.25rem;
+	vertical-align: top;
 	position: relative;
+	background-color: currentColor;
+}
+
+#sidebar .icon {
+	width: 1rem;
+	height: 1rem;
+}
+
+.i-trash {
+	mask: url("../../node_modules/lucide-svg/dist/trash.svg") no-repeat center;
+	mask-size: contain;
+}
+
+.i-book-open-text {
+	mask: url("../../node_modules/lucide-svg/dist/book-open-text.svg") no-repeat
+		center;
+	mask-size: contain;
+}
+
+.i-folder-tree {
+	mask: url("../../node_modules/lucide-svg/dist/folder-tree.svg") no-repeat
+		center;
+	mask-size: contain;
+}
+
+.i-message-square {
+	mask: url("../../node_modules/lucide-svg/dist/message-square.svg") no-repeat
+		center;
+	mask-size: contain;
+}
+
+.i-settings {
+	mask: url("../../node_modules/lucide-svg/dist/settings.svg") no-repeat center;
+	mask-size: contain;
+}
+
+.i-log-in {
+	mask: url("../../node_modules/lucide-svg/dist/log-in.svg") no-repeat center;
+	mask-size: contain;
+}
+
+.i-user-round-plus {
+	mask: url("../../node_modules/lucide-svg/dist/user-round-plus.svg") no-repeat
+		center;
+	mask-size: contain;
+}
+
+.i-log-out {
+	mask: url("../../node_modules/lucide-svg/dist/log-out.svg") no-repeat center;
+	mask-size: contain;
+}
+
+.i-plus {
+	mask: url("../../node_modules/lucide-svg/dist/plus.svg") no-repeat center;
+	mask-size: contain;
+}
+
+.i-trash {
+	mask: url("../../node_modules/lucide-svg/dist/trash.svg") no-repeat center;
+	mask-size: contain;
+}
+
+.i-save {
+	mask: url("../../node_modules/lucide-svg/dist/save.svg") no-repeat center;
+	mask-size: contain;
+}
+
+.i-git-branch {
+	mask: url("../../node_modules/lucide-svg/dist/git-branch.svg") no-repeat
+		center;
+	mask-size: contain;
+}
+
+.i-circle {
+	mask: url("../../node_modules/lucide-svg/dist/circle.svg") no-repeat center;
+	mask-size: contain;
+}
+
+.i-diamond {
+	mask: url("../../node_modules/lucide-svg/dist/diamond.svg") no-repeat center;
+	mask-size: contain;
+}
+
+.i-check {
+	mask: url("../../node_modules/lucide-svg/dist/check.svg") no-repeat center;
+	mask-size: contain;
+}
+
+.i-x {
+	mask: url("../../node_modules/lucide-svg/dist/x.svg") no-repeat center;
+	mask-size: contain;
+}
+
+.i-clipboard-copy {
+	mask: url("../../node_modules/lucide-svg/dist/clipboard-copy.svg") no-repeat
+		center;
+	mask-size: contain;
+}
+
+.i-tag {
+	mask: url("../../node_modules/lucide-svg/dist/tag.svg") no-repeat center;
+	mask-size: contain;
+}
+
+.i-folder {
+	mask: url("../../node_modules/lucide-svg/dist/folder.svg") no-repeat center;
+	mask-size: contain;
+}
+
+.i-file {
+	mask: url("../../node_modules/lucide-svg/dist/file.svg") no-repeat center;
+	mask-size: contain;
+}
+
+.i-history {
+	mask: url("../../node_modules/lucide-svg/dist/history.svg") no-repeat center;
+	mask-size: contain;
 }
 
 .hamburger-top,

@@ -1,12 +1,10 @@
-<!DOCTYPE html>
 <html>
-
   <head>
     <title>{{ issue.title }} - {{ owner.name }}/{{ project.name }}</title>
   </head>
 
   <body>
-    {% include "sidebar.html" %}
+    {% include "partials/sidebar.html" %}
     <main>
       <section>
         <div class="page-header">
@@ -17,7 +15,7 @@
           </h1>
         </div>
 
-        {% include "project_tabs.html" %}
+        {% include "partials/project_tabs.html" %}
 
         <div class="card">
           <div class="issue-header">

@@ -1,13 +1,11 @@
-{% import "markdown_content.html" as md %}
-<!DOCTYPE html>
+{% import "macros/markdown_content.html" as md %}
 <html>
-
   <head>
     <title>{{ owner.name }}/{{ project.name }}</title>
   </head>
 
   <body>
-    {% include "sidebar.html" %}
+    {% include "partials/sidebar.html" %}
     <main>
       <section>
         <div class="page-header">
@@ -17,57 +15,16 @@
           </h1>
         </div>
 
-        {% include "project_tabs.html" %}
+        {% include "partials/project_tabs.html" %}
 
         <div class="card">
-          <div class="repo-bar">
-            {% if summary.branches.len() > 0 %}
-            <select name="branch-name" class="branch-switcher" data-main-branch="{{ project.main_branch }}" data-base-href="{{ project.uri() }}">
-              {% for branch in summary.branches %}
-              <option value="{{ branch }}" {% if branch==selected_branch.as_str() %}selected{% endif %}>{{ branch
-                }}</option>
-              {% endfor %}
-            </select>
-            {% else %}
-            <select name="branch-name" disabled>
-              <option selected>Empty Repo</option>
-            </select>
-            {% endif %}
-
-            <span class="repo-branches">
-              <a href="{{ project.uri_branches() }}">
-                ⎇ {{ summary.branches.len() }} branch{% if summary.branches.len() != 1
-                %}es{% endif %}
-              </a>
-            </span>
-
-            <span class="repo-tags">
-              <a href="{{ project.uri_tags() }}">
-                🏷 {{ summary.tags.len() }} tag{% if summary.tags.len() != 1 %}s{% endif %}
-              </a>
-            </span>
-
-            <div class="flex-gap"> </div>
-
-            {% include "project_clone_url.html" %}
-          </div>
+          {% include "partials/repo_bar.html" %}
 
           {% if let Some(info) = info %}
-          <div class="commit-bar">
-            {% if let Some(commit) = info.commits.first() %}
-            <div class="commit">
-              <span class="commit-author" title="{{ commit.author }}">{{ commit.author }}</span>
-              <span class="commit-message" title="{{ commit.message }}">{{ commit.message }}</span>
-              <span class="commit-id">{{ commit.id }}</span>
-              <span class="commit-time">{{ commit.relative_time() }}</span>
-              <a href="{{ project.uri_log(selected_branch, 0) }}" class="commit-count">⟲ {{ info.commit_count }} Commit{% if info.commit_count != 1 %}s{% endif %}</a>
-            </div>
-            {% endif %}
-          </div>
+          {% include "partials/commit_bar.html" %}
           {% endif %}
 
           {% if let Some(readme_html) = readme_html %}
-          <br/>
           {% call md::render(readme_frontmatter, readme_html) %}
           {% endif %}
         </div>

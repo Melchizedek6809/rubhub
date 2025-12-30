@@ -1,10 +1,9 @@
-<!DOCTYPE html>
 <html>
   <head>
     <title>Login</title>
   </head>
   <body>
-    {% include "sidebar.html" %}
+    {% include "partials/sidebar.html" %}
     <main>
       <section>
         <h1>Login</h1>
@@ -23,7 +22,7 @@
               <label for="login-password">Password</label>
               <input id="login-password" name="password" type="password" autocomplete="current-password" required>
 
-              <button type="submit">Sign in</button>
+              <button type="submit"><span class="icon i-log-in"></span> Log in</button>
             </form>
             <br/>
             <p>New to RubHub? <a href="/registration">Register</a> instead</p>

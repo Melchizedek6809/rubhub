@@ -132,10 +132,17 @@ async fn render_new_issue_page(
     let token = csrf::get_or_create_token(&state.config.csrf_secret, cookies);
     let csrf_token_field = csrf::hidden_field(&token);
 
+    let access_level = project
+        .access_level(Some(logged_in_user.slug.clone()))
+        .await;
+    if !access_level.is_allowed(AccessType::Read) {
+        return Redirect::to(&project.uri()).into_response();
+    }
+
     let template = NewIssueTemplate {
         owner: &owner,
         project: &project,
-        access_level: AccessType::Read,
+        access_level,
         message,
         logged_in_user: Some(logged_in_user),
         sidebar_projects,

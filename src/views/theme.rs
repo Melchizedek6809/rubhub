@@ -40,7 +40,8 @@ impl<T: Template> ThemedRender for T {
         #[cfg(not(debug_assertions))]
         let theme = APP_THEME;
         #[cfg(debug_assertions)]
-        let theme = std::fs::read_to_string("dist/index.html").expect("Couldn't read dist/index.html");
+        let theme =
+            std::fs::read_to_string("dist/index.html").expect("Couldn't read dist/index.html");
 
         let contents = self.render().expect("Couldn't render template");
         let (head, body) = extract_html_parts(&contents);

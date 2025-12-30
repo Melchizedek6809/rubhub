@@ -1,12 +1,10 @@
-<!DOCTYPE html>
 <html>
-
   <head>
     <title>New Issue - {{ owner.name }}/{{ project.name }}</title>
   </head>
 
   <body>
-    {% include "sidebar.html" %}
+    {% include "partials/sidebar.html" %}
     <main>
       <section>
         <div class="page-header">
@@ -18,7 +16,7 @@
           </h1>
         </div>
 
-        {% include "project_tabs.html" %}
+        {% include "partials/project_tabs.html" %}
 
         {% if let Some(msg) = message %}
         <div class="message" role="status">{{ msg }}</div>
@@ -34,7 +32,7 @@
             Description (Markdown supported)
             <textarea name="content" rows="10" required placeholder="Describe your issue here..."></textarea>
           </label>
-          <button type="submit">Create Issue</button>
+          <button type="submit"><span class="icon i-plus"></span> Create Issue</button>
         </form>
       </section>
     </main>

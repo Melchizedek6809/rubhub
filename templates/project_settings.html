@@ -1,12 +1,10 @@
-<!DOCTYPE html>
 <html>
-
   <head>
     <title>{{ owner.name }}/{{ project.name }}/settings</title>
   </head>
 
   <body>
-    {% include "sidebar.html" %}
+    {% include "partials/sidebar.html" %}
     <main>
       <section>
         <div class="page-header">
@@ -17,7 +15,7 @@
           </h1>
         </div>
 
-        {% include "project_tabs.html" %}
+        {% include "partials/project_tabs.html" %}
 
         {% if let Some(msg) = message %}
         <div class="message" role="status">{{ msg }}</div>
@@ -65,7 +63,7 @@
             <textarea name="description">{{ project.description }}</textarea>
           </label>
 
-          <button type="submit">Save</button>
+          <button type="submit"><span class="icon i-save"></span> Save</button>
         </form>
 
         <!-- Danger Zone -->
@@ -82,7 +80,7 @@
               class="danger-button"
               data-project-path="{{ owner.slug }}/{{ project.slug }}"
             >
-              Delete Project
+              <span class="icon i-trash"></span> Delete Project
             </button>
           </form>
         </div>

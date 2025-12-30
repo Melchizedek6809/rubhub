@@ -1,12 +1,10 @@
-<!DOCTYPE html>
 <html>
-
   <head>
     <title>{{ owner.name }}/{{ project.name }} - Issues</title>
   </head>
 
   <body>
-    {% include "sidebar.html" %}
+    {% include "partials/sidebar.html" %}
     <main>
       <section>
         <div class="page-header">
@@ -17,19 +15,19 @@
           </h1>
         </div>
 
-        {% include "project_tabs.html" %}
+        {% include "partials/project_tabs.html" %}
 
         <div class="card">
           <div class="issues-header">
             <h2>Issues</h2>
             <div class="issue-filters">
-            <a href="{{ project.uri_issues() }}" class="btn btn-filter issue-open{% if current_status == "open" %} active{% endif %}"><span class="filter-icon">●</span><span class="filter-label">Open</span> {{ count_open }}</a>
-            <a href="{{ project.uri_issues() }}?status=completed" class="btn btn-filter issue-completed{% if current_status == "completed" %} active{% endif %}"><span class="filter-icon">✓</span><span class="filter-label">Completed</span> {{ count_completed }}</a>
-            <a href="{{ project.uri_issues() }}?status=cancelled" class="btn btn-filter issue-cancelled{% if current_status == "cancelled" %} active{% endif %}"><span class="filter-icon">✕</span><span class="filter-label">Closed</span> {{ count_cancelled }}</a>
+            <a href="{{ project.uri_issues() }}" class="btn btn-filter issue-open{% if current_status == "open" %} active{% endif %}"><span class="icon i-diamond"></span><span class="filter-label">Open</span> {{ count_open }}</a>
+            <a href="{{ project.uri_issues() }}?status=completed" class="btn btn-filter issue-completed{% if current_status == "completed" %} active{% endif %}"><span class="icon i-check"></span><span class="filter-label">Completed</span> {{ count_completed }}</a>
+            <a href="{{ project.uri_issues() }}?status=cancelled" class="btn btn-filter issue-cancelled{% if current_status == "cancelled" %} active{% endif %}"><span class="icon i-x"></span><span class="filter-label">Closed</span> {{ count_cancelled }}</a>
           </div>
             {% if logged_in_user.is_some() %}
             <a href="/~{{ owner.slug }}/{{ project.slug }}/issues/new" class="btn">
-              New Issue
+              <span class="icon i-plus"></span> New Issue
             </a>
             {% endif %}
           </div>
@@ -47,7 +45,7 @@
                 </span>
               </a>
               {% if issue.comment_count > 0 %}
-              <span class="issue-comment-count">{{ issue.comment_count }}</span>
+              <span class="issue-comment-count"><span class="icon i-message-square"></span> {{ issue.comment_count }}</span>
               {% endif %}
               <span class="issue-status status-{{ issue.status.as_str() }}">{{ issue.status.as_str() }}</span>
             </div>
