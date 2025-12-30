@@ -18,6 +18,7 @@ pub struct AppConfig {
     pub http_bind_addr: SocketAddr,
     pub ssh_bind_addr: SocketAddr,
     pub ssh_public_host: String,
+    pub ssh_public_host_is_set: bool,
     pub base_url: String,
     pub base_url_is_set: bool,
     pub reuse_port: bool,
@@ -65,6 +66,7 @@ impl Default for AppConfig {
             http_bind_addr,
             ssh_bind_addr,
             ssh_public_host,
+            ssh_public_host_is_set: false,
             base_url,
             base_url_is_set: false,
             reuse_port: false,
@@ -105,11 +107,13 @@ impl AppConfig {
         let addr = bind_addr.parse::<SocketAddr>()?;
 
         self.ssh_bind_addr = addr;
-        self.ssh_public_host = if addr.port() == 22 {
-            format!("{}", addr.ip())
-        } else {
-            format!("{}", addr)
-        };
+        if !self.ssh_public_host_is_set {
+            self.ssh_public_host = if addr.port() == 22 {
+                format!("{}", addr.ip())
+            } else {
+                format!("{}", addr)
+            };
+        }
 
         Ok(self)
     }
@@ -122,6 +126,7 @@ impl AppConfig {
 
     pub fn set_ssh_public_host(mut self, host: &str) -> Self {
         self.ssh_public_host = host.to_string();
+        self.ssh_public_host_is_set = true;
         self
     }
 
@@ -158,11 +163,13 @@ impl AppConfig {
         }
 
         self.ssh_bind_addr = ssh_addr;
-        self.ssh_public_host = if ssh_addr.port() == 22 {
-            format!("{}", ssh_addr.ip())
-        } else {
-            format!("{}", ssh_addr)
-        };
+        if !self.ssh_public_host_is_set {
+            self.ssh_public_host = if ssh_addr.port() == 22 {
+                format!("{}", ssh_addr.ip())
+            } else {
+                format!("{}", ssh_addr)
+            };
+        }
 
         self
     }

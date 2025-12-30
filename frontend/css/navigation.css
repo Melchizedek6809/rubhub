@@ -201,6 +201,13 @@
 	#mobile-header .show-navigation .icon {
 		width: 1.5rem;
 		height: 1.5rem;
+		color: var(--text-color);
+	}
+
+	#mobile-header .show-navigation.active .icon {
+		width: 1.5rem;
+		height: 1.5rem;
+		color: var(--white);
 	}
 
 	#mobile-header .show-navigation {
