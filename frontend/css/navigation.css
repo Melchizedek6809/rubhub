@@ -198,6 +198,11 @@
 		z-index: 10;
 	}
 
+	#mobile-header .show-navigation .icon {
+		width: 1.5rem;
+		height: 1.5rem;
+	}
+
 	#mobile-header .show-navigation {
 		background: var(--background-color-bright);
 	}
@@ -213,7 +218,7 @@
 
 	#sidebar {
 		transform: translateX(-100%);
-		padding-top: 3rem;
+		padding-top: 3.5rem;
 		transition: transform 300ms ease-in-out;
 	}
 

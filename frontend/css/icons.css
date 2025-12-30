@@ -12,6 +12,11 @@
 	height: 1rem;
 }
 
+.i-menu {
+	mask: url("../../node_modules/lucide-svg/dist/menu.svg") no-repeat center;
+	mask-size: contain;
+}
+
 .i-trash {
 	mask: url("../../node_modules/lucide-svg/dist/trash.svg") no-repeat center;
 	mask-size: contain;
@@ -121,22 +126,4 @@
 .i-history {
 	mask: url("../../node_modules/lucide-svg/dist/history.svg") no-repeat center;
 	mask-size: contain;
-}
-
-.hamburger-top,
-.hamburger-mid,
-.hamburger-bot {
-	width: 100%;
-	height: 20%;
-	position: absolute;
-	left: 0;
-	top: 0;
-	background-color: var(--text-color);
-}
-
-.hamburger-mid {
-	top: 40%;
-}
-.hamburger-bot {
-	top: 80%;
 }
