@@ -1,9 +1,5 @@
 use axum::{
-    Router,
-    extract::{Path, State},
-    http::{HeaderName, HeaderValue, header},
-    response::IntoResponse,
-    routing::get,
+    extract::{Path, State}, http::{header, HeaderName, HeaderValue}, response::IntoResponse, routing::{get, post}, Router
 };
 use rust_embed::Embed;
 use std::net::SocketAddr;
@@ -76,7 +72,7 @@ pub async fn http_server(
         .route("/login", get(controllers::login_page))
         .route("/registration", get(controllers::registration_page))
         .merge(auth_post_routes)
-        .route("/logout", get(controllers::logout))
+        .route("/logout", post(controllers::logout))
         .route(
             "/settings",
             get(controllers::settings_page).post(controllers::handle_settings),

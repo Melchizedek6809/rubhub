@@ -52,7 +52,9 @@
   <div class="actions">
     {% if let Some(user) = logged_in_user %}
     <a href="/~{{ user.slug }}" class="username-link">{{ user.slug }}</a>
-    <a href="/logout" class="btn btn-outline"><span class="icon i-log-out"></span> Logout</a>
+    <form action="/logout" method="POST">
+      <button type="submit" class="btn btn-outline"><span class="icon i-log-out"></span> Logout</button>
+    </form>
     {% else %}
     <a href="/login" class="btn"><span class="icon i-log-in"></span> Login</a>
     {% endif %}
