@@ -12,6 +12,16 @@
 	height: 1rem;
 }
 
+.i-binary {
+	mask: url("../../node_modules/lucide-svg/dist/binary.svg") no-repeat center;
+	mask-size: contain;
+}
+
+.i-code {
+	mask: url("../../node_modules/lucide-svg/dist/code.svg") no-repeat center;
+	mask-size: contain;
+}
+
 .i-menu {
 	mask: url("../../node_modules/lucide-svg/dist/menu.svg") no-repeat center;
 	mask-size: contain;

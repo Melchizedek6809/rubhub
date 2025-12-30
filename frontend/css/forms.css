@@ -20,8 +20,10 @@ button {
 		color 200ms ease-in-out;
 }
 
+.btn.active,
 .btn:hover,
 .btn:focus,
+button.active,
 button:hover,
 button:focus {
 	background-color: var(--primary-color-dark);
@@ -37,6 +39,7 @@ button:focus {
 		border 30ms ease-in-out;
 }
 
+.btn-outline.active,
 .btn-outline:hover,
 .btn-outline:focus {
 	color: var(--white);

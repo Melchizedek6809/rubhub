@@ -37,9 +37,9 @@
                 {% endfor %}
               </div>
               <div class="file-actions">
-                <a href="{{ raw_url }}" class="file-action-link">Raw</a>
+                <a href="{{ raw_url }}" class="btn btn-outline file-action-link"><span class="icon i-binary"></span> Raw</a>
                 {% if let Some(src_url) = source_url %}
-                <a href="{{ src_url }}" class="file-action-link">Source</a>
+                <a href="{{ src_url }}" class="btn btn-outline file-action-link {% if is_source %}active{% endif %}"><span class="icon i-code"></span> Source</a>
                 {% endif %}
               </div>
             </div>
