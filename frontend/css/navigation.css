@@ -23,10 +23,7 @@
 }
 
 .logo {
-	font-size: 1.5rem;
 	text-decoration: none;
-	line-height: 1em;
-	color: var(--secondary-color);
 }
 
 .nav-btn {
@@ -170,8 +167,8 @@
 
 #sidebar-top {
 	display: flex;
-	align-content: start;
-	justify-content: start;
+	align-content: center;
+	justify-content: center;
 	width: 100%;
 }
 

@@ -2,7 +2,7 @@
   <button class="show-navigation">
     <span class="icon i-menu"></span>
   </button>
-  <a href="/" class="logo">RubHub</a>
+  <a href="/" class="logo" title="RubHub"><img src="/public/logo.svg" /></a>
 
   <div class="flex-gap"> </div>
 
@@ -18,8 +18,7 @@
 
 <aside id="sidebar">
   <div id="sidebar-top">
-    <a href="/" class="logo">RubHub</a>
-    <div class="flex-gap"></div>
+    <a href="/" class="logo" title="RubHub"><img src="/public/logo.svg" /></a>
   </div>
 
   {% if let Some(user) = logged_in_user %}

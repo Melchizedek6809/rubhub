@@ -186,6 +186,30 @@ pub async fn http_server(
                     },
                 ),
             )
+        .route(
+                "/public/{*path}",
+                get(
+                    |Path(path): Path<String>,
+                     State(state): State<GlobalState>,
+                     cookies: Cookies| async move {
+                        match EmbeddedPublic::get(path.as_str()) {
+                            Some(asset) => {
+                                let mime = mime_guess::from_path(&path).first_or_octet_stream();
+                                (
+                                    [(header::CONTENT_TYPE, mime.as_ref())],
+                                    asset.data.into_owned(),
+                                )
+                                    .into_response()
+                            }
+                            None => {
+                                let logged_in_user =
+                                    session::current_user(&state, &cookies).await.ok();
+                                controllers::not_found(logged_in_user, vec![])
+                            }
+                        }
+                    },
+                ),
+            )
             .fallback(controllers::not_found_get)
         .layer(CookieManagerLayer::new())
         .layer(SetResponseHeaderLayer::overriding(
