@@ -23,6 +23,12 @@ impl Api {
     }
 
     /// Make a GET request to the given path and return the response.
+    pub async fn post(&self, path: &str) -> Result<Response> {
+        let url = format!("{}{}", self.base_url, path);
+        Ok(self.client.post(&url).send().await?.error_for_status()?)
+    }
+
+    /// Make a GET request to the given path and return the response.
     pub async fn get(&self, path: &str) -> Result<Response> {
         let url = format!("{}{}", self.base_url, path);
         Ok(self.client.get(&url).send().await?.error_for_status()?)
@@ -46,13 +52,10 @@ impl Api {
 
     /// Register a new user account.
     pub async fn register(&self, username: &str, email: &str, password: &str) -> Result<Response> {
-        let csrf_token = self.get_csrf_token("/registration").await?;
-
         let form = [
             ("username", username),
             ("email", email),
             ("password", password),
-            ("_csrf_token", &csrf_token),
         ];
 
         Ok(self
@@ -66,13 +69,7 @@ impl Api {
 
     /// Login with the given credentials.
     pub async fn login(&self, username: &str, password: &str) -> Result<Response> {
-        let csrf_token = self.get_csrf_token("/login").await?;
-
-        let form = [
-            ("username", username),
-            ("password", password),
-            ("_csrf_token", &csrf_token),
-        ];
+        let form = [("username", username), ("password", password)];
 
         Ok(self
             .client
@@ -85,18 +82,12 @@ impl Api {
 
     /// Logout the current user.
     pub async fn logout(&self) -> Result<Response> {
-        self.get("/logout").await
+        self.post("/logout").await
     }
 
     /// Create a new project with the given name and description.
     pub async fn create_project(&self, name: &str, description: &str) -> Result<Response> {
-        let csrf_token = self.get_csrf_token("/projects/new").await?;
-
-        let form = [
-            ("name", name),
-            ("description", description),
-            ("_csrf_token", &csrf_token),
-        ];
+        let form = [("name", name), ("description", description)];
 
         Ok(self
             .client
@@ -116,13 +107,10 @@ impl Api {
         description: &str,
         public_access: &str,
     ) -> Result<Response> {
-        let csrf_token = self.get_csrf_token("/projects/new").await?;
-
         let form = [
             ("name", name),
             ("description", description),
             ("public_access", public_access),
-            ("_csrf_token", &csrf_token),
         ];
 
         Ok(self
@@ -144,8 +132,6 @@ impl Api {
         default_main_branch: &str,
         ssh_keys: &str,
     ) -> Result<Response> {
-        let csrf_token = self.get_csrf_token("/settings").await?;
-
         let form = [
             ("name", name),
             ("email", email),
@@ -153,7 +139,6 @@ impl Api {
             ("description", description),
             ("default_main_branch", default_main_branch),
             ("ssh_keys", ssh_keys),
-            ("_csrf_token", &csrf_token),
         ];
 
         Ok(self
@@ -183,7 +168,6 @@ impl Api {
         website: &str,
     ) -> Result<Response> {
         let path = format!("/~{}/{}/settings", owner, project);
-        let csrf_token = self.get_csrf_token(&path).await?;
 
         let form = [
             ("name", name),
@@ -191,7 +175,6 @@ impl Api {
             ("public_access", public_access),
             ("main_branch", main_branch),
             ("website", website),
-            ("_csrf_token", &csrf_token),
         ];
 
         Ok(self
@@ -203,19 +186,6 @@ impl Api {
             .error_for_status()?)
     }
 
-    /// Make a POST request without CSRF token (for testing CSRF protection).
-    pub async fn post_without_csrf(&self, path: &str, form: &[(&str, &str)]) -> Result<Response> {
-        let url = format!("{}{}", self.base_url, path);
-        Ok(self.client.post(&url).form(form).send().await?)
-    }
-
-    /// Fetch the CSRF token from the given page path.
-    async fn get_csrf_token(&self, path: &str) -> Result<String> {
-        let html = self.get_text(path).await?;
-        extract_csrf_token(&html)
-            .ok_or_else(|| anyhow!("Failed to extract CSRF token from {}", path))
-    }
-
     /// Create a new issue in a project.
     pub async fn create_issue(
         &self,
@@ -225,13 +195,8 @@ impl Api {
         content: &str,
     ) -> Result<Response> {
         let path = format!("/~{}/{}/issues/new", owner, project);
-        let csrf_token = self.get_csrf_token(&path).await?;
 
-        let form = [
-            ("title", title),
-            ("content", content),
-            ("_csrf_token", &csrf_token),
-        ];
+        let form = [("title", title), ("content", content)];
 
         Ok(self
             .client
@@ -254,16 +219,11 @@ impl Api {
         status: Option<&str>,
     ) -> Result<Response> {
         let view_path = format!("/~{}/{}/issues/{}", owner, project, issue_dir);
-        let csrf_token = self.get_csrf_token(&view_path).await?;
 
         let post_path = format!("{}/comment", view_path);
         let status_value = status.unwrap_or("");
 
-        let form = [
-            ("content", content),
-            ("status", status_value),
-            ("_csrf_token", &csrf_token),
-        ];
+        let form = [("content", content), ("status", status_value)];
 
         Ok(self
             .client
@@ -273,14 +233,4 @@ impl Api {
             .await?
             .error_for_status()?)
     }
-}
-
-/// Extract CSRF token from HTML response.
-/// Looks for: <input type="hidden" name="_csrf_token" value="TOKEN">
-fn extract_csrf_token(html: &str) -> Option<String> {
-    let needle = r#"name="_csrf_token" value=""#;
-    let start = html.find(needle)? + needle.len();
-    let rest = &html[start..];
-    let end = rest.find('"')?;
-    Some(rest[..end].to_string())
 }

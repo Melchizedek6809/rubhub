@@ -23,7 +23,6 @@
         {% endif %}
 
         <form method="post" action="/~{{ owner.slug }}/{{ project.slug }}/issues/new" class="stack card simple-form">
-          {{ csrf_token_field|safe }}
           <label>
             Title
             <input type="text" name="title" autofocus autocomplete="off" required placeholder="Issue title">

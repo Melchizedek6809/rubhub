@@ -1,5 +1,6 @@
 use askama::Template;
 use axum::{
+    Form,
     body::Body,
     extract::State,
     http::Response,
@@ -10,10 +11,10 @@ use tower_cookies::Cookies;
 
 use crate::{
     AccessType, GlobalState, Project, User,
-    extractors::{CsrfForm, PathUserProject},
+    extractors::PathUserProject,
     models::ContentPage,
     services::{
-        csrf, session,
+        session,
         validation::{validate_project_name, validate_uri},
     },
     views::ThemedRender,
@@ -31,7 +32,6 @@ struct ProjectSettingsTemplate<'a> {
     content_pages: Vec<ContentPage>,
     active_tab: &'static str,
     selected_branch: String,
-    csrf_token_field: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -58,14 +58,14 @@ pub async fn project_settings_get(
         return Redirect::to(&project.uri()).into_response();
     }
 
-    render_project_settings_page(&state, &cookies, &current_user, owner, project, None).await
+    render_project_settings_page(&state, &current_user, owner, project, None).await
 }
 
 pub async fn project_settings_post(
     State(state): State<GlobalState>,
     cookies: Cookies,
     PathUserProject(owner, mut project): PathUserProject,
-    CsrfForm(form): CsrfForm<ProjectSettingsForm>,
+    Form(form): Form<ProjectSettingsForm>,
 ) -> Response<Body> {
     let current_user = match session::current_user(&state, &cookies).await {
         Ok(user) => user,
@@ -85,48 +85,26 @@ pub async fn project_settings_post(
     let public_access = match AccessType::parse_public_access(&form.public_access) {
         Ok(level) => level,
         Err(msg) => {
-            return render_project_settings_page(
-                &state,
-                &cookies,
-                &current_user,
-                owner,
-                project,
-                Some(msg),
-            )
-            .await;
+            return render_project_settings_page(&state, &current_user, owner, project, Some(msg))
+                .await;
         }
     };
 
     if let Err(msg) = validate_project_name(name) {
-        return render_project_settings_page(
-            &state,
-            &cookies,
-            &current_user,
-            owner,
-            project,
-            Some(msg),
-        )
-        .await;
+        return render_project_settings_page(&state, &current_user, owner, project, Some(msg))
+            .await;
     }
 
     if !website.is_empty()
         && let Err(msg) = validate_uri(website)
     {
-        return render_project_settings_page(
-            &state,
-            &cookies,
-            &current_user,
-            owner,
-            project,
-            Some(msg),
-        )
-        .await;
+        return render_project_settings_page(&state, &current_user, owner, project, Some(msg))
+            .await;
     }
 
     if name.is_empty() {
         return render_project_settings_page(
             &state,
-            &cookies,
             &current_user,
             owner,
             project,
@@ -137,7 +115,6 @@ pub async fn project_settings_post(
     if main_branch.is_empty() {
         return render_project_settings_page(
             &state,
-            &cookies,
             &current_user,
             owner,
             project,
@@ -166,16 +143,12 @@ pub async fn project_settings_post(
 
 async fn render_project_settings_page(
     state: &GlobalState,
-    cookies: &Cookies,
     logged_in_user: &User,
     owner: User,
     project: Project,
     message: Option<&str>,
 ) -> Response<Body> {
     let sidebar_projects = logged_in_user.sidebar_projects(state).await;
-    let token = csrf::get_or_create_token(&state.config.csrf_secret, cookies);
-    let csrf_token_field = csrf::hidden_field(&token);
-
     let template = ProjectSettingsTemplate {
         owner: &owner,
         project: &project,
@@ -186,7 +159,6 @@ async fn render_project_settings_page(
         content_pages: state.config.content_pages.clone(),
         active_tab: "settings",
         selected_branch: project.main_branch.clone(),
-        csrf_token_field,
     };
     template.response()
 }

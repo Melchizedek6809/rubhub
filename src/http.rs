@@ -1,5 +1,9 @@
 use axum::{
-    extract::{Path, State}, http::{header, HeaderName, HeaderValue}, response::IntoResponse, routing::{get, post}, Router
+    Router,
+    extract::{Path, State},
+    http::{HeaderName, HeaderValue, header},
+    response::IntoResponse,
+    routing::{get, post},
 };
 use rust_embed::Embed;
 use std::net::SocketAddr;

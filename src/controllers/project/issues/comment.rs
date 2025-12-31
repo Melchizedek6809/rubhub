@@ -1,4 +1,5 @@
 use axum::{
+    Form,
     body::Body,
     extract::{Path, State},
     http::Response,
@@ -9,7 +10,6 @@ use tower_cookies::Cookies;
 
 use crate::{
     AccessType, GlobalState, Project, User,
-    extractors::CsrfForm,
     models::IssueStatus,
     services::{issue, session},
 };
@@ -24,7 +24,7 @@ pub async fn issue_comment_post(
     State(state): State<GlobalState>,
     cookies: Cookies,
     Path((username, slug, issue_dir)): Path<(String, String, String)>,
-    CsrfForm(form): CsrfForm<AddCommentForm>,
+    Form(form): Form<AddCommentForm>,
 ) -> Response<Body> {
     let current_user = match session::current_user(&state, &cookies).await {
         Ok(user) => user,

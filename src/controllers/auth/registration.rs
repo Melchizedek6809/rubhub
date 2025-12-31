@@ -1,5 +1,6 @@
 use askama::Template;
 use axum::{
+    Form,
     extract::State,
     http::StatusCode,
     response::{Html, Redirect},
@@ -9,10 +10,9 @@ use tower_cookies::Cookies;
 
 use crate::{
     GlobalState, Project, User,
-    extractors::CsrfForm,
     models::ContentPage,
     services::{
-        csrf, session,
+        session,
         validation::{slugify, validate_email, validate_password, validate_username},
     },
     views::ThemedRender,
@@ -32,40 +32,33 @@ struct RegistrationTemplate<'a> {
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
-    csrf_token_field: String,
 }
 
-fn render_registration_page(message: Option<&str>, csrf_token_field: String) -> Html<String> {
+fn render_registration_page(message: Option<&str>) -> Html<String> {
     let template = RegistrationTemplate {
         message,
         logged_in_user: None,
         sidebar_projects: vec![],
         content_pages: vec![],
-        csrf_token_field,
     };
     Html(template.render_with_theme())
 }
 
-fn internal_error<E: std::fmt::Display>(
-    err: E,
-    csrf_token_field: String,
-) -> (StatusCode, Html<String>) {
+fn internal_error<E: std::fmt::Display>(err: E) -> (StatusCode, Html<String>) {
     (
         StatusCode::INTERNAL_SERVER_ERROR,
-        render_registration_page(Some(&format!("{err}")), csrf_token_field),
+        render_registration_page(Some(&format!("{err}"))),
     )
 }
 
-pub async fn registration_page(State(state): State<GlobalState>, cookies: Cookies) -> Html<String> {
-    let token = csrf::get_or_create_token(&state.config.csrf_secret, &cookies);
-    let csrf_token_field = csrf::hidden_field(&token);
-    render_registration_page(None, csrf_token_field)
+pub async fn registration_page() -> Html<String> {
+    render_registration_page(None)
 }
 
 pub async fn handle_registration(
     State(state): State<GlobalState>,
     cookies: Cookies,
-    CsrfForm(form): CsrfForm<RegistrationForm>,
+    Form(form): Form<RegistrationForm>,
 ) -> Result<Redirect, (StatusCode, Html<String>)> {
     let username = form.username.trim();
     let email = form.email.trim();
@@ -81,30 +74,16 @@ async fn handle_registration_action(
     email: &str,
     password: &str,
 ) -> Result<Redirect, (StatusCode, Html<String>)> {
-    let csrf_token_field = csrf::hidden_field(&csrf::get_or_create_token(
-        &state.config.csrf_secret,
-        &cookies,
-    ));
-
     if let Err(msg) = validate_username(username) {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            render_registration_page(Some(msg), csrf_token_field),
-        ));
+        return Err((StatusCode::BAD_REQUEST, render_registration_page(Some(msg))));
     }
 
     if let Err(msg) = validate_email(email) {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            render_registration_page(Some(msg), csrf_token_field),
-        ));
+        return Err((StatusCode::BAD_REQUEST, render_registration_page(Some(msg))));
     }
 
     if let Err(msg) = validate_password(password) {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            render_registration_page(Some(msg), csrf_token_field),
-        ));
+        return Err((StatusCode::BAD_REQUEST, render_registration_page(Some(msg))));
     }
 
     let slug = slugify(username);
@@ -113,7 +92,7 @@ async fn handle_registration_action(
     if user.is_ok() {
         return Err((
             StatusCode::CONFLICT,
-            render_registration_page(Some("That username is already taken."), csrf_token_field),
+            render_registration_page(Some("That username is already taken.")),
         ));
     };
 
@@ -123,12 +102,12 @@ async fn handle_registration_action(
                 if let Err(err) =
                     session::create_session(state, &cookies, user.id, &user.slug).await
                 {
-                    return Err(internal_error(err, csrf_token_field));
+                    return Err(internal_error(err));
                 };
                 Ok(Redirect::to(&user.uri()))
             }
-            Err(err) => Err(internal_error(err, csrf_token_field)),
+            Err(err) => Err(internal_error(err)),
         },
-        Err(err) => Err(internal_error(err, csrf_token_field)),
+        Err(err) => Err(internal_error(err)),
     }
 }

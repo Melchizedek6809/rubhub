@@ -1,5 +1,6 @@
 use askama::Template;
 use axum::{
+    Form,
     extract::State,
     http::StatusCode,
     response::{Html, IntoResponse, Redirect, Response},
@@ -9,10 +10,9 @@ use tower_cookies::Cookies;
 
 use crate::{
     GlobalState, Project, User,
-    extractors::CsrfForm,
     models::ContentPage,
     services::{
-        csrf, session as session_service,
+        session as session_service,
         user_profile::find_invalid_ssh_keys,
         validation::{validate_uri, validate_username},
     },
@@ -38,7 +38,6 @@ struct UserSettingsTemplate<'a> {
     logged_in_user: Option<&'a User>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
-    csrf_token_field: String,
 }
 
 pub async fn settings_page(
@@ -51,11 +50,10 @@ pub async fn settings_page(
     };
     let ssh_keys = current_user.ssh_keys.clone();
 
-    Ok(render_settings_page(&cookies, &state, current_user, &ssh_keys, None).await)
+    Ok(render_settings_page(&state, current_user, &ssh_keys, None).await)
 }
 
 async fn internal_error(
-    cookies: &Cookies,
     state: &GlobalState,
     user: User,
     ssh_keys: &[String],
@@ -64,14 +62,14 @@ async fn internal_error(
     eprintln!("auth error: {err}");
     (
         StatusCode::INTERNAL_SERVER_ERROR,
-        render_settings_page(cookies, state, user, ssh_keys, Some(err)).await,
+        render_settings_page(state, user, ssh_keys, Some(err)).await,
     )
 }
 
 pub async fn handle_settings(
     State(state): State<GlobalState>,
     cookies: Cookies,
-    CsrfForm(form): CsrfForm<UserSettingsForm>,
+    Form(form): Form<UserSettingsForm>,
 ) -> Result<Response, (StatusCode, Html<String>)> {
     let mut current_user = match session_service::current_user(&state, &cookies).await {
         Ok(user) => user,
@@ -103,7 +101,6 @@ pub async fn handle_settings(
         return Err((
             StatusCode::BAD_REQUEST,
             render_settings_page(
-                &cookies,
                 &state,
                 current_user,
                 &ssh_keys,
@@ -117,7 +114,6 @@ pub async fn handle_settings(
         return Err((
             StatusCode::BAD_REQUEST,
             render_settings_page(
-                &cookies,
                 &state,
                 current_user,
                 &ssh_keys,
@@ -130,7 +126,7 @@ pub async fn handle_settings(
     if let Err(msg) = validate_username(name) {
         return Err((
             StatusCode::BAD_REQUEST,
-            render_settings_page(&cookies, &state, current_user, &ssh_keys, Some(msg)).await,
+            render_settings_page(&state, current_user, &ssh_keys, Some(msg)).await,
         ));
     }
 
@@ -139,7 +135,7 @@ pub async fn handle_settings(
     {
         return Err((
             StatusCode::BAD_REQUEST,
-            render_settings_page(&cookies, &state, current_user, &ssh_keys, Some(msg)).await,
+            render_settings_page(&state, current_user, &ssh_keys, Some(msg)).await,
         ));
     }
 
@@ -151,32 +147,23 @@ pub async fn handle_settings(
     current_user.ssh_keys = ssh_keys.clone();
 
     if let Err(err) = current_user.save(&state).await {
-        return Err(
-            internal_error(&cookies, &state, current_user, &ssh_keys, &err.to_string()).await,
-        );
+        return Err(internal_error(&state, current_user, &ssh_keys, &err.to_string()).await);
     }
 
-    Ok(render_settings_page(
-        &cookies,
-        &state,
-        current_user,
-        &ssh_keys,
-        Some("Settings updated."),
+    Ok(
+        render_settings_page(&state, current_user, &ssh_keys, Some("Settings updated."))
+            .await
+            .into_response(),
     )
-    .await
-    .into_response())
 }
 
 async fn render_settings_page(
-    cookies: &Cookies,
     state: &GlobalState,
     user: User,
     ssh_keys: &[String],
     message: Option<&str>,
 ) -> Html<String> {
     let sidebar_projects = user.sidebar_projects(state).await;
-    let token = csrf::get_or_create_token(&state.config.csrf_secret, cookies);
-    let csrf_token_field = csrf::hidden_field(&token);
 
     let template = UserSettingsTemplate {
         user: &user,
@@ -185,7 +172,6 @@ async fn render_settings_page(
         logged_in_user: Some(&user),
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
-        csrf_token_field,
     };
     Html(template.render_with_theme())
 }

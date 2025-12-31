@@ -10,7 +10,7 @@ use tower_cookies::Cookies;
 use crate::{
     AccessType, GlobalState, Project, User,
     models::{ContentPage, Issue, IssueStatus},
-    services::{csrf, issue, session},
+    services::{issue, session},
     views::ThemedRender,
 };
 
@@ -26,7 +26,6 @@ struct IssueViewTemplate<'a> {
     content_pages: Vec<ContentPage>,
     active_tab: &'static str,
     selected_branch: String,
-    csrf_token_field: String,
 }
 
 pub async fn issue_view_get(
@@ -64,9 +63,6 @@ pub async fn issue_view_get(
         vec![]
     };
 
-    let token = csrf::get_or_create_token(&state.config.csrf_secret, &cookies);
-    let csrf_token_field = csrf::hidden_field(&token);
-
     let template = IssueViewTemplate {
         owner: &owner,
         project: &project,
@@ -77,7 +73,6 @@ pub async fn issue_view_get(
         content_pages: state.config.content_pages.clone(),
         active_tab: "issues",
         selected_branch: project.main_branch.clone(),
-        csrf_token_field,
     };
     Html(template.render_with_theme()).into_response()
 }

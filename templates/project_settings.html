@@ -21,7 +21,6 @@
         <div class="message" role="status">{{ msg }}</div>
         {% endif %}
         <form method="post" action="{{ project.uri_settings() }}" class="stack card simple-form">
-          {{ csrf_token_field|safe }}
           <label>
             ID (used in URIs, can't be changed)
             <input name="slug" type="text" value="{{ project.slug }}" readonly>
@@ -72,7 +71,6 @@
           <p>Deleting a project is permanent and cannot be undone. All repository data and commit history will be lost.</p>
 
           <form method="post" action="/~{{ owner.slug }}/{{ project.slug }}/delete" class="delete-form">
-            {{ csrf_token_field|safe }}
             <input type="hidden" name="confirmation" value="" />
             <button
               type="button"

@@ -25,20 +25,11 @@ pub struct AppConfig {
     pub content_pages: Vec<ContentPage>,
     pub index_content: Option<ContentPage>,
     pub featured_projects: Vec<String>,
-    pub csrf_secret: [u8; 32],
 }
 
 impl Default for AppConfig {
     fn default() -> Self {
         let dir_root = PathBuf::from("./data/");
-
-        // In debug mode, use a hardcoded secret for convenience
-        // In release mode, this will be overwritten by CSRF_SECRET env var (required)
-        #[cfg(debug_assertions)]
-        let csrf_secret = *b"rubhub-dev-csrf-secret-not-prod!";
-
-        #[cfg(not(debug_assertions))]
-        let csrf_secret = [0u8; 32]; // Will be set from env var
 
         let git_root = dir_root.join("git");
         let session_root = dir_root.join("sessions");
@@ -73,7 +64,6 @@ impl Default for AppConfig {
             content_pages: vec![],
             index_content: None,
             featured_projects: vec![],
-            csrf_secret,
         }
     }
 }
@@ -147,11 +137,6 @@ impl AppConfig {
 
     pub fn set_featured_projects(mut self, projects: Vec<String>) -> Self {
         self.featured_projects = projects;
-        self
-    }
-
-    pub fn set_csrf_secret(mut self, secret: [u8; 32]) -> Self {
-        self.csrf_secret = secret;
         self
     }
 
@@ -229,20 +214,9 @@ impl AppConfig {
             }
             _ => config,
         };
-        let csrf_secret_env = env::var("CSRF_SECRET");
-        let config = match &csrf_secret_env {
-            Ok(hex) => {
-                let secret = parse_csrf_secret(&hex)
-                    .context("Failed to parse CSRF_SECRET environment variable")?;
-                config.set_csrf_secret(secret)
-            }
-            Err(_) => config,
-        };
 
         #[cfg(not(debug_assertions))]
-        {
-            validate_release_requirements(base_url_env.is_ok(), csrf_secret_env.is_ok())?;
-        }
+        validate_release_requirements(base_url_env.is_ok())?;
 
         Ok(config)
     }
@@ -314,25 +288,10 @@ fn parse_index_content(spec: &str) -> Result<ContentPage> {
     })
 }
 
-fn parse_csrf_secret(input: &str) -> Result<[u8; 32]> {
-    use sha2::{Digest, Sha256};
-
-    let input = input.trim();
-    if input.is_empty() {
-        anyhow::bail!("CSRF_SECRET cannot be empty");
-    }
-
-    let hash = Sha256::digest(input.as_bytes());
-    Ok(hash.into())
-}
-
 #[cfg_attr(debug_assertions, allow(dead_code))]
-fn validate_release_requirements(base_url_set: bool, csrf_secret_set: bool) -> Result<()> {
+fn validate_release_requirements(base_url_set: bool) -> Result<()> {
     if !base_url_set {
         anyhow::bail!("BASE_URL must be set in release builds");
-    }
-    if !csrf_secret_set {
-        anyhow::bail!("CSRF_SECRET must be set in release builds");
     }
     Ok(())
 }
@@ -349,19 +308,13 @@ mod tests {
 
     #[test]
     fn validate_release_requirements_fails_without_base_url() {
-        let err = validate_release_requirements(false, true).unwrap_err();
+        let err = validate_release_requirements(false).unwrap_err();
         assert_eq!(err.to_string(), "BASE_URL must be set in release builds");
     }
 
     #[test]
-    fn validate_release_requirements_fails_without_csrf_secret() {
-        let err = validate_release_requirements(true, false).unwrap_err();
-        assert_eq!(err.to_string(), "CSRF_SECRET must be set in release builds");
-    }
-
-    #[test]
     fn validate_release_requirements_ok_when_present() {
-        assert!(validate_release_requirements(true, true).is_ok());
+        assert!(validate_release_requirements(true).is_ok());
     }
 }
 

@@ -46,7 +46,6 @@
           <div class="add-comment">
             <h3>Add Comment</h3>
             <form method="post" action="/~{{ owner.slug }}/{{ project.slug }}/issues/{{ issue.dir_name }}/comment" class="stack simple-form">
-              {{ csrf_token_field|safe }}
               <label>
                 Comment
                 <textarea name="content" rows="6" placeholder="Write your comment here..."></textarea>
