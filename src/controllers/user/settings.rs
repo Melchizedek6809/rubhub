@@ -16,7 +16,7 @@ use crate::{
     services::{
         session as session_service,
         user_profile::find_invalid_ssh_keys,
-        validation::{validate_uri, validate_username},
+        validation::validate_username,
     },
     views::ThemedRender,
 };

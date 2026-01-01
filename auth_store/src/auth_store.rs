@@ -25,24 +25,30 @@ impl AuthStore {
         let (tx, rx) = mpsc::sync_channel::<StoreEvent>(512);
 
         thread::spawn(move || {
-            let mut file = OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(path)
-                .expect("Couldn't open auth.ndjson");
+            loop {
+                let mut file = OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(path.clone())
+                    .expect("Couldn't open auth.ndjson");
 
-            for event in rx {
-                match event {
-                    StoreEvent::Quit => {
-                        file.flush().expect("Couldn't flush auth.ndjson on quit");
-                        return;
-                    },
-                    _ => {
-                        if let Ok(mut json) = serde_json::to_string(&event) {
-                            json.push('\n');
-                            file.write_all(json.as_bytes()).expect("Write to auth.ndjson failed");
-                        } else {
-                            eprintln!("Writing event to auth.ndjson failed: {:?}", event);
+                for event in rx.iter() {
+                    match event {
+                        StoreEvent::ReopenLog => {
+                            eprintln!("Reopening auth.ndjson");
+                            break;
+                        }
+                        StoreEvent::Quit => {
+                            file.flush().expect("Couldn't flush auth.ndjson on quit");
+                            return;
+                        },
+                        _ => {
+                            if let Ok(mut json) = serde_json::to_string(&event) {
+                                json.push('\n');
+                                file.write_all(json.as_bytes()).expect("Write to auth.ndjson failed");
+                            } else {
+                                eprintln!("Writing event to auth.ndjson failed: {:?}", event);
+                            }
                         }
                     }
                 }
@@ -55,12 +61,19 @@ impl AuthStore {
     pub fn handle_event(&self, event: StoreEvent) {
         match event {
             StoreEvent::Quit => return,
+            StoreEvent::ReopenLog => return,
             StoreEvent::User(user) => {
                 self.user_map.insert(user.slug.clone(), Arc::new(user));
+            },
+            StoreEvent::UserDelete { slug } => {
+                self.user_map.remove(&slug);
             },
             StoreEvent::Session(session) => {
                 self.session_map.insert(session.session_id.clone(), Arc::new(session));
             },
+            StoreEvent::SessionDelete { session_id } => {
+                self.session_map.remove(&session_id);
+            }
         }
     }
 
