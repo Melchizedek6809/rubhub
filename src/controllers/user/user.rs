@@ -1,9 +1,11 @@
+use std::sync::Arc;
+
 use askama::Template;
 use axum::{body::Body, extract::State, http::Response, response::Html};
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, Project, ProjectSummary, User, controllers::not_found, extractors::PathUser,
+    GlobalState, Project, ProjectSummary, User, controllers::not_found, extractors::PathUser, UserModel,
     models::ContentPage, services::session, views::ThemedRender,
 };
 
@@ -13,7 +15,7 @@ struct UserTemplate<'a> {
     user: &'a User,
     projects: &'a [ProjectSummary<'a>],
     is_owner: bool,
-    logged_in_user: Option<&'a User>,
+    logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
 }
@@ -33,7 +35,7 @@ pub async fn user_page(
 
     let is_owner = logged_in_user
         .as_ref()
-        .map(|user| user.id == owner.id)
+        .map(|user| user.slug == owner.slug)
         .unwrap_or(false);
 
     let projects = match owner.projects(&state).await {
@@ -62,7 +64,7 @@ pub async fn user_page(
         user: &owner,
         projects: &summaries,
         is_owner,
-        logged_in_user: logged_in_user.as_ref(),
+        logged_in_user,
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
     };

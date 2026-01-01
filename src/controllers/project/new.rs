@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use askama::Template;
 use axum::{
     Form,
@@ -10,7 +12,7 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    AccessType, GlobalState, Project, User,
+    AccessType, GlobalState, Project, User, UserModel,
     models::ContentPage,
     services::{
         repository::create_bare_repo,
@@ -30,7 +32,7 @@ pub struct NewProjectForm {
 #[template(path = "project_new.html")]
 struct NewProjectTemplate<'a> {
     message: Option<&'a str>,
-    logged_in_user: Option<&'a User>,
+    logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
 }
@@ -43,15 +45,15 @@ pub async fn project_new_get(
         Ok(user) => user,
         Err(_) => return Err(Redirect::to("/login")),
     };
-    Ok(render_new_project_page(&state, Some(&logged_in_user), None).await)
+    Ok(render_new_project_page(&state, Some(logged_in_user), None).await)
 }
 
 async fn render_new_project_page(
     state: &GlobalState,
-    logged_in_user: Option<&User>,
+    logged_in_user: Option<Arc<User>>,
     message: Option<&str>,
 ) -> Html<String> {
-    let sidebar_projects = if let Some(user) = logged_in_user {
+    let sidebar_projects = if let Some(user) = logged_in_user.clone() {
         user.sidebar_projects(state).await
     } else {
         vec![]
@@ -84,13 +86,13 @@ pub async fn project_new_post(
 
     let name = form.name.trim();
     if name.is_empty() {
-        return render_new_project_page(&state, Some(&current_user), Some("Name is required."))
+        return render_new_project_page(&state, Some(current_user), Some("Name is required."))
             .await
             .into_response();
     }
 
     if let Err(msg) = validate_project_name(name) {
-        return render_new_project_page(&state, Some(&current_user), Some(msg))
+        return render_new_project_page(&state, Some(current_user), Some(msg))
             .await
             .into_response();
     }
@@ -98,7 +100,7 @@ pub async fn project_new_post(
     if is_reserved_project_name(name) {
         return render_new_project_page(
             &state,
-            Some(&current_user),
+            Some(current_user),
             Some("That project name is reserved."),
         )
         .await
@@ -110,7 +112,7 @@ pub async fn project_new_post(
     let project = match Project::new(&current_user, name, selected_public_access) {
         Ok(p) => p,
         Err(msg) => {
-            return render_new_project_page(&state, Some(&current_user), Some(&msg.to_string()))
+            return render_new_project_page(&state, Some(current_user), Some(&msg.to_string()))
                 .await
                 .into_response();
         }
@@ -125,7 +127,7 @@ pub async fn project_new_post(
     if tokio::fs::metadata(&repo_path).await.is_ok() {
         return render_new_project_page(
             &state,
-            Some(&current_user),
+            Some(current_user),
             Some("Project already exists"),
         )
         .await
@@ -136,7 +138,7 @@ pub async fn project_new_post(
     if let Err(_) = create_bare_repo(&state, user_slug.clone(), project.slug.clone()).await {
         return render_new_project_page(
             &state,
-            Some(&current_user),
+            Some(current_user),
             Some("Could not create project."),
         )
         .await

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use askama::Template;
 use axum::{
     Form,
@@ -10,7 +12,7 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    AccessType, GlobalState, Project, User,
+    AccessType, GlobalState, Project, User, UserModel,
     extractors::PathUserProject,
     models::ContentPage,
     services::{
@@ -23,11 +25,11 @@ use crate::{
 #[derive(Template)]
 #[template(path = "project_settings.html")]
 struct ProjectSettingsTemplate<'a> {
-    owner: &'a User,
+    owner: Arc<User>,
     project: &'a Project,
     access_level: AccessType,
     message: Option<&'a str>,
-    logged_in_user: Option<&'a User>,
+    logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
     active_tab: &'static str,
@@ -58,7 +60,7 @@ pub async fn project_settings_get(
         return Redirect::to(&project.uri()).into_response();
     }
 
-    render_project_settings_page(&state, &current_user, owner, project, None).await
+    render_project_settings_page(&state, current_user, owner, project, None).await
 }
 
 pub async fn project_settings_post(
@@ -85,27 +87,27 @@ pub async fn project_settings_post(
     let public_access = match AccessType::parse_public_access(&form.public_access) {
         Ok(level) => level,
         Err(msg) => {
-            return render_project_settings_page(&state, &current_user, owner, project, Some(msg))
+            return render_project_settings_page(&state, current_user, owner, project, Some(msg))
                 .await;
         }
     };
 
     if let Err(msg) = validate_project_name(name) {
-        return render_project_settings_page(&state, &current_user, owner, project, Some(msg))
+        return render_project_settings_page(&state, current_user, owner, project, Some(msg))
             .await;
     }
 
     if !website.is_empty()
         && let Err(msg) = validate_uri(website)
     {
-        return render_project_settings_page(&state, &current_user, owner, project, Some(msg))
+        return render_project_settings_page(&state, current_user, owner, project, Some(msg))
             .await;
     }
 
     if name.is_empty() {
         return render_project_settings_page(
             &state,
-            &current_user,
+            current_user,
             owner,
             project,
             Some("Name is required."),
@@ -115,7 +117,7 @@ pub async fn project_settings_post(
     if main_branch.is_empty() {
         return render_project_settings_page(
             &state,
-            &current_user,
+            current_user,
             owner,
             project,
             Some("Branch name is required."),
@@ -143,14 +145,14 @@ pub async fn project_settings_post(
 
 async fn render_project_settings_page(
     state: &GlobalState,
-    logged_in_user: &User,
-    owner: User,
+    logged_in_user: Arc<User>,
+    owner: Arc<User>,
     project: Project,
     message: Option<&str>,
 ) -> Response<Body> {
     let sidebar_projects = logged_in_user.sidebar_projects(state).await;
     let template = ProjectSettingsTemplate {
-        owner: &owner,
+        owner,
         project: &project,
         access_level: AccessType::Admin, // Only admins can access settings
         message,

@@ -1,9 +1,11 @@
+use std::sync::Arc;
+
 use askama::Template;
 use axum::{body::Body, extract::State, http::Response, response::Html};
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, Project, ProjectSummary, User,
+    GlobalState, Project, ProjectSummary, User, UserModel,
     models::{AccessType, ContentPage},
     services::session,
     views::ThemedRender,
@@ -13,7 +15,7 @@ use crate::{
 #[template(path = "projects_list.html")]
 struct ProjectsListTemplate<'a> {
     projects: &'a [ProjectSummary<'a>],
-    logged_in_user: Option<&'a User>,
+    logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
 }
@@ -36,7 +38,7 @@ pub async fn all_projects_list(
         // If we can't read the git_root, just return empty list
         let template = ProjectsListTemplate {
             projects: &[],
-            logged_in_user: logged_in_user.as_ref(),
+            logged_in_user,
             sidebar_projects,
             content_pages: state.config.content_pages.clone(),
         };
@@ -55,7 +57,7 @@ pub async fn all_projects_list(
                 .unwrap();
 
             // Load the user
-            if let Ok(user) = User::load(&state, username).await {
+            if let Some(user) = state.auth.get_user(username) {
                 // Get their projects
                 if let Ok(projects) = user.projects(&state).await {
                     for project in projects {
@@ -86,7 +88,7 @@ pub async fn all_projects_list(
 
     let template = ProjectsListTemplate {
         projects: &summaries,
-        logged_in_user: logged_in_user.as_ref(),
+        logged_in_user,
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
     };

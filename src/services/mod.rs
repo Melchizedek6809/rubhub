@@ -1,7 +1,5 @@
-pub mod fs;
 pub mod issue;
 pub mod markdown;
-pub mod password;
 pub mod project_info;
 pub mod repository;
 pub mod session;

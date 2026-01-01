@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use askama::Template;
 use axum::{
     body::Body,
@@ -8,22 +10,17 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    AccessType, GlobalState, Project, User,
-    controllers::not_found,
-    extractors::PathUserProjectRefPath,
-    models::ContentPage,
-    services::{
+    controllers::not_found, extractors::PathUserProjectRefPath, models::{user::UserModel, ContentPage}, services::{
         markdown::{self, Frontmatter},
-        repository::{GitRefInfo, GitSummary, get_git_file, get_git_info, get_git_summary},
+        repository::{get_git_file, get_git_info, get_git_summary, GitRefInfo, GitSummary},
         session,
-    },
-    views::ThemedRender,
+    }, views::ThemedRender, AccessType, GlobalState, Project, User
 };
 
 #[derive(Template)]
 #[template(path = "project_blob.html")]
 struct ProjectBlobTemplate<'a> {
-    owner: &'a User,
+    owner: Arc<User>,
     project: &'a Project,
     access_level: AccessType,
     ssh_clone_url: String,
@@ -41,7 +38,7 @@ struct ProjectBlobTemplate<'a> {
     markdown_frontmatter: Frontmatter,
     raw_url: String,
     source_url: Option<String>,
-    logged_in_user: Option<&'a User>,
+    logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
     active_tab: &'static str,
@@ -156,7 +153,7 @@ pub async fn project_blob_get(
         let path_parts: Vec<String> = path.split('/').map(|s| s.to_string()).collect();
         let file_size = file_obj.data.len();
         let template = ProjectBlobTemplate {
-            owner: &owner,
+            owner,
             project: &project,
             access_level,
             ssh_clone_url,
@@ -174,7 +171,7 @@ pub async fn project_blob_get(
             markdown_frontmatter: vec![],
             raw_url,
             source_url: None,
-            logged_in_user: logged_in_user.as_ref(),
+            logged_in_user,
             sidebar_projects,
             content_pages: state.config.content_pages.clone(),
             active_tab: "code",
@@ -190,7 +187,7 @@ pub async fn project_blob_get(
         let path_parts: Vec<String> = path.split('/').map(|s| s.to_string()).collect();
         let file_size = file_obj.data.len();
         let template = ProjectBlobTemplate {
-            owner: &owner,
+            owner,
             project: &project,
             access_level,
             ssh_clone_url,
@@ -208,7 +205,7 @@ pub async fn project_blob_get(
             markdown_frontmatter: vec![],
             raw_url,
             source_url: None,
-            logged_in_user: logged_in_user.as_ref(),
+            logged_in_user,
             sidebar_projects,
             content_pages: state.config.content_pages.clone(),
             active_tab: "code",
@@ -236,7 +233,7 @@ pub async fn project_blob_get(
     let path_parts: Vec<String> = path.split('/').map(|s| s.to_string()).collect();
 
     let template = ProjectBlobTemplate {
-        owner: &owner,
+        owner,
         project: &project,
         access_level,
         ssh_clone_url,
@@ -254,7 +251,7 @@ pub async fn project_blob_get(
         markdown_frontmatter,
         raw_url,
         source_url,
-        logged_in_user: logged_in_user.as_ref(),
+        logged_in_user,
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
         active_tab: "code",

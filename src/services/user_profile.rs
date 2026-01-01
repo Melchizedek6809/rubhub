@@ -135,39 +135,6 @@ pub async fn load_user_profile(
     }
 }
 
-/// Load SSH keys from .profile/authorized_keys
-/// Returns empty vec if file doesn't exist or can't be parsed
-/// Invalid keys are filtered out
-pub async fn load_ssh_keys(state: &GlobalState, user_slug: &str) -> Vec<String> {
-    // Check if repo exists
-    if !profile_repo_exists(state, user_slug).await {
-        return vec![];
-    }
-
-    // Check if main branch exists
-    if !branch_exists(state, user_slug, PROFILE_REPO, MAIN_BRANCH).await {
-        return vec![];
-    }
-
-    // Try to read authorized_keys
-    let content =
-        match get_git_file(state, user_slug, PROFILE_REPO, MAIN_BRANCH, SSH_KEYS_FILE).await {
-            Ok(c) => c,
-            Err(_) => return vec![],
-        };
-
-    let content_str = String::from_utf8_lossy(&content.data);
-
-    // Parse SSH keys, filtering invalid ones
-    content_str
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty() && !line.starts_with('#'))
-        .filter(|line| ssh_key::PublicKey::from_openssh(line).is_ok())
-        .map(ToOwned::to_owned)
-        .collect()
-}
-
 /// Save user profile to .profile/README.md
 pub async fn save_user_profile(
     state: &GlobalState,

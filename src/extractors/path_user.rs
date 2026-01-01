@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::{
     extract::{FromRef, FromRequestParts, Path},
     http::{StatusCode, request::Parts},
@@ -5,7 +7,7 @@ use axum::{
 
 use crate::{GlobalState, User};
 
-pub struct PathUser(pub User);
+pub struct PathUser(pub Arc<User>);
 
 impl<S> FromRequestParts<S> for PathUser
 where
@@ -21,8 +23,8 @@ where
 
         let state = GlobalState::from_ref(state);
 
-        if let Some(slug) = user_slug.strip_prefix("~") {
-            if let Ok(user) = User::load(&state, slug).await {
+        if let Some(user_slug) = user_slug.strip_prefix("~") {
+            if let Some(user) = state.auth.get_user(user_slug) {
                 return Ok(PathUser(user));
             }
         };

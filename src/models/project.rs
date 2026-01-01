@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::{Result, anyhow};
 use time::OffsetDateTime;
 
@@ -211,7 +213,7 @@ impl Project {
         )
     }
 
-    pub async fn load_by_path(state: &GlobalState, path: String) -> Result<(User, Project)> {
+    pub async fn load_by_path(state: &GlobalState, path: String) -> Result<(Arc<User>, Project)> {
         let parts = path.split("/").collect::<Vec<&str>>();
         if parts.len() != 2 {
             return Err(anyhow!("Invalid path"));
@@ -225,9 +227,12 @@ impl Project {
             return Err(anyhow!("Invalid project"));
         }
 
-        let user = User::load(state, user_slug).await?;
-        let project = Self::load(state, user_slug, project_slug).await?;
-        Ok((user, project))
+        if let Some(user) = state.auth.get_user(user_slug) {
+            let project = Self::load(state, user_slug, project_slug).await?;
+            Ok((user, project))
+        } else {
+            return Err(anyhow!("Cant load user"));
+        }
     }
 }
 

@@ -1,10 +1,12 @@
+use std::sync::Arc;
+
 use askama::Template;
 use axum::{body::Body, extract::State, http::Response};
 use gix::objs::tree::EntryKind;
 use tower_cookies::Cookies;
 
 use crate::{
-    AccessType, GlobalState, Project, User,
+    AccessType, GlobalState, Project, User, UserModel,
     controllers::not_found,
     extractors::{PathUserProjectRef, PathUserProjectRefPath},
     models::ContentPage,
@@ -22,7 +24,7 @@ use crate::{
 #[derive(Template)]
 #[template(path = "project_tree.html")]
 struct ProjectTreeTemplate<'a> {
-    owner: &'a User,
+    owner: Arc<User>,
     project: &'a Project,
     access_level: AccessType,
     ssh_clone_url: String,
@@ -36,7 +38,7 @@ struct ProjectTreeTemplate<'a> {
     readme_html: Option<String>,
     readme_frontmatter: Frontmatter,
     parent_path: Option<String>,
-    logged_in_user: Option<&'a User>,
+    logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
     active_tab: &'static str,
@@ -75,7 +77,7 @@ pub async fn project_tree_get(
 async fn render_tree_page(
     state: &GlobalState,
     cookies: Cookies,
-    owner: User,
+    owner: Arc<User>,
     project: Project,
     git_ref: String,
     path: String,
@@ -154,7 +156,7 @@ async fn render_tree_page(
     };
 
     let template = ProjectTreeTemplate {
-        owner: &owner,
+        owner,
         project: &project,
         access_level,
         ssh_clone_url,
@@ -168,7 +170,7 @@ async fn render_tree_page(
         readme_html,
         readme_frontmatter,
         parent_path,
-        logged_in_user: logged_in_user.as_ref(),
+        logged_in_user,
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
         active_tab: "code",

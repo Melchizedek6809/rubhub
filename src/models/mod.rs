@@ -8,4 +8,4 @@ pub use common::AccessType;
 pub use content_page::ContentPage;
 pub use issue::{CommentFrontmatter, Issue, IssueComment, IssueStatus, IssueSummary};
 pub use project::{Project, ProjectSummary};
-pub use user::User;
+pub use user::UserModel;

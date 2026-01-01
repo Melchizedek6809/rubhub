@@ -1,5 +1,7 @@
+use std::sync::Arc;
+
 use crate::{
-    GlobalState, Project, ProjectSummary, User, models::ContentPage, services::session,
+    GlobalState, Project, ProjectSummary, User, models::ContentPage, services::session, UserModel,
     views::ThemedRender,
 };
 use askama::Template;
@@ -10,7 +12,7 @@ use tower_cookies::Cookies;
 #[template(path = "index.html")]
 struct IndexTemplate<'a> {
     featured: &'a [ProjectSummary<'a>],
-    logged_in_user: Option<&'a User>,
+    logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
     index_content: String,
@@ -25,7 +27,7 @@ pub async fn index(State(state): State<GlobalState>, cookies: Cookies) -> Html<S
         vec![]
     };
 
-    let mut projects: Vec<(User, Project)> = vec![];
+    let mut projects: Vec<(Arc<User>, Project)> = vec![];
     for project_path in &state.config.featured_projects {
         if let Ok(tuple) = Project::load_by_path(&state, project_path.clone()).await {
             projects.push(tuple);
@@ -52,7 +54,7 @@ pub async fn index(State(state): State<GlobalState>, cookies: Cookies) -> Html<S
 
     let template = IndexTemplate {
         featured: &featured,
-        logged_in_user: logged_in_user.as_ref(),
+        logged_in_user,
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
         index_content,

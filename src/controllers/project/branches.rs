@@ -1,28 +1,25 @@
+use std::sync::Arc;
+
 use askama::Template;
 use axum::{body::Body, extract::State, response::Response};
 use tower_cookies::Cookies;
 
 use crate::{
-    AccessType, GlobalState, Project, User,
-    controllers::not_found,
-    extractors::PathUserProject,
-    models::ContentPage,
-    services::{
-        repository::{GitRefInfo, get_git_info, get_git_summary},
+    controllers::not_found, extractors::PathUserProject, models::{user::UserModel, ContentPage}, services::{
+        repository::{get_git_info, get_git_summary, GitRefInfo},
         session,
-    },
-    views::ThemedRender,
+    }, views::ThemedRender, AccessType, GlobalState, Project, User
 };
 
 #[derive(Template)]
 #[template(path = "project_branches.html")]
 struct ProjectBranchesTemplate<'a> {
-    owner: &'a User,
+    owner: Arc<User>,
     project: &'a Project,
     access_level: AccessType,
     selected_branch: &'a str,
     branches: Vec<GitRefInfo>,
-    logged_in_user: Option<&'a User>,
+    logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
     active_tab: &'static str,
@@ -60,12 +57,12 @@ pub async fn project_branches_get(
     }
 
     let template = ProjectBranchesTemplate {
-        owner: &owner,
+        owner,
         project: &project,
         access_level,
         selected_branch: &project.main_branch,
         branches,
-        logged_in_user: logged_in_user.as_ref(),
+        logged_in_user,
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
         active_tab: "",

@@ -1,9 +1,11 @@
+use std::sync::Arc;
+
 use askama::Template;
 use axum::{body::Body, extract::State, http::Response};
 use tower_cookies::Cookies;
 
 use crate::{
-    AccessType, GlobalState, Project, User,
+    AccessType, GlobalState, Project, User, UserModel,
     controllers::not_found,
     extractors::PathUserProject,
     models::ContentPage,
@@ -18,7 +20,7 @@ use crate::{
 #[derive(Template)]
 #[template(path = "project.html")]
 struct ProjectTemplate<'a> {
-    owner: &'a User,
+    owner: Arc<User>,
     project: &'a Project,
     access_level: AccessType,
     ssh_clone_url: String,
@@ -28,7 +30,7 @@ struct ProjectTemplate<'a> {
     info: Option<GitRefInfo>,
     readme_html: Option<String>,
     readme_frontmatter: Frontmatter,
-    logged_in_user: Option<&'a User>,
+    logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
     active_tab: &'static str,
@@ -37,7 +39,7 @@ struct ProjectTemplate<'a> {
 async fn render_project_page(
     state: &GlobalState,
     cookies: Cookies,
-    owner: User,
+    owner: Arc<User>,
     project: Project,
     branch: Option<String>,
 ) -> Response<Body> {
@@ -94,7 +96,7 @@ async fn render_project_page(
     // let tree = tree.unwrap_or_default();
 
     let template = ProjectTemplate {
-        owner: &owner,
+        owner,
         project: &project,
         access_level,
         ssh_clone_url,
@@ -104,7 +106,7 @@ async fn render_project_page(
         selected_branch,
         readme_html,
         readme_frontmatter,
-        logged_in_user: logged_in_user.as_ref(),
+        logged_in_user,
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
         active_tab: "overview",

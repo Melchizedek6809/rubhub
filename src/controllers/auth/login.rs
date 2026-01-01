@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use askama::Template;
 use axum::{
     Form,
@@ -8,7 +10,7 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, Project, User, models::ContentPage, services::session, views::ThemedRender,
+    models::{ContentPage, UserModel}, services::session, views::ThemedRender, GlobalState, Project, User
 };
 
 #[derive(Debug, Deserialize)]
@@ -21,7 +23,7 @@ pub struct LoginForm {
 #[template(path = "login.html")]
 struct LoginTemplate<'a> {
     message: Option<&'a str>,
-    logged_in_user: Option<&'a User>,
+    logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
 }
@@ -64,19 +66,15 @@ async fn handle_login_action(
     username: &str,
     password: &str,
 ) -> Result<Redirect, (axum::http::StatusCode, Html<String>)> {
-    match User::login(state, username, password).await {
-        Ok(user) => {
-            if let Err(err) = session::create_session(state, &cookies, user.id, &user.slug).await {
-                return Err(internal_error(err));
-            }
-            Ok(Redirect::to(&user.uri()))
+    if let Some(user) = state.auth.login_user(username, password) {
+        if let Err(err) = session::create_session(state, &cookies, &user.slug).await {
+            return Err(internal_error(err));
         }
-        Err(err) => {
-            eprintln!("Login failed for '{username}': {err}");
-            Err((
-                axum::http::StatusCode::UNAUTHORIZED,
-                render_login_page(Some("Invalid username or password.")),
-            ))
-        }
+        Ok(Redirect::to(&user.uri()))
+    } else {
+        Err((
+            axum::http::StatusCode::UNAUTHORIZED,
+            render_login_page(Some("Invalid username or password.")),
+        ))
     }
 }

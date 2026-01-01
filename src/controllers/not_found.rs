@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use askama::Template;
 use axum::{
     body::Body,
@@ -13,15 +15,15 @@ use crate::{
 
 #[derive(Template)]
 #[template(path = "404.html")]
-struct NotFoundTemplate<'a> {
-    logged_in_user: Option<&'a User>,
+struct NotFoundTemplate {
+    logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
 }
 
-pub fn not_found(logged_in_user: Option<User>, content_pages: Vec<ContentPage>) -> Response<Body> {
+pub fn not_found(logged_in_user: Option<Arc<User>>, content_pages: Vec<ContentPage>) -> Response<Body> {
     let template = NotFoundTemplate {
-        logged_in_user: logged_in_user.as_ref(),
+        logged_in_user,
         sidebar_projects: vec![],
         content_pages,
     };

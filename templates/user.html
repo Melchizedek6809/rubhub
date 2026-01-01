@@ -14,18 +14,9 @@
           {% endif %}
         </div>
         <div class="card">
-          {% if !user.description.is_empty() %}
-          <p>{{ user.description }}</p>
-          {% endif %}
-
           <dl class="meta user-meta">
             <dt>E-Mail</dt>
             <dd><a href="mailto:{{ user.email }}">{{ user.email }}</a></dd>
-
-            {% if !user.website.is_empty() %}
-            <dt>Website</dt>
-            <dd><a href="{{ user.website }}">{{ user.website }}</a></dd>
-            {% endif %}
           </dl>
         </div>
 

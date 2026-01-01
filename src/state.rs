@@ -7,6 +7,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use rubhub_auth_store::AuthStore;
 
 use crate::models::ContentPage;
 
@@ -298,6 +299,7 @@ fn validate_release_requirements(base_url_set: bool) -> Result<()> {
 
 #[derive(Debug, Clone)]
 pub struct GlobalState {
+    pub auth: Arc<AuthStore>,
     pub config: Arc<AppConfig>,
     pub process_start: Instant,
 }
@@ -324,10 +326,15 @@ impl GlobalState {
     }
 
     pub fn new(config: AppConfig, process_start: Instant) -> Result<Self> {
+        fs::create_dir_all(&config.dir_root)?;
         fs::create_dir_all(&config.git_root)?;
         fs::create_dir_all(&config.session_root)?;
 
+        let auth = AuthStore::new(config.dir_root.clone());
+        let auth = Arc::new(auth);
+
         let state = Self {
+            auth,
             process_start,
             config: Arc::new(config),
         };

@@ -9,7 +9,7 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    AccessType, GlobalState, Project, User,
+    AccessType, GlobalState, Project,
     models::IssueStatus,
     services::{issue, session},
 };
@@ -32,7 +32,7 @@ pub async fn issue_comment_post(
     };
 
     let user_slug = username.strip_prefix("~").unwrap_or(&username);
-    let Ok(owner) = User::load(&state, user_slug).await else {
+    let Some(owner) = state.auth.get_user(user_slug) else {
         return Redirect::to("/").into_response();
     };
     let Ok(project) = Project::load(&state, user_slug, &slug).await else {

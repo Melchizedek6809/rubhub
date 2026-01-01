@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use askama::Template;
 use axum::{
     body::Body,
@@ -8,7 +10,7 @@ use axum::{
 use tower_cookies::Cookies;
 
 use crate::{
-    AccessType, GlobalState, Project, User,
+    AccessType, GlobalState, Project, User, UserModel,
     models::{ContentPage, Issue, IssueStatus},
     services::{issue, session},
     views::ThemedRender,
@@ -17,11 +19,11 @@ use crate::{
 #[derive(Template)]
 #[template(path = "issue_view.html")]
 struct IssueViewTemplate<'a> {
-    owner: &'a User,
+    owner: Arc<User>,
     project: &'a Project,
     access_level: AccessType,
     issue: Issue,
-    logged_in_user: Option<&'a User>,
+    logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
     active_tab: &'static str,
@@ -38,7 +40,7 @@ pub async fn issue_view_get(
 
     // Load user and project (handle ~ prefix)
     let user_slug = username.strip_prefix("~").unwrap_or(&username);
-    let Ok(owner) = User::load(&state, user_slug).await else {
+    let Some(owner) = state.auth.get_user(user_slug) else {
         return crate::controllers::not_found(logged_in_user, content_pages);
     };
     let Ok(project) = Project::load(&state, user_slug, &slug).await else {
@@ -64,11 +66,11 @@ pub async fn issue_view_get(
     };
 
     let template = IssueViewTemplate {
-        owner: &owner,
+        owner,
         project: &project,
         access_level,
         issue,
-        logged_in_user: logged_in_user.as_ref(),
+        logged_in_user,
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
         active_tab: "issues",

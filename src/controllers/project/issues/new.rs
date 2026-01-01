@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use askama::Template;
 use axum::{
     Form,
@@ -13,6 +15,7 @@ use crate::{
     AccessType, GlobalState, Project, User,
     extractors::PathUserProject,
     models::ContentPage,
+    UserModel,
     services::{issue, session},
     views::ThemedRender,
 };
@@ -20,11 +23,11 @@ use crate::{
 #[derive(Template)]
 #[template(path = "issue_new.html")]
 struct NewIssueTemplate<'a> {
-    owner: &'a User,
+    owner: Arc<User>,
     project: &'a Project,
     access_level: AccessType,
     message: Option<&'a str>,
-    logged_in_user: Option<&'a User>,
+    logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
     active_tab: &'static str,
@@ -54,7 +57,7 @@ pub async fn issue_new_get(
         return Redirect::to(&project.uri()).into_response();
     }
 
-    render_new_issue_page(&state, &current_user, owner, project, None).await
+    render_new_issue_page(&state, current_user, owner, project, None).await
 }
 
 pub async fn issue_new_post(
@@ -79,7 +82,7 @@ pub async fn issue_new_post(
     if title.is_empty() {
         return render_new_issue_page(
             &state,
-            &current_user,
+            current_user,
             owner,
             project,
             Some("Title is required."),
@@ -90,7 +93,7 @@ pub async fn issue_new_post(
     if content.is_empty() {
         return render_new_issue_page(
             &state,
-            &current_user,
+            current_user,
             owner,
             project,
             Some("Description is required."),
@@ -107,7 +110,7 @@ pub async fn issue_new_post(
             eprintln!("Failed to create issue: {}", e);
             render_new_issue_page(
                 &state,
-                &current_user,
+                current_user,
                 owner,
                 project,
                 Some("Failed to create issue. Please try again."),
@@ -119,26 +122,26 @@ pub async fn issue_new_post(
 
 async fn render_new_issue_page(
     state: &GlobalState,
-    logged_in_user: &User,
-    owner: User,
+    current_user: Arc<User>,
+    owner: Arc<User>,
     project: Project,
     message: Option<&str>,
 ) -> Response<Body> {
-    let sidebar_projects = logged_in_user.sidebar_projects(state).await;
+    let sidebar_projects = current_user.sidebar_projects(state).await;
 
     let access_level = project
-        .access_level(Some(logged_in_user.slug.clone()))
+        .access_level(Some(current_user.slug.clone()))
         .await;
     if !access_level.is_allowed(AccessType::Read) {
         return Redirect::to(&project.uri()).into_response();
     }
 
     let template = NewIssueTemplate {
-        owner: &owner,
+        owner,
         project: &project,
         access_level,
         message,
-        logged_in_user: Some(logged_in_user),
+        logged_in_user: Some(current_user),
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
         active_tab: "issues",

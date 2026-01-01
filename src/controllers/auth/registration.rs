@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use askama::Template;
 use axum::{
     Form,
@@ -9,13 +11,10 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, Project, User,
-    models::ContentPage,
-    services::{
+    models::ContentPage, services::{
         session,
         validation::{slugify, validate_email, validate_password, validate_username},
-    },
-    views::ThemedRender,
+    }, views::ThemedRender, GlobalState, Project, User, UserModel
 };
 
 #[derive(Debug, Deserialize)]
@@ -29,7 +28,7 @@ pub struct RegistrationForm {
 #[template(path = "registration.html")]
 struct RegistrationTemplate<'a> {
     message: Option<&'a str>,
-    logged_in_user: Option<&'a User>,
+    logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
 }
@@ -88,22 +87,24 @@ async fn handle_registration_action(
 
     let slug = slugify(username);
 
-    let user = User::load(state, &slug).await;
-    if user.is_ok() {
+    let user = state.auth.get_user(&slug);
+    if user.is_some() {
         return Err((
             StatusCode::CONFLICT,
             render_registration_page(Some("That username is already taken.")),
         ));
     };
 
-    match User::new(username, email, password) {
-        Ok(user) => match user.save(state).await {
+    let user = User::new(slug.to_string(), username.to_string(), email.to_string(), password.to_string());
+    match user {
+        Ok(user) => match user.save(&state.auth) {
             Ok(_) => {
                 if let Err(err) =
-                    session::create_session(state, &cookies, user.id, &user.slug).await
+                    session::create_session(state, &cookies, &slug).await
                 {
                     return Err(internal_error(err));
                 };
+                let user = state.auth.get_user(&slug).expect("Couldn't get user after registration");
                 Ok(Redirect::to(&user.uri()))
             }
             Err(err) => Err(internal_error(err)),

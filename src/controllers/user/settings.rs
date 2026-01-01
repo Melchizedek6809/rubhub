@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use askama::Template;
 use axum::{
     Form,
@@ -9,7 +11,7 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, Project, User,
+    GlobalState, Project, User, UserModel,
     models::ContentPage,
     services::{
         session as session_service,
@@ -23,8 +25,6 @@ use crate::{
 pub struct UserSettingsForm {
     pub name: String,
     pub email: String,
-    pub website: String,
-    pub description: String,
     pub default_main_branch: String,
     pub ssh_keys: Option<String>,
 }
@@ -32,10 +32,10 @@ pub struct UserSettingsForm {
 #[derive(Template)]
 #[template(path = "user_settings.html")]
 struct UserSettingsTemplate<'a> {
-    user: &'a User,
+    user: Arc<User>,
     ssh_keys: &'a [String],
     message: Option<&'a str>,
-    logged_in_user: Option<&'a User>,
+    logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
 }
@@ -55,7 +55,7 @@ pub async fn settings_page(
 
 async fn internal_error(
     state: &GlobalState,
-    user: User,
+    user: Arc<User>,
     ssh_keys: &[String],
     err: &str,
 ) -> (StatusCode, Html<String>) {
@@ -71,7 +71,7 @@ pub async fn handle_settings(
     cookies: Cookies,
     Form(form): Form<UserSettingsForm>,
 ) -> Result<Response, (StatusCode, Html<String>)> {
-    let mut current_user = match session_service::current_user(&state, &cookies).await {
+    let current_user = match session_service::current_user(&state, &cookies).await {
         Ok(user) => user,
         Err(_) => return Ok(Redirect::to("/login").into_response()),
     };
@@ -79,7 +79,6 @@ pub async fn handle_settings(
     let name = form.name.trim();
     let default_main_branch = form.default_main_branch.trim();
     let email = form.email.trim().to_owned();
-    let website = form.website.trim();
     let ssh_keys: Vec<String> = form
         .ssh_keys
         .unwrap_or_default()
@@ -130,23 +129,13 @@ pub async fn handle_settings(
         ));
     }
 
-    if !website.is_empty()
-        && let Err(msg) = validate_uri(website)
-    {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            render_settings_page(&state, current_user, &ssh_keys, Some(msg)).await,
-        ));
-    }
+    let mut new_user = current_user.as_ref().clone();
+    new_user.name = name.to_owned();
+    new_user.email = email.to_owned();
+    new_user.default_main_branch = default_main_branch.to_owned();
+    new_user.ssh_keys = ssh_keys.clone();
 
-    current_user.name = name.to_owned();
-    current_user.email = email.to_owned();
-    current_user.website = website.to_owned();
-    current_user.description = form.description.trim().to_owned();
-    current_user.default_main_branch = default_main_branch.to_owned();
-    current_user.ssh_keys = ssh_keys.clone();
-
-    if let Err(err) = current_user.save(&state).await {
+    if let Err(err) = new_user.save(&state.auth) {
         return Err(internal_error(&state, current_user, &ssh_keys, &err.to_string()).await);
     }
 
@@ -159,17 +148,17 @@ pub async fn handle_settings(
 
 async fn render_settings_page(
     state: &GlobalState,
-    user: User,
+    user: Arc<User>,
     ssh_keys: &[String],
     message: Option<&str>,
 ) -> Html<String> {
     let sidebar_projects = user.sidebar_projects(state).await;
 
     let template = UserSettingsTemplate {
-        user: &user,
+        user: user.clone(),
         ssh_keys,
         message,
-        logged_in_user: Some(&user),
+        logged_in_user: Some(user),
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
     };

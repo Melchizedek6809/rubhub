@@ -3409,6 +3409,7 @@ dependencies = [
  "markdown",
  "mime_guess",
  "reqwest",
+ "rubhub-auth-store",
  "russh",
  "rust-embed",
  "sd-notify",
@@ -3428,6 +3429,19 @@ dependencies = [
  "urlencoding",
  "uuid",
  "validator",
+]
+
+[[package]]
+name = "rubhub-auth-store"
+version = "0.1.0"
+dependencies = [
+ "argon2",
+ "dashmap",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "time",
+ "uuid",
 ]
 
 [[package]]

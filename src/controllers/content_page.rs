@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use askama::Template;
 use axum::{
     body::Body,
@@ -8,7 +10,7 @@ use axum::{
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, Project, User, models::ContentPage, services::session, views::ThemedRender,
+    GlobalState, Project, User, models::ContentPage, services::session, views::ThemedRender, UserModel,
 };
 
 #[derive(Template)]
@@ -16,7 +18,7 @@ use crate::{
 struct ContentPageTemplate<'a> {
     page_title: &'a str,
     content_html: String,
-    logged_in_user: Option<&'a User>,
+    logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
 }
@@ -52,7 +54,7 @@ pub async fn render_content_page(
     let template = ContentPageTemplate {
         page_title: &page.title,
         content_html,
-        logged_in_user: logged_in_user.as_ref(),
+        logged_in_user,
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
     };

@@ -14,6 +14,8 @@ name = "dummy-to-cache-dependencies"
 path = "dummy.rs"
 
 [dependencies]
+rubhub-auth-store = { path = "auth_store" }
+
 anyhow = "1"
 axum = { version = "0.8", features = ["ws", "multipart"] }
 askama = "0.14"

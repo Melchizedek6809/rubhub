@@ -8,7 +8,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::process::Command;
 use tokio::task::JoinHandle;
 
-use crate::{AccessType, GlobalState, Project, User};
+use crate::{AccessType, GlobalState, Project, UserModel};
 
 async fn ensure_host_key(path: &PathBuf, key_type: &str) -> Result<(), io::Error> {
     if path.exists() {
@@ -245,9 +245,9 @@ impl server::Handler for Connection {
         session: &mut Session,
     ) -> Result<bool, Self::Error> {
         if let Some(user_slug) = &self.user_slug {
-            let user = User::load(&self.state, user_slug).await;
+            let user = self.state.auth.get_user(user_slug);
 
-            if user.is_err() {
+            if user.is_none() {
                 return Err(russh::Error::NoAuthMethod);
             }
         }
@@ -269,11 +269,11 @@ impl server::Handler for Connection {
             return Ok(server::Auth::Accept);
         }
 
-        match User::load(&self.state, user).await {
-            Ok(user) => match user.validate_ssh_key(key) {
+        match self.state.auth.get_user(user) {
+            Some(user) => match user.validate_ssh_key(key) {
                 Ok(_) => {
                     println!("SSH Accept: {} - {openssh}", user.slug);
-                    self.user_slug = Some(user.slug);
+                    self.user_slug = Some(user.slug.to_string());
                     return Ok(server::Auth::Accept);
                 }
                 Err(_e) => {
@@ -281,7 +281,7 @@ impl server::Handler for Connection {
                     println!("SSH Reject: {} - {openssh}", user.slug);
                 }
             },
-            Err(_) => {
+            None => {
                 self.user_slug = None;
                 println!("Anon Auth - PK {openssh}");
             }

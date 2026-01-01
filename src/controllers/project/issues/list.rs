@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use askama::Template;
 use axum::{
     body::Body,
@@ -5,11 +7,12 @@ use axum::{
     http::Response,
     response::{Html, IntoResponse},
 };
+use rubhub_auth_store::User;
 use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    AccessType, GlobalState, Project,
+    AccessType, GlobalState, Project, UserModel,
     extractors::PathUserProject,
     models::{ContentPage, IssueStatus, IssueSummary},
     services::{issue, session},
@@ -27,11 +30,11 @@ pub struct IssueFilters {
 #[derive(Template)]
 #[template(path = "issues_list.html")]
 struct IssuesListTemplate<'a> {
-    owner: &'a crate::User,
+    owner: Arc<User>,
     project: &'a Project,
     access_level: AccessType,
     issues: Vec<IssueSummary>,
-    logged_in_user: Option<&'a crate::User>,
+    logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
     active_tab: &'static str,
@@ -97,11 +100,11 @@ pub async fn issues_list_get(
         .collect();
 
     let template = IssuesListTemplate {
-        owner: &owner,
+        owner,
         project: &project,
         access_level,
         issues,
-        logged_in_user: logged_in_user.as_ref(),
+        logged_in_user,
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
         active_tab: "issues",

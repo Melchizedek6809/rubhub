@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use askama::Template;
 use axum::{
     body::Body,
@@ -8,15 +10,10 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    AccessType, GlobalState, Project, User,
-    controllers::not_found,
-    extractors::PathUserProjectBranch,
-    models::ContentPage,
-    services::{
-        repository::{GitRefInfo, GitSummary, get_git_info, get_git_summary},
+    controllers::not_found, extractors::PathUserProjectBranch, models::{user::UserModel, ContentPage}, services::{
+        repository::{get_git_info, get_git_summary, GitRefInfo, GitSummary},
         session,
-    },
-    views::ThemedRender,
+    }, views::ThemedRender, AccessType, GlobalState, Project, User
 };
 
 #[derive(Debug, Deserialize)]
@@ -27,7 +24,7 @@ pub struct Pagination {
 #[derive(Template)]
 #[template(path = "project_commits.html")]
 struct ProjectCommitsTemplate<'a> {
-    owner: &'a User,
+    owner: Arc<User>,
     project: &'a Project,
     selected_branch: String,
     ssh_clone_url: String,
@@ -38,7 +35,7 @@ struct ProjectCommitsTemplate<'a> {
     page_count: i32,
     page_min: i32,
     page_max: i32,
-    logged_in_user: Option<&'a User>,
+    logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
     access_level: AccessType,
@@ -102,7 +99,7 @@ pub async fn project_commits_get(
     let page_max: i32 = (current_page + 5).min(page_count);
 
     let template = ProjectCommitsTemplate {
-        owner: &owner,
+        owner,
         project: &project,
         ssh_clone_url,
         http_clone_url,
@@ -115,7 +112,7 @@ pub async fn project_commits_get(
         page_max,
         access_level,
         active_tab: "",
-        logged_in_user: logged_in_user.as_ref(),
+        logged_in_user,
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
     };
