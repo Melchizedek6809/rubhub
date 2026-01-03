@@ -41,3 +41,5 @@ yarn-error.log*
 **/*.tgz
 **/*.log
 **/*.bun
+
+.direnv/
