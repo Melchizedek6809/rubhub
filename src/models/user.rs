@@ -4,9 +4,6 @@ use russh::keys::ssh_key;
 
 use crate::{
     GlobalState, Project,
-    services::{
-        user_profile::PROFILE_REPO,
-    },
 };
 
 pub trait UserModel {
@@ -42,11 +39,6 @@ impl UserModel for User {
             if meta.is_dir() {
                 let file_name = entry.file_name();
                 let project_slug = file_name.to_string_lossy();
-
-                // Skip .profile repo - it's a special system repo
-                if project_slug == PROFILE_REPO {
-                    continue;
-                }
 
                 if let Ok(project) = Project::load(state, &self.slug, &project_slug).await {
                     ret.push(project);

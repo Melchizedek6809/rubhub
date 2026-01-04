@@ -13,20 +13,6 @@
           <a class="btn" href="/settings"><span class="icon i-settings"></span> Settings</a>
           {% endif %}
         </div>
-        <div class="card">
-          <dl class="meta user-meta">
-            <dt>E-Mail</dt>
-            <dd><a href="mailto:{{ user.email }}">{{ user.email }}</a></dd>
-          </dl>
-        </div>
-
-        <br/>
-        <div class="page-header">
-          <h2 class="project-header">Projects</h2>
-          {% if is_owner %}
-          <a class="btn" href="/projects/new"><span class="icon i-plus"></span> New project</a>
-          {% endif %}
-        </div>
         {% if projects.len() > 0 %}
         <div class="card-grid">
           {% for project in projects %}
@@ -34,6 +20,14 @@
           {% endfor %}
         </div>
         {% endif %}
+
+        <br/>
+        <div class="page-header">
+          <h2 class="project-header"></h2>
+          {% if is_owner %}
+          <a class="btn" href="/projects/new"><span class="icon i-plus"></span> New project</a>
+          {% endif %}
+        </div>
       </section>
     </main>
   </body>

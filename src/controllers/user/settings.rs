@@ -7,6 +7,7 @@ use axum::{
     http::StatusCode,
     response::{Html, IntoResponse, Redirect, Response},
 };
+use russh::keys::ssh_key;
 use serde::Deserialize;
 use tower_cookies::Cookies;
 
@@ -15,7 +16,6 @@ use crate::{
     models::ContentPage,
     services::{
         session as session_service,
-        user_profile::find_invalid_ssh_keys,
         validation::validate_username,
     },
     views::ThemedRender,
@@ -39,6 +39,15 @@ struct UserSettingsTemplate<'a> {
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
 }
+
+/// Validate all SSH keys and return invalid ones
+fn find_invalid_ssh_keys(keys: &[String]) -> Vec<String> {
+    keys.iter()
+        .filter(|key| !key.is_empty() && ssh_key::PublicKey::from_openssh(key).is_err())
+        .cloned()
+        .collect()
+}
+
 
 pub async fn settings_page(
     State(state): State<GlobalState>,
