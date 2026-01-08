@@ -13,7 +13,6 @@ use crate::Session;
 
 #[derive(Clone, Debug)]
 pub struct AuthStore {
-    dir_root: PathBuf,
     chan: mpsc::SyncSender<StoreEvent>,
 
     user_map: DashMap<String, Arc<User>>,
@@ -99,7 +98,6 @@ impl AuthStore {
         let chan = Self::spawn_writer(path.clone());
 
         let ret = Self {
-            dir_root,
             chan,
             user_map: DashMap::new(),
             session_map: DashMap::new(),
