@@ -21,8 +21,6 @@ pub struct User {
 
     #[serde(default)]
     pub default_main_branch: String,
-    #[serde(default)]
-    pub ssh_keys: Vec<String>,
 }
 
 pub enum PasswordVerification {
@@ -43,7 +41,6 @@ impl User {
             password_hash,
             created_at: OffsetDateTime::now_utc(),
             default_main_branch: "main".to_string(),
-            ssh_keys: vec![],
         })
     }
 

@@ -1,4 +1,6 @@
-use crate::{Session, User};
+use crate::session::Session;
+use crate::ssh_key::SshKey;
+use crate::user::User;
 use serde::{Serialize,Deserialize};
 use uuid::Uuid;
 
@@ -11,5 +13,7 @@ pub enum StoreEvent {
     UserDelete{ slug: String },
     Session(Session),
     SessionDelete{ session_id: Uuid },
+    SshKey(SshKey),
+    SshKeyDelete{ public_key: String },
 }
 

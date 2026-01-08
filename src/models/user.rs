@@ -1,11 +1,9 @@
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use rubhub_auth_store::User;
-use russh::keys::ssh_key;
 
 use crate::{GlobalState, Project};
 
 pub trait UserModel {
-    fn validate_ssh_key(&self, ssh_key: &ssh_key::PublicKey) -> Result<()>;
     fn projects(
         &self,
         state: &GlobalState,
@@ -18,18 +16,6 @@ pub trait UserModel {
 }
 
 impl UserModel for User {
-    fn validate_ssh_key(&self, ssh_key: &ssh_key::PublicKey) -> Result<()> {
-        for key in &self.ssh_keys {
-            let Ok(key) = ssh_key::PublicKey::from_openssh(key) else {
-                continue;
-            };
-            if key.key_data() == ssh_key.key_data() {
-                return Ok(());
-            }
-        }
-        Err(anyhow!("PublicKey doesn't match user"))
-    }
-
     async fn projects(&self, state: &GlobalState) -> Result<Vec<Project>> {
         let mut ret = vec![];
 

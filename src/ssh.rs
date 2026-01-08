@@ -8,7 +8,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::process::Command;
 use tokio::task::JoinHandle;
 
-use crate::{AccessType, GlobalState, Project, UserModel};
+use crate::{AccessType, GlobalState, Project};
 
 async fn ensure_host_key(path: &PathBuf, key_type: &str) -> Result<(), io::Error> {
     if path.exists() {
@@ -263,33 +263,39 @@ impl server::Handler for Connection {
         key: &ssh_key::PublicKey,
     ) -> Result<server::Auth, Self::Error> {
         let openssh = key.to_openssh()?;
+        // Extract just the key data (second field in openssh format)
+        let key_data = openssh
+            .split_whitespace()
+            .nth(1)
+            .unwrap_or(&openssh);
 
-        if user == "anon" {
-            self.user_slug = None;
-            return Ok(server::Auth::Accept);
-        }
-
-        match self.state.auth.get_user(user) {
-            Some(user) => match user.validate_ssh_key(key) {
-                Ok(_) => {
-                    println!("SSH Accept: {} - {openssh}", user.slug);
-                    self.user_slug = Some(user.slug.to_string());
-                    return Ok(server::Auth::Accept);
-                }
-                Err(_e) => {
-                    self.user_slug = None;
-                    println!("SSH Reject: {} - {openssh}", user.slug);
-                }
-            },
-            None => {
+        match user {
+            "anon" => {
                 self.user_slug = None;
-                println!("Anon Auth - PK {openssh}");
+                println!("SSH Accept: anon");
+                Ok(server::Auth::Accept)
+            }
+            "git" => {
+                if let Some(found_user) = self.state.auth.get_user_by_ssh_key(key_data) {
+                    println!("SSH Accept: {} - {}", found_user.slug, key_data);
+                    self.user_slug = Some(found_user.slug.clone());
+                    Ok(server::Auth::Accept)
+                } else {
+                    println!("SSH Reject: unknown key - {}", key_data);
+                    Ok(server::Auth::Reject {
+                        partial_success: false,
+                        proceed_with_methods: None,
+                    })
+                }
+            }
+            _ => {
+                println!("SSH Reject: invalid username '{}' (use 'git' or 'anon')", user);
+                Ok(server::Auth::Reject {
+                    partial_success: false,
+                    proceed_with_methods: None,
+                })
             }
         }
-        Ok(server::Auth::Reject {
-            partial_success: false,
-            proceed_with_methods: None,
-        })
     }
 
     async fn exec_request(

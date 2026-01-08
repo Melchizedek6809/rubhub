@@ -61,16 +61,16 @@ impl TestUser {
     /// Build an SSH URL for a project owned by this user.
     pub fn ssh_url(&self, project_slug: &str) -> String {
         format!(
-            "ssh://{}@{}/~{}/{}",
-            self.username, self.ssh_public_host, self.username, project_slug
+            "ssh://git@{}/~{}/{}",
+            self.ssh_public_host, self.username, project_slug
         )
     }
 
     /// Build an SSH URL for a project owned by another user.
     pub fn ssh_url_for(&self, owner: &str, project_slug: &str) -> String {
         format!(
-            "ssh://{}@{}/~{}/{}",
-            self.username, self.ssh_public_host, owner, project_slug
+            "ssh://git@{}/~{}/{}",
+            self.ssh_public_host, owner, project_slug
         )
     }
 

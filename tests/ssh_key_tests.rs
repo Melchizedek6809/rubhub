@@ -62,7 +62,7 @@ async fn test_multiple_ssh_keys() {
             .unwrap();
 
         let ssh_url = format!(
-            "ssh://alice@{}/~alice/multi-key-test",
+            "ssh://git@{}/~alice/multi-key-test",
             state.config.ssh_public_host
         );
 
@@ -124,7 +124,7 @@ async fn test_ssh_key_removal() {
             .unwrap();
 
         let ssh_url = format!(
-            "ssh://alice@{}/~alice/key-removal-test",
+            "ssh://git@{}/~alice/key-removal-test",
             state.config.ssh_public_host
         );
 
@@ -246,12 +246,164 @@ async fn test_invalid_ssh_key_format() {
         );
 
         let ssh_url = format!(
-            "ssh://alice@{}/~alice/ssh-test",
+            "ssh://git@{}/~alice/ssh-test",
             state.config.ssh_public_host
         );
 
         let result = git.clone_ssh(&ssh_url, "repo").await.unwrap();
         assert_clone_success(&result);
+    })
+    .await;
+}
+
+/// Test that an unregistered SSH key is rejected when using git@ username.
+#[tokio::test(flavor = "current_thread")]
+async fn test_unregistered_key_rejected() {
+    with_backend(|state| async move {
+        let api = Api::new(&state.config.base_url);
+        let temp_dir = state.config.dir_root.as_path();
+
+        // Register alice and create a project
+        let registered_key = TestSshKey::generate_ed25519(temp_dir, "alice").unwrap();
+        api.register("alice", "alice@test.com", "password123456789")
+            .await
+            .unwrap();
+        api.update_settings(
+            "alice",
+            "alice@test.com",
+            "",
+            "",
+            "main",
+            &registered_key.public_key_content,
+        )
+        .await
+        .unwrap();
+        api.create_project_with_access("Test Project", "Testing", "read")
+            .await
+            .unwrap();
+
+        // Generate a different key that is NOT registered
+        let unregistered_key = TestSshKey::generate_ed25519(temp_dir, "unknown").unwrap();
+
+        let ssh_url = format!(
+            "ssh://git@{}/~alice/test-project",
+            state.config.ssh_public_host
+        );
+
+        let work_dir = temp_dir.join("work");
+        std::fs::create_dir_all(&work_dir).unwrap();
+
+        let git = common::GitHelper::new(
+            work_dir.clone(),
+            &unregistered_key.private_key_path,
+            "Unknown",
+            "unknown@test.com",
+        );
+
+        // Should fail because the key is not registered
+        let result = git.clone_ssh(&ssh_url, "repo").await.unwrap();
+        assert_clone_failure(&result);
+    })
+    .await;
+}
+
+/// Test that SSH usernames other than 'git' or 'anon' are rejected.
+#[tokio::test(flavor = "current_thread")]
+async fn test_non_git_username_rejected() {
+    with_backend(|state| async move {
+        let api = Api::new(&state.config.base_url);
+        let temp_dir = state.config.dir_root.as_path();
+
+        // Register alice with a key
+        let ssh_key = TestSshKey::generate_ed25519(temp_dir, "alice").unwrap();
+        api.register("alice", "alice@test.com", "password123456789")
+            .await
+            .unwrap();
+        api.update_settings(
+            "alice",
+            "alice@test.com",
+            "",
+            "",
+            "main",
+            &ssh_key.public_key_content,
+        )
+        .await
+        .unwrap();
+        api.create_project_with_access("Test Project", "Testing", "read")
+            .await
+            .unwrap();
+
+        // Try to connect with username 'alice' instead of 'git'
+        let ssh_url = format!(
+            "ssh://alice@{}/~alice/test-project",
+            state.config.ssh_public_host
+        );
+
+        let work_dir = temp_dir.join("work");
+        std::fs::create_dir_all(&work_dir).unwrap();
+
+        let git = common::GitHelper::new(
+            work_dir.clone(),
+            &ssh_key.private_key_path,
+            "Alice",
+            "alice@test.com",
+        );
+
+        // Should fail because 'alice' is not a valid SSH username (only 'git' and 'anon' are)
+        let result = git.clone_ssh(&ssh_url, "repo").await.unwrap();
+        assert_clone_failure(&result);
+    })
+    .await;
+}
+
+/// Test that adding an SSH key already owned by another user is rejected.
+#[tokio::test(flavor = "current_thread")]
+async fn test_duplicate_key_rejected() {
+    with_backend(|state| async move {
+        let api = Api::new(&state.config.base_url);
+        let temp_dir = state.config.dir_root.as_path();
+
+        // Generate a shared key
+        let shared_key = TestSshKey::generate_ed25519(temp_dir, "shared").unwrap();
+
+        // Register alice and add the key
+        api.register("alice", "alice@test.com", "password123456789")
+            .await
+            .unwrap();
+        api.update_settings(
+            "alice",
+            "alice@test.com",
+            "",
+            "",
+            "main",
+            &shared_key.public_key_content,
+        )
+        .await
+        .unwrap();
+
+        // Register bob and try to add the same key
+        api.register("bob", "bob@test.com", "password123456789")
+            .await
+            .unwrap();
+        let result = api
+            .update_settings(
+                "bob",
+                "bob@test.com",
+                "",
+                "",
+                "main",
+                &shared_key.public_key_content,
+            )
+            .await;
+
+        // Should fail because the key is already registered to alice
+        assert!(result.is_err(), "Duplicate SSH key should be rejected");
+        let err = result.unwrap_err();
+        assert!(
+            err.to_string().contains("400"),
+            "Expected 400 status code, got: {}",
+            err
+        );
     })
     .await;
 }

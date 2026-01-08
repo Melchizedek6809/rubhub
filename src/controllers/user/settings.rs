@@ -11,6 +11,8 @@ use russh::keys::ssh_key;
 use serde::Deserialize;
 use tower_cookies::Cookies;
 
+use rubhub_auth_store::SshKey;
+
 use crate::{
     GlobalState, Project, User, UserModel,
     models::ContentPage,
@@ -53,7 +55,12 @@ pub async fn settings_page(
         Ok(user) => user,
         Err(_) => return Err(Redirect::to("/login")),
     };
-    let ssh_keys = current_user.ssh_keys.clone();
+    let ssh_keys: Vec<String> = state
+        .auth
+        .get_ssh_keys_for_user(&current_user.slug)
+        .iter()
+        .map(|k| k.to_authorized_keys_line())
+        .collect();
 
     Ok(render_settings_page(&state, current_user, &ssh_keys, None).await)
 }
@@ -84,7 +91,7 @@ pub async fn handle_settings(
     let name = form.name.trim();
     let default_main_branch = form.default_main_branch.trim();
     let email = form.email.trim().to_owned();
-    let ssh_keys: Vec<String> = form
+    let ssh_keys_raw: Vec<String> = form
         .ssh_keys
         .unwrap_or_default()
         .lines()
@@ -94,7 +101,7 @@ pub async fn handle_settings(
         .collect();
 
     // Validate SSH keys
-    let invalid_keys = find_invalid_ssh_keys(&ssh_keys);
+    let invalid_keys = find_invalid_ssh_keys(&ssh_keys_raw);
     if !invalid_keys.is_empty() {
         let first_invalid = &invalid_keys[0];
         let preview = if first_invalid.len() > 40 {
@@ -107,7 +114,7 @@ pub async fn handle_settings(
             render_settings_page(
                 &state,
                 current_user,
-                &ssh_keys,
+                &ssh_keys_raw,
                 Some(&format!("Invalid SSH key format: {}", preview)),
             )
             .await,
@@ -120,7 +127,7 @@ pub async fn handle_settings(
             render_settings_page(
                 &state,
                 current_user,
-                &ssh_keys,
+                &ssh_keys_raw,
                 Some("Default main branch is required"),
             )
             .await,
@@ -130,22 +137,75 @@ pub async fn handle_settings(
     if let Err(msg) = validate_username(name) {
         return Err((
             StatusCode::BAD_REQUEST,
-            render_settings_page(&state, current_user, &ssh_keys, Some(msg)).await,
+            render_settings_page(&state, current_user, &ssh_keys_raw, Some(msg)).await,
         ));
     }
 
+    // Parse submitted keys
+    let submitted_keys: Vec<SshKey> = ssh_keys_raw
+        .iter()
+        .filter_map(|line| SshKey::from_authorized_keys_line(line, current_user.slug.clone()))
+        .collect();
+
+    // Get current keys for this user
+    let current_keys = state.auth.get_ssh_keys_for_user(&current_user.slug);
+    let current_key_data: std::collections::HashSet<&str> = current_keys
+        .iter()
+        .map(|k| k.public_key.as_str())
+        .collect();
+    let submitted_key_data: std::collections::HashSet<&str> = submitted_keys
+        .iter()
+        .map(|k| k.public_key.as_str())
+        .collect();
+
+    // Check for duplicate keys owned by other users
+    for key in &submitted_keys {
+        if let Some(existing) = state.auth.get_ssh_key(&key.public_key) {
+            if existing.user_slug != current_user.slug {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    render_settings_page(
+                        &state,
+                        current_user,
+                        &ssh_keys_raw,
+                        Some("One of the SSH keys is already registered to another user"),
+                    )
+                    .await,
+                ));
+            }
+        }
+    }
+
+    // Delete removed keys
+    for key in &current_keys {
+        if !submitted_key_data.contains(key.public_key.as_str()) {
+            if let Err(err) = SshKey::delete(&state.auth, key.public_key.clone()) {
+                return Err(internal_error(&state, current_user, &ssh_keys_raw, &err.to_string()).await);
+            }
+        }
+    }
+
+    // Add new keys
+    for key in submitted_keys {
+        if !current_key_data.contains(key.public_key.as_str()) {
+            if let Err(err) = key.save(&state.auth) {
+                return Err(internal_error(&state, current_user, &ssh_keys_raw, &err.to_string()).await);
+            }
+        }
+    }
+
+    // Update user (without ssh_keys field)
     let mut new_user = current_user.as_ref().clone();
     new_user.name = name.to_owned();
     new_user.email = email.to_owned();
     new_user.default_main_branch = default_main_branch.to_owned();
-    new_user.ssh_keys = ssh_keys.clone();
 
     if let Err(err) = new_user.save(&state.auth) {
-        return Err(internal_error(&state, current_user, &ssh_keys, &err.to_string()).await);
+        return Err(internal_error(&state, current_user, &ssh_keys_raw, &err.to_string()).await);
     }
 
     Ok(
-        render_settings_page(&state, current_user, &ssh_keys, Some("Settings updated."))
+        render_settings_page(&state, current_user, &ssh_keys_raw, Some("Settings updated."))
             .await
             .into_response(),
     )
