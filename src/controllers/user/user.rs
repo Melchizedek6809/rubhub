@@ -5,8 +5,8 @@ use axum::{body::Body, extract::State, http::Response, response::Html};
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, Project, ProjectSummary, User, controllers::not_found, extractors::PathUser, UserModel,
-    models::ContentPage, services::session, views::ThemedRender,
+    GlobalState, Project, ProjectSummary, User, UserModel, controllers::not_found,
+    extractors::PathUser, models::ContentPage, services::session, views::ThemedRender,
 };
 
 #[derive(Template)]

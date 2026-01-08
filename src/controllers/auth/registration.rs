@@ -11,10 +11,13 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    models::ContentPage, services::{
+    GlobalState, Project, User, UserModel,
+    models::ContentPage,
+    services::{
         session,
         validation::{slugify, validate_email, validate_password, validate_username},
-    }, views::ThemedRender, GlobalState, Project, User, UserModel
+    },
+    views::ThemedRender,
 };
 
 #[derive(Debug, Deserialize)]
@@ -95,16 +98,22 @@ async fn handle_registration_action(
         ));
     };
 
-    let user = User::new(slug.to_string(), username.to_string(), email.to_string(), password.to_string());
+    let user = User::new(
+        slug.to_string(),
+        username.to_string(),
+        email.to_string(),
+        password.to_string(),
+    );
     match user {
         Ok(user) => match user.save(&state.auth) {
             Ok(_) => {
-                if let Err(err) =
-                    session::create_session(state, &cookies, &slug).await
-                {
+                if let Err(err) = session::create_session(state, &cookies, &slug).await {
                     return Err(internal_error(err));
                 };
-                let user = state.auth.get_user(&slug).expect("Couldn't get user after registration");
+                let user = state
+                    .auth
+                    .get_user(&slug)
+                    .expect("Couldn't get user after registration");
                 Ok(Redirect::to(&user.uri()))
             }
             Err(err) => Err(internal_error(err)),

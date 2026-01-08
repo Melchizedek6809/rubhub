@@ -16,8 +16,8 @@ mod ssh;
 mod state;
 mod views;
 
-pub use rubhub_auth_store::User;
 pub use models::{AccessType, Project, ProjectSummary, UserModel};
+pub use rubhub_auth_store::User;
 pub use state::{AppConfig, GlobalState};
 use tokio::time::interval;
 

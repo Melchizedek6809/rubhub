@@ -93,15 +93,13 @@ pub async fn project_settings_post(
     };
 
     if let Err(msg) = validate_project_name(name) {
-        return render_project_settings_page(&state, current_user, owner, project, Some(msg))
-            .await;
+        return render_project_settings_page(&state, current_user, owner, project, Some(msg)).await;
     }
 
     if !website.is_empty()
         && let Err(msg) = validate_uri(website)
     {
-        return render_project_settings_page(&state, current_user, owner, project, Some(msg))
-            .await;
+        return render_project_settings_page(&state, current_user, owner, project, Some(msg)).await;
     }
 
     if name.is_empty() {

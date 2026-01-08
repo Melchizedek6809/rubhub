@@ -5,10 +5,15 @@ use axum::{body::Body, extract::State, response::Response};
 use tower_cookies::Cookies;
 
 use crate::{
-    controllers::not_found, extractors::PathUserProject, models::{user::UserModel, ContentPage}, services::{
-        repository::{get_git_info, get_git_summary, GitRefInfo},
+    AccessType, GlobalState, Project, User,
+    controllers::not_found,
+    extractors::PathUserProject,
+    models::{ContentPage, user::UserModel},
+    services::{
+        repository::{GitRefInfo, get_git_info, get_git_summary},
         session,
-    }, views::ThemedRender, AccessType, GlobalState, Project, User
+    },
+    views::ThemedRender,
 };
 
 #[derive(Template)]

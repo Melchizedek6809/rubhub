@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::{Result, anyhow};
 use axum::response::Redirect;
 use rubhub_auth_store::{Session, User};
-use time::{Duration as CookieDuration};
+use time::Duration as CookieDuration;
 use tower_cookies::{Cookie, Cookies, cookie::SameSite};
 use uuid::Uuid;
 
@@ -38,20 +38,17 @@ pub async fn current_user(state: &GlobalState, cookies: &Cookies) -> Result<Arc<
         .ok_or(anyhow!("No Session Cookie"))?;
     let session_id = Uuid::parse_str(cookie.value())?;
 
-    state.auth
+    state
+        .auth
         .get_user_by_session(session_id)
         .ok_or(anyhow!("Invalid session"))
 }
 
-pub async fn create_session(
-    state: &GlobalState,
-    cookies: &Cookies,
-    user_slug: &str,
-) -> Result<()> {
+pub async fn create_session(state: &GlobalState, cookies: &Cookies, user_slug: &str) -> Result<()> {
     let session = Session::new(user_slug.to_string());
     let session_id = session.session_id;
     session.save(&state.auth)?;
-    
+
     let cookie = Cookie::build((SESSION_COOKIE, session_id.to_string()))
         .path("/")
         .http_only(true)

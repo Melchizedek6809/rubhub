@@ -21,7 +21,10 @@ struct NotFoundTemplate {
     content_pages: Vec<ContentPage>,
 }
 
-pub fn not_found(logged_in_user: Option<Arc<User>>, content_pages: Vec<ContentPage>) -> Response<Body> {
+pub fn not_found(
+    logged_in_user: Option<Arc<User>>,
+    content_pages: Vec<ContentPage>,
+) -> Response<Body> {
     let template = NotFoundTemplate {
         logged_in_user,
         sidebar_projects: vec![],

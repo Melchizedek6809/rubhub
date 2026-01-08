@@ -10,7 +10,8 @@ use axum::{
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, Project, User, models::ContentPage, services::session, views::ThemedRender, UserModel,
+    GlobalState, Project, User, UserModel, models::ContentPage, services::session,
+    views::ThemedRender,
 };
 
 #[derive(Template)]

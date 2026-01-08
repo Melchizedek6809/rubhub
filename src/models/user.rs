@@ -2,14 +2,18 @@ use anyhow::{Result, anyhow};
 use rubhub_auth_store::User;
 use russh::keys::ssh_key;
 
-use crate::{
-    GlobalState, Project,
-};
+use crate::{GlobalState, Project};
 
 pub trait UserModel {
     fn validate_ssh_key(&self, ssh_key: &ssh_key::PublicKey) -> Result<()>;
-    fn projects(&self, state: &GlobalState) -> impl std::future::Future<Output = Result<Vec<Project>>> + Send;
-    fn sidebar_projects(&self, state: &GlobalState) -> impl std::future::Future<Output = Vec<Project>> + Send;
+    fn projects(
+        &self,
+        state: &GlobalState,
+    ) -> impl std::future::Future<Output = Result<Vec<Project>>> + Send;
+    fn sidebar_projects(
+        &self,
+        state: &GlobalState,
+    ) -> impl std::future::Future<Output = Vec<Project>> + Send;
     fn uri(&self) -> String;
 }
 

@@ -8,7 +8,7 @@ use axum::{
 use serde::Deserialize;
 use tower_cookies::Cookies;
 
-use crate::{AccessType, GlobalState, extractors::PathUserProject, services::session, UserModel};
+use crate::{AccessType, GlobalState, UserModel, extractors::PathUserProject, services::session};
 
 #[derive(Debug, Deserialize)]
 pub struct ProjectDeleteForm {

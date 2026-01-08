@@ -10,7 +10,10 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    models::{ContentPage, UserModel}, services::session, views::ThemedRender, GlobalState, Project, User
+    GlobalState, Project, User,
+    models::{ContentPage, UserModel},
+    services::session,
+    views::ThemedRender,
 };
 
 #[derive(Debug, Deserialize)]

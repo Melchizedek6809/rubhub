@@ -12,10 +12,9 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    AccessType, GlobalState, Project, User,
+    AccessType, GlobalState, Project, User, UserModel,
     extractors::PathUserProject,
     models::ContentPage,
-    UserModel,
     services::{issue, session},
     views::ThemedRender,
 };
@@ -129,9 +128,7 @@ async fn render_new_issue_page(
 ) -> Response<Body> {
     let sidebar_projects = current_user.sidebar_projects(state).await;
 
-    let access_level = project
-        .access_level(Some(current_user.slug.clone()))
-        .await;
+    let access_level = project.access_level(Some(current_user.slug.clone())).await;
     if !access_level.is_allowed(AccessType::Read) {
         return Redirect::to(&project.uri()).into_response();
     }

@@ -10,10 +10,15 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    controllers::not_found, extractors::PathUserProjectBranch, models::{user::UserModel, ContentPage}, services::{
-        repository::{get_git_info, get_git_summary, GitRefInfo, GitSummary},
+    AccessType, GlobalState, Project, User,
+    controllers::not_found,
+    extractors::PathUserProjectBranch,
+    models::{ContentPage, user::UserModel},
+    services::{
+        repository::{GitRefInfo, GitSummary, get_git_info, get_git_summary},
         session,
-    }, views::ThemedRender, AccessType, GlobalState, Project, User
+    },
+    views::ThemedRender,
 };
 
 #[derive(Debug, Deserialize)]

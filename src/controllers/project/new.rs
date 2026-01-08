@@ -125,13 +125,9 @@ pub async fn project_new_post(
         .join(&project.owner)
         .join(&project.slug);
     if tokio::fs::metadata(&repo_path).await.is_ok() {
-        return render_new_project_page(
-            &state,
-            Some(current_user),
-            Some("Project already exists"),
-        )
-        .await
-        .into_response();
+        return render_new_project_page(&state, Some(current_user), Some("Project already exists"))
+            .await
+            .into_response();
     }
 
     // Create bare repo first (metadata is stored within)

@@ -14,10 +14,7 @@ use tower_cookies::Cookies;
 use crate::{
     GlobalState, Project, User, UserModel,
     models::ContentPage,
-    services::{
-        session as session_service,
-        validation::validate_username,
-    },
+    services::{session as session_service, validation::validate_username},
     views::ThemedRender,
 };
 
@@ -47,7 +44,6 @@ fn find_invalid_ssh_keys(keys: &[String]) -> Vec<String> {
         .cloned()
         .collect()
 }
-
 
 pub async fn settings_page(
     State(state): State<GlobalState>,
