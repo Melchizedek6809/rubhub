@@ -4,11 +4,9 @@ use anyhow::{Result, anyhow};
 use time::OffsetDateTime;
 
 use crate::{
-    AccessType, GlobalState, User,
     services::{
-        project_info::{self, load_project_info},
-        validation::{slugify, validate_slug},
-    },
+        project_info::{self, load_project_info}, repository, validation::{slugify, validate_slug}
+    }, AccessType, GlobalState, User
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -90,6 +88,9 @@ impl Project {
         if validate_slug(&self.slug).is_err() {
             return Err(anyhow!("Invalid projectname"));
         }
+
+        // Update HEAD
+        repository::set_git_head(state, &self.owner, &self.slug, &self.main_branch).await?;
 
         // Save to meta/info branch
         project_info::save_project_info(
