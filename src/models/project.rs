@@ -170,10 +170,10 @@ impl Project {
         format!("/~{}/{}/talk", self.owner, self.slug)
     }
 
-    pub fn ssh_clone_url(&self, ssh_public_host: &str, git_user: &str) -> String {
+    pub fn ssh_clone_url(&self, ssh_public_host: &str) -> String {
         format!(
-            "ssh://{}@{}/~{}/{}",
-            git_user, ssh_public_host, self.owner, self.slug
+            "ssh://git@{}/~{}/{}",
+            ssh_public_host, self.owner, self.slug
         )
     }
 

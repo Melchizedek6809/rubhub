@@ -109,12 +109,7 @@ async fn render_tree_page(
         Err(_) => return not_found(logged_in_user, vec![]),
     };
 
-    let git_user = logged_in_user
-        .as_ref()
-        .map(|u| u.slug.clone())
-        .unwrap_or("anon".to_string());
-
-    let ssh_clone_url = project.ssh_clone_url(&state.config.ssh_public_host, &git_user);
+    let ssh_clone_url = project.ssh_clone_url(&state.config.ssh_public_host);
     let http_clone_url = project.http_clone_url(&state.config.base_url);
 
     let info = get_git_info(state, &owner.slug, &project.slug, &git_ref, 1, 0).await;
