@@ -30,7 +30,7 @@ struct IssueViewTemplate<'a> {
     selected_branch: String,
 }
 
-pub async fn issue_view_get(
+pub async fn talk_view_get(
     State(state): State<GlobalState>,
     cookies: Cookies,
     Path((username, slug, issue_dir)): Path<(String, String, String)>,
@@ -73,7 +73,7 @@ pub async fn issue_view_get(
         logged_in_user,
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
-        active_tab: "issues",
+        active_tab: "talk",
         selected_branch: project.main_branch.clone(),
     };
     Html(template.render_with_theme()).into_response()

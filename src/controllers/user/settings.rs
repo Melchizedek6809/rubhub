@@ -149,10 +149,8 @@ pub async fn handle_settings(
 
     // Get current keys for this user
     let current_keys = state.auth.get_ssh_keys_for_user(&current_user.slug);
-    let current_key_data: std::collections::HashSet<&str> = current_keys
-        .iter()
-        .map(|k| k.public_key.as_str())
-        .collect();
+    let current_key_data: std::collections::HashSet<&str> =
+        current_keys.iter().map(|k| k.public_key.as_str()).collect();
     let submitted_key_data: std::collections::HashSet<&str> = submitted_keys
         .iter()
         .map(|k| k.public_key.as_str())
@@ -180,7 +178,9 @@ pub async fn handle_settings(
     for key in &current_keys {
         if !submitted_key_data.contains(key.public_key.as_str()) {
             if let Err(err) = SshKey::delete(&state.auth, key.public_key.clone()) {
-                return Err(internal_error(&state, current_user, &ssh_keys_raw, &err.to_string()).await);
+                return Err(
+                    internal_error(&state, current_user, &ssh_keys_raw, &err.to_string()).await,
+                );
             }
         }
     }
@@ -189,7 +189,9 @@ pub async fn handle_settings(
     for key in submitted_keys {
         if !current_key_data.contains(key.public_key.as_str()) {
             if let Err(err) = key.save(&state.auth) {
-                return Err(internal_error(&state, current_user, &ssh_keys_raw, &err.to_string()).await);
+                return Err(
+                    internal_error(&state, current_user, &ssh_keys_raw, &err.to_string()).await,
+                );
             }
         }
     }
@@ -204,11 +206,14 @@ pub async fn handle_settings(
         return Err(internal_error(&state, current_user, &ssh_keys_raw, &err.to_string()).await);
     }
 
-    Ok(
-        render_settings_page(&state, current_user, &ssh_keys_raw, Some("Settings updated."))
-            .await
-            .into_response(),
+    Ok(render_settings_page(
+        &state,
+        current_user,
+        &ssh_keys_raw,
+        Some("Settings updated."),
     )
+    .await
+    .into_response())
 }
 
 async fn render_settings_page(

@@ -137,22 +137,22 @@ pub async fn http_server(
                 "/{username}/{slug}/delete",
                 axum::routing::post(controllers::project_delete_post),
             )
-            // Issues routes
+            // Talk routes
             .route(
-                "/{username}/{slug}/issues",
-                get(controllers::issues_list_get),
+                "/{username}/{slug}/talk",
+                get(controllers::talk_list_get),
             )
             .route(
-                "/{username}/{slug}/issues/new",
-                get(controllers::issue_new_get).post(controllers::issue_new_post),
+                "/{username}/{slug}/talk/new",
+                get(controllers::talk_new_get).post(controllers::talk_new_post),
             )
             .route(
-                "/{username}/{slug}/issues/{issue_dir}",
-                get(controllers::issue_view_get),
+                "/{username}/{slug}/talk/{issue_dir}",
+                get(controllers::talk_view_get),
             )
             .route(
-                "/{username}/{slug}/issues/{issue_dir}/comment",
-                axum::routing::post(controllers::issue_comment_post),
+                "/{username}/{slug}/talk/{issue_dir}/comment",
+                axum::routing::post(controllers::talk_comment_post),
             )
             // Git HTTP protocol endpoints (must come after specific routes)
             .route(

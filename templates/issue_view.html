@@ -11,7 +11,7 @@
           <h1 class="project-header">
             <a href="{{ owner.uri() }}">{{ owner.name }}</a> /
             <a href="{{ project.uri() }}">{{ project.name }}</a> /
-            <a href="{{ project.uri_issues() }}">Issues</a>
+            <a href="{{ project.uri_talk() }}">Talk</a>
           </h1>
         </div>
 
@@ -45,7 +45,7 @@
           {% if logged_in_user.is_some() %}
           <div class="add-comment">
             <h3>Add Comment</h3>
-            <form method="post" action="/~{{ owner.slug }}/{{ project.slug }}/issues/{{ issue.dir_name }}/comment" class="stack simple-form">
+            <form method="post" action="/~{{ owner.slug }}/{{ project.slug }}/talk/{{ issue.dir_name }}/comment" class="stack simple-form">
               <label>
                 Comment
                 <textarea name="content" rows="6" placeholder="Write your comment here..."></textarea>

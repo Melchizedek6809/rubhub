@@ -17,7 +17,7 @@ async fn test_issue_workflow() {
             .unwrap();
 
         // Verify issues list is empty initially
-        api.assert_contains("/~alice/test-project/issues", "No issues yet")
+        api.assert_contains("/~alice/test-project/talk", "No issues yet")
             .await
             .unwrap();
 
@@ -32,7 +32,7 @@ async fn test_issue_workflow() {
         .unwrap();
 
         // Verify issue appears in the list
-        let issues_page = api.get_text("/~alice/test-project/issues").await.unwrap();
+        let issues_page = api.get_text("/~alice/test-project/talk").await.unwrap();
         assert!(
             issues_page.contains("First Issue"),
             "Issue title should appear in list"
@@ -51,7 +51,7 @@ async fn test_issue_workflow() {
             extract_issue_dir(&issues_page, "First Issue").expect("Should find issue link in list");
 
         // View the single issue
-        let issue_path = format!("/~alice/test-project/issues/{}", issue_dir);
+        let issue_path = format!("/~alice/test-project/talk/{}", issue_dir);
         let issue_page = api.get_text(&issue_path).await.unwrap();
         assert!(
             issue_page.contains("First Issue"),
@@ -107,7 +107,7 @@ async fn test_issue_workflow() {
         );
 
         // By default, completed issues should NOT appear in the list
-        let issues_page = api.get_text("/~alice/test-project/issues").await.unwrap();
+        let issues_page = api.get_text("/~alice/test-project/talk").await.unwrap();
         assert!(
             !issues_page.contains("First Issue"),
             "Completed issue should not appear in default list view"
@@ -115,7 +115,7 @@ async fn test_issue_workflow() {
 
         // With status=completed, the issue should appear
         let issues_page = api
-            .get_text("/~alice/test-project/issues?status=completed")
+            .get_text("/~alice/test-project/talk?status=completed")
             .await
             .unwrap();
         assert!(
@@ -147,7 +147,7 @@ async fn test_issue_reopen() {
             .await
             .unwrap();
 
-        let issues_page = api.get_text("/~bob/reopen-test/issues").await.unwrap();
+        let issues_page = api.get_text("/~bob/reopen-test/talk").await.unwrap();
         let issue_dir =
             extract_issue_dir(&issues_page, "Bug Report").expect("Should find issue link");
 
@@ -162,7 +162,7 @@ async fn test_issue_reopen() {
         .await
         .unwrap();
 
-        let issue_path = format!("/~bob/reopen-test/issues/{}", issue_dir);
+        let issue_path = format!("/~bob/reopen-test/talk/{}", issue_dir);
         let issue_page = api.get_text(&issue_path).await.unwrap();
         assert!(
             issue_page.contains("status-completed"),
@@ -215,7 +215,7 @@ async fn test_issue_cancelled() {
         .await
         .unwrap();
 
-        let issues_page = api.get_text("/~carol/cancel-test/issues").await.unwrap();
+        let issues_page = api.get_text("/~carol/cancel-test/talk").await.unwrap();
         let issue_dir =
             extract_issue_dir(&issues_page, "Wont Fix").expect("Should find issue link");
 
@@ -230,7 +230,7 @@ async fn test_issue_cancelled() {
         .await
         .unwrap();
 
-        let issue_path = format!("/~carol/cancel-test/issues/{}", issue_dir);
+        let issue_path = format!("/~carol/cancel-test/talk/{}", issue_dir);
         let issue_page = api.get_text(&issue_path).await.unwrap();
         assert!(
             issue_page.contains("status-cancelled"),
@@ -238,7 +238,7 @@ async fn test_issue_cancelled() {
         );
 
         // By default, cancelled issues should NOT appear in the list
-        let issues_page = api.get_text("/~carol/cancel-test/issues").await.unwrap();
+        let issues_page = api.get_text("/~carol/cancel-test/talk").await.unwrap();
         assert!(
             !issues_page.contains("Wont Fix"),
             "Cancelled issue should not appear in default list view"
@@ -246,7 +246,7 @@ async fn test_issue_cancelled() {
 
         // With status=cancelled, the issue should appear
         let issues_page = api
-            .get_text("/~carol/cancel-test/issues?status=cancelled")
+            .get_text("/~carol/cancel-test/talk?status=cancelled")
             .await
             .unwrap();
         assert!(
@@ -297,7 +297,7 @@ async fn test_issue_filter_counts() {
             .await
             .unwrap();
 
-            let issues_page = api.get_text("/~dave/filter-test/issues").await.unwrap();
+            let issues_page = api.get_text("/~dave/filter-test/talk").await.unwrap();
             let issue_dir = extract_issue_dir(&issues_page, &format!("Completed Issue {}", i))
                 .expect("Should find issue");
 
@@ -322,7 +322,7 @@ async fn test_issue_filter_counts() {
         .await
         .unwrap();
 
-        let issues_page = api.get_text("/~dave/filter-test/issues").await.unwrap();
+        let issues_page = api.get_text("/~dave/filter-test/talk").await.unwrap();
         let issue_dir =
             extract_issue_dir(&issues_page, "Cancelled Issue").expect("Should find issue");
 
@@ -337,7 +337,7 @@ async fn test_issue_filter_counts() {
         .unwrap();
 
         // Check filter counts on the issues list page
-        let issues_page = api.get_text("/~dave/filter-test/issues").await.unwrap();
+        let issues_page = api.get_text("/~dave/filter-test/talk").await.unwrap();
 
         // Verify counts are displayed (Open 3, Completed 2, Closed 1)
         assert!(issues_page.contains("Open"), "Should show Open filter");
@@ -363,7 +363,7 @@ async fn test_issue_filter_counts() {
 
         // Test status=completed shows only completed issues
         let issues_page = api
-            .get_text("/~dave/filter-test/issues?status=completed")
+            .get_text("/~dave/filter-test/talk?status=completed")
             .await
             .unwrap();
         assert!(
@@ -379,14 +379,14 @@ async fn test_issue_filter_counts() {
 }
 
 /// Extract the issue directory name from the issues list HTML.
-/// Looks for links like: href="/~owner/project/issues/DIRNAME"
+/// Looks for links like: href="/~owner/project/talk/DIRNAME"
 fn extract_issue_dir(html: &str, issue_title: &str) -> Option<String> {
     // Find the issue title in the HTML
     let title_pos = html.find(issue_title)?;
 
     // Search backwards for the href containing the issue path
     let before_title = &html[..title_pos];
-    let href_needle = "/issues/";
+    let href_needle = "/talk/";
     let href_start = before_title.rfind(href_needle)? + href_needle.len();
 
     // Extract up to the closing quote

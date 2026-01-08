@@ -11,7 +11,7 @@
           <h1 class="project-header">
             <a href="{{ owner.uri() }}">{{ owner.name }}</a> /
             <a href="{{ project.uri() }}">{{ project.name }}</a> /
-            <a href="{{ project.uri_issues() }}">Issues</a>
+            <a href="{{ project.uri_talk() }}">Talk</a>
           </h1>
         </div>
 
@@ -20,12 +20,12 @@
         <div class="card">
           <div class="issues-header">
             <div class="issue-filters">
-              <a href="{{ project.uri_issues() }}" class="btn btn-filter issue-open{% if current_status == "open" %} active{% endif %}"><span class="icon i-diamond"></span><span class="filter-label">Open</span> {{ count_open }}</a>
-              <a href="{{ project.uri_issues() }}?status=completed" class="btn btn-filter issue-completed{% if current_status == "completed" %} active{% endif %}"><span class="icon i-check"></span><span class="filter-label">Completed</span> {{ count_completed }}</a>
-              <a href="{{ project.uri_issues() }}?status=cancelled" class="btn btn-filter issue-cancelled{% if current_status == "cancelled" %} active{% endif %}"><span class="icon i-x"></span><span class="filter-label">Closed</span> {{ count_cancelled }}</a>
+              <a href="{{ project.uri_talk() }}" class="btn btn-filter issue-open{% if current_status == "open" %} active{% endif %}"><span class="icon i-diamond"></span><span class="filter-label">Open</span> {{ count_open }}</a>
+              <a href="{{ project.uri_talk() }}?status=completed" class="btn btn-filter issue-completed{% if current_status == "completed" %} active{% endif %}"><span class="icon i-check"></span><span class="filter-label">Completed</span> {{ count_completed }}</a>
+              <a href="{{ project.uri_talk() }}?status=cancelled" class="btn btn-filter issue-cancelled{% if current_status == "cancelled" %} active{% endif %}"><span class="icon i-x"></span><span class="filter-label">Closed</span> {{ count_cancelled }}</a>
             </div>
             {% if logged_in_user.is_some() %}
-            <a href="/~{{ owner.slug }}/{{ project.slug }}/issues/new" class="btn">
+            <a href="/~{{ owner.slug }}/{{ project.slug }}/talk/new" class="btn">
               <span class="icon i-plus"></span> New Issue
             </a>
             {% endif %}

@@ -12,7 +12,7 @@ use crate::{
     },
 };
 
-const ISSUES_BRANCH: &str = "rubhub/issues";
+const ISSUES_BRANCH: &str = "meta/talk";
 const ISSUES_DIR: &str = "issues";
 
 /// Parse YAML frontmatter from markdown content

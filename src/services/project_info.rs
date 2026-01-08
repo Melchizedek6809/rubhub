@@ -9,10 +9,10 @@ use crate::{
     },
 };
 
-const INFO_BRANCH: &str = "rubhub/info";
+const INFO_BRANCH: &str = "meta/info";
 const README_FILE: &str = "README.md";
 
-/// Frontmatter parsed from rubhub/info branch README.md
+/// Frontmatter parsed from meta/info branch README.md
 #[derive(Debug, Default, Deserialize)]
 pub struct ProjectInfoFrontmatter {
     #[serde(default)]
@@ -90,7 +90,7 @@ fn generate_readme(project: &Project) -> String {
     content
 }
 
-/// Load project metadata from rubhub/info branch
+/// Load project metadata from meta/info branch
 /// Returns (frontmatter, description) or defaults if branch/file doesn't exist
 pub async fn load_project_info(
     state: &GlobalState,
@@ -118,7 +118,7 @@ pub async fn load_project_info(
     }
 }
 
-/// Save project metadata to rubhub/info branch
+/// Save project metadata to meta/info branch
 pub async fn save_project_info(
     state: &GlobalState,
     user_slug: &str,
@@ -174,7 +174,7 @@ pub async fn detect_default_branch(
         None => return "main".to_string(),
     };
 
-    // Priority: main > master > first non-rubhub branch
+    // Priority: main > master > first non-meta branch
     if summary.branches.contains(&"main".to_string()) {
         return "main".to_string();
     }
@@ -182,9 +182,9 @@ pub async fn detect_default_branch(
         return "master".to_string();
     }
 
-    // Return first branch that isn't a rubhub/* branch
+    // Return first branch that isn't a meta/* branch
     for branch in &summary.branches {
-        if !branch.starts_with("rubhub/") {
+        if !branch.starts_with("meta/") {
             return branch.clone();
         }
     }

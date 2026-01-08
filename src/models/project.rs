@@ -44,7 +44,7 @@ impl Project {
             return Err(anyhow!("Project not found"));
         }
 
-        // Try to load from rubhub/info branch
+        // Try to load from meta/info branch
         let (frontmatter, description) = load_project_info(state, user_slug, project_slug).await?;
 
         // Apply defaults for missing fields
@@ -91,7 +91,7 @@ impl Project {
             return Err(anyhow!("Invalid projectname"));
         }
 
-        // Save to rubhub/info branch
+        // Save to meta/info branch
         project_info::save_project_info(
             state,
             &self.owner,
@@ -166,8 +166,8 @@ impl Project {
         format!("/~{}/{}/tags", self.owner, self.slug)
     }
 
-    pub fn uri_issues(&self) -> String {
-        format!("/~{}/{}/issues", self.owner, self.slug)
+    pub fn uri_talk(&self) -> String {
+        format!("/~{}/{}/talk", self.owner, self.slug)
     }
 
     pub fn ssh_clone_url(&self, ssh_public_host: &str, git_user: &str) -> String {

@@ -39,7 +39,7 @@ pub struct NewIssueForm {
     pub content: String,
 }
 
-pub async fn issue_new_get(
+pub async fn talk_new_get(
     State(state): State<GlobalState>,
     cookies: Cookies,
     PathUserProject(owner, project): PathUserProject,
@@ -59,7 +59,7 @@ pub async fn issue_new_get(
     render_new_issue_page(&state, current_user, owner, project, None).await
 }
 
-pub async fn issue_new_post(
+pub async fn talk_new_post(
     State(state): State<GlobalState>,
     cookies: Cookies,
     PathUserProject(owner, project): PathUserProject,
@@ -102,7 +102,7 @@ pub async fn issue_new_post(
 
     match issue::create_issue(&state, &current_user, &project, title, content).await {
         Ok(dir_name) => {
-            let uri = format!("/~{}/{}/issues/{}", owner.slug, project.slug, dir_name);
+            let uri = format!("/~{}/{}/talk/{}", owner.slug, project.slug, dir_name);
             Redirect::to(&uri).into_response()
         }
         Err(e) => {
@@ -141,7 +141,7 @@ async fn render_new_issue_page(
         logged_in_user: Some(current_user),
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
-        active_tab: "issues",
+        active_tab: "talk",
         selected_branch: project.main_branch.clone(),
     };
     Html(template.render_with_theme()).into_response()

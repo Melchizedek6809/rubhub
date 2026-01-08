@@ -79,7 +79,7 @@ impl Issue {
 impl IssueSummary {
     /// URI for viewing this issue
     pub fn uri(&self, owner: &str, project_slug: &str) -> String {
-        format!("/~{}/{}/issues/{}", owner, project_slug, self.dir_name)
+        format!("/~{}/{}/talk/{}", owner, project_slug, self.dir_name)
     }
 
     /// Format the created_at date for display

@@ -194,7 +194,7 @@ impl Api {
         title: &str,
         content: &str,
     ) -> Result<Response> {
-        let path = format!("/~{}/{}/issues/new", owner, project);
+        let path = format!("/~{}/{}/talk/new", owner, project);
 
         let form = [("title", title), ("content", content)];
 
@@ -218,7 +218,7 @@ impl Api {
         content: &str,
         status: Option<&str>,
     ) -> Result<Response> {
-        let view_path = format!("/~{}/{}/issues/{}", owner, project, issue_dir);
+        let view_path = format!("/~{}/{}/talk/{}", owner, project, issue_dir);
 
         let post_path = format!("{}/comment", view_path);
         let status_value = status.unwrap_or("");

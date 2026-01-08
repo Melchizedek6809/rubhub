@@ -20,7 +20,7 @@ pub struct AddCommentForm {
     pub status: Option<String>,
 }
 
-pub async fn issue_comment_post(
+pub async fn talk_comment_post(
     State(state): State<GlobalState>,
     cookies: Cookies,
     Path((username, slug, issue_dir)): Path<(String, String, String)>,
@@ -54,7 +54,7 @@ pub async fn issue_comment_post(
 
     // Require either content or a status change
     if content.is_empty() && status.is_none() {
-        let uri = format!("/~{}/{}/issues/{}", owner.slug, project.slug, issue_dir);
+        let uri = format!("/~{}/{}/talk/{}", owner.slug, project.slug, issue_dir);
         return Redirect::to(&uri).into_response();
     }
 
@@ -64,6 +64,6 @@ pub async fn issue_comment_post(
         eprintln!("Failed to add comment: {}", e);
     }
 
-    let uri = format!("/~{}/{}/issues/{}", owner.slug, project.slug, issue_dir);
+    let uri = format!("/~{}/{}/talk/{}", owner.slug, project.slug, issue_dir);
     Redirect::to(&uri).into_response()
 }

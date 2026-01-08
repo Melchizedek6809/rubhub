@@ -11,7 +11,7 @@
           <h1 class="project-header">
             <a href="{{ owner.uri() }}">{{ owner.name }}</a> /
             <a href="{{ project.uri() }}">{{ project.name }}</a> /
-            <a href="{{ project.uri_issues() }}">Issues</a> /
+            <a href="{{ project.uri_talk() }}">Talk</a> /
             new
           </h1>
         </div>
@@ -22,7 +22,7 @@
         <div class="message" role="status">{{ msg }}</div>
         {% endif %}
 
-        <form method="post" action="/~{{ owner.slug }}/{{ project.slug }}/issues/new" class="stack card simple-form">
+        <form method="post" action="/~{{ owner.slug }}/{{ project.slug }}/talk/new" class="stack card simple-form">
           <label>
             Title
             <input type="text" name="title" autofocus autocomplete="off" required placeholder="Issue title">

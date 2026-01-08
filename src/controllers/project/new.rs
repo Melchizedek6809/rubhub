@@ -141,7 +141,7 @@ pub async fn project_new_post(
         .into_response();
     }
 
-    // Save metadata to rubhub/info branch
+    // Save metadata to meta/info branch
     if let Err(msg) = project
         .save(&state, &current_user.name, &current_user.email)
         .await

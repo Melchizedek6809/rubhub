@@ -264,10 +264,7 @@ impl server::Handler for Connection {
     ) -> Result<server::Auth, Self::Error> {
         let openssh = key.to_openssh()?;
         // Extract just the key data (second field in openssh format)
-        let key_data = openssh
-            .split_whitespace()
-            .nth(1)
-            .unwrap_or(&openssh);
+        let key_data = openssh.split_whitespace().nth(1).unwrap_or(&openssh);
 
         match user {
             "anon" => {
@@ -289,7 +286,10 @@ impl server::Handler for Connection {
                 }
             }
             _ => {
-                println!("SSH Reject: invalid username '{}' (use 'git' or 'anon')", user);
+                println!(
+                    "SSH Reject: invalid username '{}' (use 'git' or 'anon')",
+                    user
+                );
                 Ok(server::Auth::Reject {
                     partial_success: false,
                     proceed_with_methods: None,

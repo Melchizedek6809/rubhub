@@ -245,10 +245,7 @@ async fn test_invalid_ssh_key_format() {
             "alice@test.com",
         );
 
-        let ssh_url = format!(
-            "ssh://git@{}/~alice/ssh-test",
-            state.config.ssh_public_host
-        );
+        let ssh_url = format!("ssh://git@{}/~alice/ssh-test", state.config.ssh_public_host);
 
         let result = git.clone_ssh(&ssh_url, "repo").await.unwrap();
         assert_clone_success(&result);

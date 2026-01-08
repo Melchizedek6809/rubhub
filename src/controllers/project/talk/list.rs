@@ -45,7 +45,7 @@ struct IssuesListTemplate<'a> {
     count_cancelled: usize,
 }
 
-pub async fn issues_list_get(
+pub async fn talk_list_get(
     State(state): State<GlobalState>,
     cookies: Cookies,
     Query(filters): Query<IssueFilters>,
@@ -107,7 +107,7 @@ pub async fn issues_list_get(
         logged_in_user,
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
-        active_tab: "issues",
+        active_tab: "talk",
         selected_branch: project.main_branch.clone(),
         current_status,
         count_open,
