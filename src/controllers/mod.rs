@@ -18,4 +18,4 @@ pub use project::{
     project_tree_root_get,
 };
 pub use projects_list::all_projects_list;
-pub use user::{handle_settings, settings_page, user_page};
+pub use user::{handle_settings, settings_page, user_keys_get, user_page};

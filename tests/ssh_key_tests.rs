@@ -407,3 +407,63 @@ async fn test_duplicate_key_rejected() {
     })
     .await;
 }
+
+/// Test that the /~user/keys endpoint returns SSH keys in authorized_keys format.
+#[tokio::test(flavor = "current_thread")]
+async fn test_user_keys_endpoint() {
+    with_backend(|state| async move {
+        let api = Api::new(&state.config.base_url);
+        let temp_dir = state.config.dir_root.as_path();
+
+        // Generate SSH keys
+        let key1 = TestSshKey::generate_ed25519(temp_dir, "alice_key1").unwrap();
+        let key2 = TestSshKey::generate_rsa(temp_dir, "alice_key2").unwrap();
+
+        // Register and add keys
+        api.register("alice", "alice@test.com", "password123456789")
+            .await
+            .unwrap();
+
+        let both_keys = format!("{}\n{}", key1.public_key_content, key2.public_key_content);
+        api.update_settings("alice", "alice@test.com", "", "", "main", &both_keys)
+            .await
+            .unwrap();
+
+        // Fetch the keys endpoint (no login required - public endpoint)
+        let keys_response = api.get_text("/~alice/keys").await.unwrap();
+
+        // Verify both keys are present in authorized_keys format
+        assert!(
+            keys_response.contains("ssh-ed25519"),
+            "Should contain ed25519 key type"
+        );
+        assert!(
+            keys_response.contains("ssh-rsa"),
+            "Should contain RSA key type"
+        );
+    })
+    .await;
+}
+
+/// Test that the /~user/keys endpoint returns empty for users with no keys.
+#[tokio::test(flavor = "current_thread")]
+async fn test_user_keys_endpoint_empty() {
+    with_backend(|state| async move {
+        let api = Api::new(&state.config.base_url);
+
+        // Register user without adding SSH keys
+        api.register("bob", "bob@test.com", "password123456789")
+            .await
+            .unwrap();
+
+        // Fetch the keys endpoint
+        let keys_response = api.get_text("/~bob/keys").await.unwrap();
+
+        // Should return empty for user with no keys
+        assert!(
+            keys_response.trim().is_empty(),
+            "Should return empty for user with no keys"
+        );
+    })
+    .await;
+}

@@ -103,6 +103,7 @@ pub async fn http_server(
 
     let app =
         app.route("/{username}", get(controllers::user_page))
+            .route("/{username}/keys", get(controllers::user_keys_get))
             .route("/{username}/{slug}", get(controllers::project_overview_get))
             .route(
                 "/{username}/{slug}/branches",
