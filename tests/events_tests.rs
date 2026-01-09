@@ -142,3 +142,88 @@ async fn test_event_emission() {
     })
     .await;
 }
+
+#[tokio::test(flavor = "current_thread")]
+async fn test_create_event_emission() {
+    use rubhub::{AccessType, RepoEvent};
+    use time::OffsetDateTime;
+
+    with_backend(|state| async move {
+        let api = Api::new(&state.config.base_url);
+
+        api.register("testuser", "test@example.com", "password123456789")
+            .await
+            .unwrap();
+
+        // Emit a create event
+        state.emit_event(RepoEvent::RepositoryCreated {
+            owner: "testuser".to_string(),
+            project: "test-project".to_string(),
+            public_access: AccessType::Read,
+            timestamp: OffsetDateTime::now_utc(),
+        });
+
+        // Verify event was emitted (basic test - channel accepts the event)
+        // Full streaming verification would require async stream consumption
+    })
+    .await;
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn test_delete_event_emission() {
+    use rubhub::{AccessType, RepoEvent};
+    use time::OffsetDateTime;
+
+    with_backend(|state| async move {
+        let api = Api::new(&state.config.base_url);
+
+        api.register("testuser", "test@example.com", "password123456789")
+            .await
+            .unwrap();
+
+        api.create_project("Test Project", "A test project")
+            .await
+            .unwrap();
+
+        // Emit a delete event
+        state.emit_event(RepoEvent::RepositoryDeleted {
+            owner: "testuser".to_string(),
+            project: "test-project".to_string(),
+            public_access: AccessType::Read,
+            timestamp: OffsetDateTime::now_utc(),
+        });
+
+        // Verify event was emitted (basic test - channel accepts the event)
+        // Full streaming verification would require async stream consumption
+    })
+    .await;
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn test_project_events_404_after_deletion() {
+    with_backend(|state| async move {
+        let api = Api::new(&state.config.base_url);
+
+        api.register("testuser", "test@example.com", "password123456789")
+            .await
+            .unwrap();
+
+        api.create_project("Test Project", "A test project")
+            .await
+            .unwrap();
+
+        // Delete the project
+        api.delete_project("testuser", "test-project")
+            .await
+            .unwrap();
+
+        // Trying to access events for deleted project should 404
+        let response = api
+            .get_raw("/~testuser/test-project/.events")
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), 404);
+    })
+    .await;
+}

@@ -6,9 +6,13 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 use serde::Deserialize;
+use time::OffsetDateTime;
 use tower_cookies::Cookies;
 
-use crate::{AccessType, GlobalState, UserModel, extractors::PathUserProject, services::session};
+use crate::{
+    AccessType, GlobalState, UserModel, extractors::PathUserProject, models::RepoEvent,
+    services::session,
+};
 
 #[derive(Debug, Deserialize)]
 pub struct ProjectDeleteForm {
@@ -39,12 +43,22 @@ pub async fn project_delete_post(
         return Redirect::to(&project.uri_settings()).into_response();
     }
 
-    // Get redirect URL before deletion
+    // Get redirect URL and public access before deletion
     let redirect_url = owner.uri();
+    let public_access = project.public_access;
 
     // Delete the project
     match project.delete(&state).await {
-        Ok(_) => Redirect::to(&redirect_url).into_response(),
+        Ok(_) => {
+            // Emit deletion event with captured public_access for access control
+            state.emit_event(RepoEvent::RepositoryDeleted {
+                owner: project.owner.clone(),
+                project: project.slug.clone(),
+                public_access,
+                timestamp: OffsetDateTime::now_utc(),
+            });
+            Redirect::to(&redirect_url).into_response()
+        }
         Err(_) => Redirect::to(&project.uri_settings()).into_response(),
     }
 }

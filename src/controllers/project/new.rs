@@ -11,9 +11,11 @@ use axum::{
 use serde::Deserialize;
 use tower_cookies::Cookies;
 
+use time::OffsetDateTime;
+
 use crate::{
     AccessType, GlobalState, Project, User, UserModel,
-    models::ContentPage,
+    models::{ContentPage, RepoEvent},
     services::{
         repository::create_bare_repo,
         session,
@@ -140,6 +142,14 @@ pub async fn project_new_post(
         .await
         .into_response();
     }
+
+    // Emit creation event before saving metadata (which emits branch events)
+    state.emit_event(RepoEvent::RepositoryCreated {
+        owner: project.owner.clone(),
+        project: project.slug.clone(),
+        public_access: project.public_access,
+        timestamp: OffsetDateTime::now_utc(),
+    });
 
     // Save metadata to meta/info branch
     if let Err(msg) = project

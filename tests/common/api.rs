@@ -233,4 +233,18 @@ impl Api {
             .await?
             .error_for_status()?)
     }
+
+    /// Delete a project (requires being logged in as owner).
+    pub async fn delete_project(&self, owner: &str, project: &str) -> Result<Response> {
+        let confirmation = format!("{}/{}", owner, project);
+        let form = [("confirmation", confirmation.as_str())];
+
+        Ok(self
+            .client
+            .post(format!("{}/~{}/{}/delete", self.base_url, owner, project))
+            .form(&form)
+            .send()
+            .await?
+            .error_for_status()?)
+    }
 }

@@ -31,9 +31,22 @@ pub async fn global_events(State(state): State<GlobalState>, cookies: Cookies) -
             async move {
                 let event = result.ok()?;
 
+                // For create/delete events, check access using the captured public_access
+                // (project may not be loadable - not created yet or already deleted)
+                if let Some(public_access) = event.event_public_access() {
+                    let is_owner = logged_in_user
+                        .as_ref()
+                        .map(|u| u.slug == event.owner())
+                        .unwrap_or(false);
+                    // Allow if owner or if project is/was publicly readable
+                    if is_owner || public_access != AccessType::None {
+                        return Some(event);
+                    }
+                    return None;
+                }
+
                 // Check read access for the event's project
-                let info = event.info();
-                if let Ok(project) = Project::load(&state, &info.owner, &info.project).await {
+                if let Ok(project) = Project::load(&state, event.owner(), event.project()).await {
                     let access = project
                         .access_level(logged_in_user.as_ref().map(|u| u.slug.clone()))
                         .await;
@@ -68,15 +81,28 @@ pub async fn user_events(
 
             async move {
                 let event = result.ok()?;
-                let info = event.info();
 
                 // Filter by owner
-                if info.owner != user_slug {
+                if event.owner() != user_slug {
+                    return None;
+                }
+
+                // For create/delete events, check access using the captured public_access
+                // (project may not be loadable - not created yet or already deleted)
+                if let Some(public_access) = event.event_public_access() {
+                    let is_owner = logged_in_user
+                        .as_ref()
+                        .map(|u| u.slug == event.owner())
+                        .unwrap_or(false);
+                    // Allow if owner or if project is/was publicly readable
+                    if is_owner || public_access != AccessType::None {
+                        return Some(event);
+                    }
                     return None;
                 }
 
                 // Check read access for the event's project
-                if let Ok(project) = Project::load(&state, &info.owner, &info.project).await {
+                if let Ok(project) = Project::load(&state, event.owner(), event.project()).await {
                     let access = project
                         .access_level(logged_in_user.as_ref().map(|u| u.slug.clone()))
                         .await;
@@ -121,15 +147,24 @@ pub async fn project_events(
 
             async move {
                 let event = result.ok()?;
-                let info = event.info();
 
                 // Filter by owner and project
-                if info.owner == owner_slug && info.project == project_slug {
+                if event.owner() == owner_slug && event.project() == project_slug {
                     Some(event)
                 } else {
                     None
                 }
             }
+        })
+        // Include delete event then terminate the stream
+        .scan(false, |terminated, event| {
+            if *terminated {
+                return std::future::ready(None);
+            }
+            if event.is_repository_deleted() {
+                *terminated = true;
+            }
+            std::future::ready(Some(event))
         })
         .map(format_sse_event);
 
