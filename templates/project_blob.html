@@ -32,7 +32,8 @@
                   {% if i == path_parts.len() - 1 %}
                     / {{ part }}
                   {% else %}
-                    / <a href="{{ project.uri_tree(&selected_branch, &path_parts[..=i].join("/")) }}">{{ part }}</a>
+                    {% let subpath = path_parts[..=i].join("/") %}
+                    / <a href="{{ project.uri_tree(&selected_branch, &subpath) }}">{{ part }}</a>
                   {% endif %}
                 {% endfor %}
               </div>
@@ -62,7 +63,7 @@
               <p>Binary file</p>
             </div>
             {% elif is_rendered_markdown %}
-            {% call md::render(markdown_frontmatter, file_content) %}
+            {{ md::render(markdown_frontmatter, file_content) }}
             {% else %}
             <pre class="file-content"><code>{{ file_content }}</code></pre>
             {% endif %}

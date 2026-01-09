@@ -68,14 +68,10 @@ pub async fn set_git_head(
     project_slug: &str,
     head_branch: &str,
 ) -> Result<()> {
-    if branch_exists(state, user_name, project_slug, head_branch).await {
-        let contents = format!("ref: refs/heads/{}\n", head_branch);
-        let path = state.config.git_root.join(user_name).join(project_slug).join("HEAD");
-        fs::write(path, contents).await?;
-        Ok(())
-    } else {
-        Err(anyhow!("Branch doesn't exist"))
-    }
+    let contents = format!("ref: refs/heads/{}\n", head_branch);
+    let path = state.config.git_root.join(user_name).join(project_slug).join("HEAD");
+    fs::write(path, contents).await?;
+    Ok(())
 }
 
 pub async fn get_git_summary(

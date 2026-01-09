@@ -30,7 +30,8 @@
             <div class="path-breadcrumb">
               <a href="{{ project.uri_tree(&selected_branch, "") }}">{{ project.slug }}</a>
               {% for (i, part) in path_parts.iter().enumerate() %}
-                / <a href="{{ project.uri_tree(&selected_branch, &path_parts[..=i].join("/")) }}">{{ part }}</a>
+                {% let subpath = path_parts[..=i].join("/") %}
+                / <a href="{{ project.uri_tree(&selected_branch, &subpath) }}">{{ part }}</a>
               {% endfor %}
             </div>
             {% endif %}
@@ -62,9 +63,12 @@
           </div>
           <br/>
 
-          {% if let Some(readme_html) = readme_html %}
-            {% call md::render(readme_frontmatter, readme_html) %}
-          {% endif %}
+          {% match readme_html %}
+          {% when Some(html) %}
+              {% let fm = readme_frontmatter %}
+              {{ md::render(fm, html) }}
+          {% when _ %}
+          {% endmatch %}
         </div>
       </section>
     </main>

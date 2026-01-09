@@ -18,14 +18,14 @@ rubhub-auth-store = { path = "auth_store" }
 
 anyhow = "1"
 axum = { version = "0.8", features = ["ws", "multipart"] }
-askama = "0.14"
+askama = "0.15"
 dotenvy = "0.15"
-gix = { version = "0.75", default-features = false, features = ["basic", "tree-editor"] }
+gix = { version = "0.77", default-features = false, features = ["basic", "tree-editor"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"
 smallvec = "1"
-russh = "0.55"
+russh = "0.56"
 argon2 = { version = "0.5", features = ["password-hash"] }
 time = { version = "0.3", features = ["serde", "macros", "formatting", "parsing"] }
 tokio = { version = "1.48", features = ["macros", "process", "signal", "rt-multi-thread", "rt"] }
@@ -43,7 +43,7 @@ mime_guess = "2.0"
 sha2 = "0.10"
 serde_urlencoded = "0.7"
 tower_governor = "0.8"
-validator = "0.19"
+validator = "0.20"
 
 [dev-dependencies]
 tempfile = "3"

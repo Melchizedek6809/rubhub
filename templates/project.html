@@ -25,7 +25,7 @@
           {% endif %}
 
           {% if let Some(readme_html) = readme_html %}
-          {% call md::render(readme_frontmatter, readme_html) %}
+          {{ md::render(readme_frontmatter, readme_html) }}
           {% endif %}
         </div>
       </section>
