@@ -405,7 +405,7 @@ async fn test_duplicate_key_rejected() {
     .await;
 }
 
-/// Test that the /~user/keys endpoint returns SSH keys in authorized_keys format.
+/// Test that the /~user/.keys endpoint returns SSH keys in authorized_keys format.
 #[tokio::test(flavor = "current_thread")]
 async fn test_user_keys_endpoint() {
     with_backend(|state| async move {
@@ -427,7 +427,7 @@ async fn test_user_keys_endpoint() {
             .unwrap();
 
         // Fetch the keys endpoint (no login required - public endpoint)
-        let keys_response = api.get_text("/~alice/keys").await.unwrap();
+        let keys_response = api.get_text("/~alice/.keys").await.unwrap();
 
         // Verify both keys are present in authorized_keys format
         assert!(
@@ -442,7 +442,7 @@ async fn test_user_keys_endpoint() {
     .await;
 }
 
-/// Test that the /~user/keys endpoint returns empty for users with no keys.
+/// Test that the /~user/.keys endpoint returns empty for users with no keys.
 #[tokio::test(flavor = "current_thread")]
 async fn test_user_keys_endpoint_empty() {
     with_backend(|state| async move {
@@ -454,7 +454,7 @@ async fn test_user_keys_endpoint_empty() {
             .unwrap();
 
         // Fetch the keys endpoint
-        let keys_response = api.get_text("/~bob/keys").await.unwrap();
+        let keys_response = api.get_text("/~bob/.keys").await.unwrap();
 
         // Should return empty for user with no keys
         assert!(

@@ -85,7 +85,9 @@ pub async fn http_server(
             "/projects/new",
             get(controllers::project_new_get).post(controllers::project_new_post),
         )
-        .route("/projects", get(controllers::all_projects_list));
+        .route("/projects", get(controllers::all_projects_list))
+        // SSE event stream (global)
+        .route("/.events", get(controllers::global_events));
 
     // Dynamically register content page routes
     for page in &state.config.content_pages {
@@ -102,8 +104,12 @@ pub async fn http_server(
     }
 
     let app =
-        app.route("/{username}", get(controllers::user_page))
-            .route("/{username}/keys", get(controllers::user_keys_get))
+        app
+            // SSE event streams (must come before catch-all patterns)
+            .route("/{username}/.events", get(controllers::user_events))
+            .route("/{username}/{slug}/.events", get(controllers::project_events))
+            .route("/{username}", get(controllers::user_page))
+            .route("/{username}/.keys", get(controllers::user_keys_get))
             .route("/{username}/{slug}", get(controllers::project_overview_get))
             .route(
                 "/{username}/{slug}/branches",

@@ -55,7 +55,7 @@ pub async fn project_branches_get(
     };
 
     let mut branches: Vec<GitRefInfo> = vec![];
-    for b in &summary.branches {
+    for b in summary.branches() {
         if let Some(info) = get_git_info(&state, &owner.slug, &project.slug, b, 1, 0).await {
             branches.push(info);
         }

@@ -1,7 +1,7 @@
 <div class="repo-bar">
-  {% if summary.branches.len() > 0 %}
+  {% if summary.branches().len() > 0 %}
   <select name="branch-name" class="branch-switcher" data-main-branch="{{ project.main_branch }}" data-base-href="{{ project.uri() }}">
-    {% for branch in summary.branches %}
+    {% for branch in summary.branches() %}
     <option value="{{ branch }}" {% if branch==selected_branch.as_str() %}selected{% endif %}>{{ branch
       }}</option>
     {% endfor %}
@@ -14,14 +14,14 @@
 
   <span class="repo-branches">
     <a href="{{ project.uri_branches() }}">
-      <span class="icon i-git-branch"></span> {{ summary.branches.len() }} branch{% if summary.branches.len() != 1
+      <span class="icon i-git-branch"></span> {{ summary.branches().len() }} branch{% if summary.branches().len() != 1
       %}es{% endif %}
     </a>
   </span>
 
   <span class="repo-tags">
     <a href="{{ project.uri_tags() }}">
-      <span class="icon i-tag"></span> {{ summary.tags.len() }} tag{% if summary.tags.len() != 1 %}s{% endif %}
+      <span class="icon i-tag"></span> {{ summary.tags().len() }} tag{% if summary.tags().len() != 1 %}s{% endif %}
     </a>
   </span>
 

@@ -175,17 +175,18 @@ pub async fn detect_default_branch(
     };
 
     // Priority: main > master > first non-meta branch
-    if summary.branches.contains(&"main".to_string()) {
+    let branches = summary.branches();
+    if branches.contains(&"main") {
         return "main".to_string();
     }
-    if summary.branches.contains(&"master".to_string()) {
+    if branches.contains(&"master") {
         return "master".to_string();
     }
 
     // Return first branch that isn't a meta/* branch
-    for branch in &summary.branches {
+    for branch in branches {
         if !branch.starts_with("meta/") {
-            return branch.clone();
+            return branch.to_string();
         }
     }
 

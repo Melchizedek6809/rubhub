@@ -8,6 +8,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::process::Command;
 use tokio::task::JoinHandle;
 
+use crate::services::repository::GitSummary;
 use crate::{AccessType, GlobalState, Project};
 
 async fn ensure_host_key(path: &PathBuf, key_type: &str) -> Result<(), io::Error> {
@@ -115,11 +116,21 @@ impl Connection {
 
     async fn handle_receive_pack(
         &mut self,
+        owner_slug: String,
+        project_slug: String,
         path: String,
         rx_from_ssh: tokio::sync::mpsc::Receiver<Vec<u8>>,
     ) -> Result<(), russh::Error> {
-        self.handle_with_command("git-receive-pack".to_string(), path, rx_from_ssh)
-            .await
+        // Capture refs before push
+        let before = GitSummary::capture(&self.state, &owner_slug, &project_slug);
+
+        self.handle_with_command_and_callback(
+            "git-receive-pack".to_string(),
+            path,
+            rx_from_ssh,
+            Some((self.state.clone(), before)),
+        )
+        .await
     }
 
     async fn handle_archive_pack(
@@ -135,7 +146,18 @@ impl Connection {
         &mut self,
         command: String,
         path: String,
+        rx_from_ssh: tokio::sync::mpsc::Receiver<Vec<u8>>,
+    ) -> Result<(), russh::Error> {
+        self.handle_with_command_and_callback(command, path, rx_from_ssh, None)
+            .await
+    }
+
+    async fn handle_with_command_and_callback(
+        &mut self,
+        command: String,
+        path: String,
         mut rx_from_ssh: tokio::sync::mpsc::Receiver<Vec<u8>>,
+        callback_data: Option<(GlobalState, GitSummary)>,
     ) -> Result<(), russh::Error> {
         let path = self.state.config.git_root.join(path);
 
@@ -143,7 +165,7 @@ impl Connection {
         let id = self.channel_id.ok_or(russh::Error::SendError)?;
 
         let mut child = Command::new(command)
-            .arg(path)
+            .arg(&path)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -209,6 +231,15 @@ impl Connection {
                 .ok()
                 .and_then(|status| status.code())
                 .unwrap_or(1);
+
+            // Emit events on successful receive-pack
+            if exit_code == 0
+                && let Some((state, before)) = callback_data
+            {
+                let after = GitSummary::capture(&state, before.owner(), before.project());
+                before.emit_changes(&after, &state);
+            }
+
             let _ = handle.eof(id).await;
             let _ = handle.exit_status_request(id, exit_code as u32).await.ok();
             let _ = handle.close(id).await;
@@ -356,7 +387,10 @@ impl server::Handler for Connection {
 
         match *command {
             "git-upload-pack" => self.handle_upload_pack(repo_path, rx).await,
-            "git-receive-pack" => self.handle_receive_pack(repo_path, rx).await,
+            "git-receive-pack" => {
+                self.handle_receive_pack(owner.slug.clone(), project.slug.clone(), repo_path, rx)
+                    .await
+            }
             "git-upload-archive" => self.handle_archive_pack(repo_path, rx).await,
             _ => Err(russh::Error::RequestDenied),
         }

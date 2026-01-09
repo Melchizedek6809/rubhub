@@ -3543,13 +3543,12 @@ dependencies = [
  "sd-notify",
  "serde",
  "serde_json",
- "serde_urlencoded",
  "serde_yaml",
- "sha2 0.10.9",
  "smallvec",
  "tempfile",
  "time",
  "tokio",
+ "tokio-stream",
  "tower",
  "tower-cookies",
  "tower-http",
@@ -4376,6 +4375,7 @@ dependencies = [
  "futures-core",
  "pin-project-lite",
  "tokio",
+ "tokio-util",
 ]
 
 [[package]]

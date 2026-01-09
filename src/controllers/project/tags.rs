@@ -55,7 +55,7 @@ pub async fn project_tags_get(
     };
 
     let mut tags: Vec<GitRefInfo> = vec![];
-    for b in &summary.tags {
+    for b in summary.tags() {
         if let Some(info) = get_git_info(&state, &owner.slug, &project.slug, b, 1, 0).await {
             tags.push(info);
         }

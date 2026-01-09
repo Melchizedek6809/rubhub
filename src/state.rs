@@ -8,8 +8,9 @@ use std::{
 
 use anyhow::{Context, Result};
 use rubhub_auth_store::AuthStore;
+use tokio::sync::broadcast;
 
-use crate::models::ContentPage;
+use crate::models::{ContentPage, RepoEvent};
 
 #[derive(Debug, Clone)]
 pub struct AppConfig {
@@ -302,6 +303,7 @@ pub struct GlobalState {
     pub auth: Arc<AuthStore>,
     pub config: Arc<AppConfig>,
     pub process_start: Instant,
+    pub event_tx: broadcast::Sender<RepoEvent>,
 }
 
 #[cfg(test)]
@@ -333,12 +335,23 @@ impl GlobalState {
         let auth = AuthStore::new(config.dir_root.clone());
         let auth = Arc::new(auth);
 
+        // Create broadcast channel for SSE events
+        // 256 buffer - lagging receivers will drop old events
+        let (event_tx, _) = broadcast::channel(256);
+
         let state = Self {
             auth,
             process_start,
             config: Arc::new(config),
+            event_tx,
         };
 
         Ok(state)
+    }
+
+    /// Emit a repository event to all SSE listeners
+    pub fn emit_event(&self, event: RepoEvent) {
+        // Ignore send errors (no receivers is fine)
+        let _ = self.event_tx.send(event);
     }
 }

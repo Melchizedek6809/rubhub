@@ -4,9 +4,12 @@ use anyhow::{Result, anyhow};
 use time::OffsetDateTime;
 
 use crate::{
+    AccessType, GlobalState, User,
     services::{
-        project_info::{self, load_project_info}, repository, validation::{slugify, validate_slug}
-    }, AccessType, GlobalState, User
+        project_info::{self, load_project_info},
+        repository,
+        validation::{slugify, validate_slug},
+    },
 };
 
 #[derive(Clone, Debug, PartialEq)]

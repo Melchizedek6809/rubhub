@@ -6,10 +6,13 @@ use std::{
     io,
     time::{SystemTime, UNIX_EPOCH},
 };
+use time::OffsetDateTime;
 use tokio::fs;
 
 use crate::{
-    GlobalState, models::common::format_relative_time, services::validation::validate_slug,
+    GlobalState,
+    models::{RepoEvent, RepoEventInfo, common::format_relative_time},
+    services::validation::validate_slug,
 };
 
 fn ensure_safe_component(value: &str) -> io::Result<()> {
@@ -69,7 +72,12 @@ pub async fn set_git_head(
     head_branch: &str,
 ) -> Result<()> {
     let contents = format!("ref: refs/heads/{}\n", head_branch);
-    let path = state.config.git_root.join(user_name).join(project_slug).join("HEAD");
+    let path = state
+        .config
+        .git_root
+        .join(user_name)
+        .join(project_slug)
+        .join("HEAD");
     fs::write(path, contents).await?;
     Ok(())
 }
@@ -84,25 +92,9 @@ pub async fn get_git_summary(
     let project_slug = project_slug.to_string();
 
     let Ok(res) = tokio::task::spawn_blocking(move || {
-        let repo = get_git_repo(&state, &user_name, &project_slug)?;
-        let mut tags = vec![];
-        let mut branches = vec![];
-
-        if let Ok(refs) = repo.references() {
-            if let Ok(iter) = refs.prefixed("refs/tags/") {
-                for r in iter.flatten() {
-                    tags.push(r.name().shorten().to_string());
-                }
-            }
-
-            if let Ok(iter) = refs.prefixed("refs/heads/") {
-                for r in iter.flatten() {
-                    branches.push(r.name().shorten().to_string());
-                }
-            }
-        }
-
-        Some(GitSummary { branches, tags })
+        // Check repo exists
+        let _ = get_git_repo(&state, &user_name, &project_slug)?;
+        Some(GitSummary::capture(&state, &user_name, &project_slug))
     })
     .await
     else {
@@ -362,10 +354,107 @@ impl PartialOrd for GitTreeEntry {
     }
 }
 
+/// Summary of a repository's refs state, used for both display and change detection
 #[derive(Debug, Clone)]
 pub struct GitSummary {
-    pub branches: Vec<String>,
-    pub tags: Vec<String>,
+    owner: String,
+    project: String,
+    branches: std::collections::HashMap<String, String>, // branch name -> commit hash
+    tags: std::collections::HashMap<String, String>,     // tag name -> commit hash
+}
+
+impl GitSummary {
+    /// Get the owner slug
+    pub fn owner(&self) -> &str {
+        &self.owner
+    }
+
+    /// Get the project slug
+    pub fn project(&self) -> &str {
+        &self.project
+    }
+
+    /// Capture the current state of a repository's refs
+    pub fn capture(state: &GlobalState, owner: &str, project: &str) -> Self {
+        let path = state.config.git_root.join(owner).join(project);
+        let mut branches = std::collections::HashMap::new();
+        let mut tags = std::collections::HashMap::new();
+
+        if let Ok(repo) = gix::open(&path)
+            && let Ok(references) = repo.references()
+        {
+            if let Ok(iter) = references.prefixed("refs/heads/") {
+                for mut r in iter.flatten() {
+                    if let Ok(commit) = r.peel_to_commit() {
+                        branches.insert(r.name().shorten().to_string(), commit.id().to_string());
+                    }
+                }
+            }
+            if let Ok(iter) = references.prefixed("refs/tags/") {
+                for mut r in iter.flatten() {
+                    if let Ok(commit) = r.peel_to_commit() {
+                        tags.insert(r.name().shorten().to_string(), commit.id().to_string());
+                    }
+                }
+            }
+        }
+
+        Self {
+            owner: owner.to_string(),
+            project: project.to_string(),
+            branches,
+            tags,
+        }
+    }
+
+    /// Get branch names as a sorted vec (for templates)
+    pub fn branches(&self) -> Vec<&str> {
+        let mut names: Vec<&str> = self.branches.keys().map(|s| s.as_str()).collect();
+        names.sort();
+        names
+    }
+
+    /// Get tag names as a sorted vec (for templates)
+    pub fn tags(&self) -> Vec<&str> {
+        let mut names: Vec<&str> = self.tags.keys().map(|s| s.as_str()).collect();
+        names.sort();
+        names
+    }
+
+    /// Compare with another state and emit events for any changes
+    pub fn emit_changes(&self, after: &GitSummary, state: &GlobalState) {
+        let timestamp = OffsetDateTime::now_utc();
+
+        // Check for new or updated branches
+        for (branch, new_hash) in &after.branches {
+            if self.branches.get(branch) != Some(new_hash) {
+                state.emit_event(RepoEvent::BranchUpdated {
+                    info: RepoEventInfo {
+                        owner: after.owner.clone(),
+                        project: after.project.clone(),
+                        commit_hash: new_hash.clone(),
+                        timestamp,
+                    },
+                    branch: branch.clone(),
+                });
+            }
+        }
+
+        // Check for new or updated tags
+        for (tag, new_hash) in &after.tags {
+            if self.tags.get(tag) != Some(new_hash) {
+                state.emit_event(RepoEvent::TagUpdated {
+                    info: RepoEventInfo {
+                        owner: after.owner.clone(),
+                        project: after.project.clone(),
+                        commit_hash: new_hash.clone(),
+                        timestamp,
+                    },
+                    tag: tag.clone(),
+                });
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -431,18 +520,21 @@ pub async fn create_orphan_branch(
     author_name: &str,
     author_email: &str,
 ) -> Result<()> {
-    let state = state.clone();
-    let user_name = user_name.to_string();
-    let project_slug = project_slug.to_string();
-    let branch_name = branch_name.to_string();
+    // Capture state before operation
+    let before = GitSummary::capture(state, user_name, project_slug);
+
+    let state_clone = state.clone();
+    let user_name_owned = user_name.to_string();
+    let project_slug_owned = project_slug.to_string();
+    let branch_name_owned = branch_name.to_string();
     let file_path = file_path.to_string();
     let file_content = file_content.to_string();
     let commit_message = commit_message.to_string();
     let author_name = author_name.to_string();
     let author_email = author_email.to_string();
 
-    let res = tokio::task::spawn_blocking(move || -> Result<()> {
-        let repo = get_git_repo(&state, &user_name, &project_slug)
+    tokio::task::spawn_blocking(move || -> Result<()> {
+        let repo = get_git_repo(&state_clone, &user_name_owned, &project_slug_owned)
             .ok_or_else(|| anyhow!("Could not open repository"))?;
 
         // 1. Write blob
@@ -475,12 +567,12 @@ pub async fn create_orphan_branch(
         let commit_id = repo.write_object(&commit)?;
 
         // 5. Create reference
-        let ref_name = format!("refs/heads/{}", branch_name);
+        let ref_name = format!("refs/heads/{}", branch_name_owned);
         repo.reference(
             ref_name,
             commit_id,
             gix::refs::transaction::PreviousValue::MustNotExist,
-            "Create issues branch",
+            "Create orphan branch",
         )?;
 
         Ok(())
@@ -488,7 +580,11 @@ pub async fn create_orphan_branch(
     .await
     .map_err(|e| anyhow!("Task join error: {}", e))??;
 
-    Ok(res)
+    // Capture state after and emit changes
+    let after = GitSummary::capture(state, user_name, project_slug);
+    before.emit_changes(&after, state);
+
+    Ok(())
 }
 
 /// Add a file to a branch and create a commit
@@ -503,22 +599,25 @@ pub async fn add_file_to_branch(
     author_name: &str,
     author_email: &str,
 ) -> Result<()> {
-    let state = state.clone();
-    let user_name = user_name.to_string();
-    let project_slug = project_slug.to_string();
-    let branch_name = branch_name.to_string();
+    // Capture state before operation
+    let before = GitSummary::capture(state, user_name, project_slug);
+
+    let state_clone = state.clone();
+    let user_name_owned = user_name.to_string();
+    let project_slug_owned = project_slug.to_string();
+    let branch_name_owned = branch_name.to_string();
     let file_path = file_path.to_string();
     let file_content = file_content.to_string();
     let commit_message = commit_message.to_string();
     let author_name = author_name.to_string();
     let author_email = author_email.to_string();
 
-    let res = tokio::task::spawn_blocking(move || -> Result<()> {
-        let repo = get_git_repo(&state, &user_name, &project_slug)
+    tokio::task::spawn_blocking(move || -> Result<()> {
+        let repo = get_git_repo(&state_clone, &user_name_owned, &project_slug_owned)
             .ok_or_else(|| anyhow!("Could not open repository"))?;
 
         // 1. Get current branch tip and its tree
-        let ref_name = format!("refs/heads/{}", branch_name);
+        let ref_name = format!("refs/heads/{}", branch_name_owned);
         let mut reference = repo.find_reference(&ref_name)?;
         let parent_commit = reference.peel_to_commit()?;
         let tree_id = parent_commit.tree_id()?;
@@ -559,5 +658,9 @@ pub async fn add_file_to_branch(
     .await
     .map_err(|e| anyhow!("Task join error: {}", e))??;
 
-    Ok(res)
+    // Capture state after and emit changes
+    let after = GitSummary::capture(state, user_name, project_slug);
+    before.emit_changes(&after, state);
+
+    Ok(())
 }
