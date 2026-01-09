@@ -17,25 +17,14 @@ pub trait UserModel {
 
 impl UserModel for User {
     async fn projects(&self, state: &GlobalState) -> Result<Vec<Project>> {
-        let mut ret = vec![];
+        let project_infos = state.auth.get_projects_for_owner(&self.slug);
 
-        let path = state.config.git_root.join(&self.slug);
-        let Ok(mut entries) = tokio::fs::read_dir(path).await else {
-            return Ok(ret);
-        };
+        let projects: Vec<Project> = project_infos
+            .iter()
+            .filter_map(|info| Project::from_project_info(info))
+            .collect();
 
-        while let Some(entry) = entries.next_entry().await? {
-            let meta = entry.metadata().await?;
-            if meta.is_dir() {
-                let file_name = entry.file_name();
-                let project_slug = file_name.to_string_lossy();
-
-                if let Ok(project) = Project::load(state, &self.slug, &project_slug).await {
-                    ret.push(project);
-                }
-            };
-        }
-        Ok(ret)
+        Ok(projects)
     }
 
     async fn sidebar_projects(&self, state: &GlobalState) -> Vec<Project> {

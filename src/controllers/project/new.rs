@@ -151,11 +151,8 @@ pub async fn project_new_post(
         timestamp: OffsetDateTime::now_utc(),
     });
 
-    // Save metadata to meta/info branch
-    if let Err(msg) = project
-        .save(&state, &current_user.name, &current_user.email)
-        .await
-    {
+    // Save metadata to auth_store
+    if let Err(msg) = project.save(&state).await {
         // Log error but don't fail - project was created, just no metadata yet
         eprintln!("Warning: Could not save project metadata: {}", msg);
     }

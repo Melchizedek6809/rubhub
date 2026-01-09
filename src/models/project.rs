@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use anyhow::{Result, anyhow};
+use rubhub_auth_store::{ProjectInfo, PublicAccess};
 use time::OffsetDateTime;
 
 use crate::{
     AccessType, GlobalState, User,
     services::{
-        project_info::{self, load_project_info},
         repository,
         validation::{slugify, validate_slug},
     },
@@ -21,12 +21,56 @@ pub struct Project {
 
     pub name: String,
     pub description: String,
-    pub website: String,
 
     pub main_branch: String,
 }
 
 impl Project {
+    /// Convert auth_store PublicAccess to AccessType
+    fn public_access_to_access_type(pa: PublicAccess) -> AccessType {
+        match pa {
+            PublicAccess::None => AccessType::None,
+            PublicAccess::Read => AccessType::Read,
+            PublicAccess::Write => AccessType::Write,
+        }
+    }
+
+    /// Convert AccessType to auth_store PublicAccess
+    fn access_type_to_public_access(at: AccessType) -> PublicAccess {
+        match at {
+            AccessType::None => PublicAccess::None,
+            AccessType::Read => PublicAccess::Read,
+            AccessType::Write => PublicAccess::Write,
+            AccessType::Admin => PublicAccess::Write, // Admin is internal only
+        }
+    }
+
+    /// Create Project from ProjectInfo (for list views)
+    pub fn from_project_info(info: &ProjectInfo) -> Option<Self> {
+        let (owner, slug) = ProjectInfo::parse_key(&info.key)?;
+        Some(Self {
+            slug: slug.to_string(),
+            owner: owner.to_string(),
+            created_at: info.created_at,
+            public_access: Self::public_access_to_access_type(info.public_access),
+            name: info.name.clone(),
+            description: info.description.clone(),
+            main_branch: info.default_branch.clone(),
+        })
+    }
+
+    /// Convert to ProjectInfo for auth_store
+    pub fn to_project_info(&self) -> ProjectInfo {
+        ProjectInfo {
+            key: ProjectInfo::make_key(&self.owner, &self.slug),
+            name: self.name.clone(),
+            description: self.description.clone(),
+            default_branch: self.main_branch.clone(),
+            public_access: Self::access_type_to_public_access(self.public_access),
+            created_at: self.created_at,
+        }
+    }
+
     pub async fn load(state: &GlobalState, user_slug: &str, project_slug: &str) -> Result<Self> {
         if validate_slug(user_slug).is_err() {
             return Err(anyhow!("Invalid username"));
@@ -45,46 +89,16 @@ impl Project {
             return Err(anyhow!("Project not found"));
         }
 
-        // Try to load from meta/info branch
-        let (frontmatter, description) = load_project_info(state, user_slug, project_slug).await?;
+        // Load from auth_store
+        let info = state
+            .auth
+            .get_project_by_owner_slug(user_slug, project_slug)
+            .ok_or_else(|| anyhow!("Project not found in auth_store"))?;
 
-        // Apply defaults for missing fields
-        let name = frontmatter.name.unwrap_or_else(|| project_slug.to_string());
-
-        let public_access = frontmatter
-            .public_access
-            .as_ref()
-            .and_then(|s| AccessType::parse_public_access(s).ok())
-            .unwrap_or(AccessType::None);
-
-        let main_branch = match frontmatter.default_branch {
-            Some(branch) => branch,
-            None => project_info::detect_default_branch(state, user_slug, project_slug).await,
-        };
-
-        let website = frontmatter.website.unwrap_or_default();
-        let created_at = frontmatter
-            .created_at
-            .unwrap_or_else(OffsetDateTime::now_utc);
-
-        Ok(Self {
-            slug: project_slug.to_string(),
-            owner: user_slug.to_string(),
-            created_at,
-            public_access,
-            name,
-            description,
-            website,
-            main_branch,
-        })
+        Self::from_project_info(&info).ok_or_else(|| anyhow!("Invalid project info"))
     }
 
-    pub async fn save(
-        &self,
-        state: &GlobalState,
-        author_name: &str,
-        author_email: &str,
-    ) -> Result<()> {
+    pub async fn save(&self, state: &GlobalState) -> Result<()> {
         if validate_slug(&self.owner).is_err() {
             return Err(anyhow!("Invalid username"));
         }
@@ -92,19 +106,15 @@ impl Project {
             return Err(anyhow!("Invalid projectname"));
         }
 
-        // Update HEAD
+        // Save to auth_store (source of truth)
+        self.to_project_info()
+            .save(&state.auth)
+            .map_err(|e| anyhow!("Failed to save project info: {}", e))?;
+
+        // Update HEAD in Git
         repository::set_git_head(state, &self.owner, &self.slug, &self.main_branch).await?;
 
-        // Save to meta/info branch
-        project_info::save_project_info(
-            state,
-            &self.owner,
-            &self.slug,
-            self,
-            author_name,
-            author_email,
-        )
-        .await
+        Ok(())
     }
 
     pub async fn delete(&self, state: &GlobalState) -> Result<()> {
@@ -116,7 +126,12 @@ impl Project {
             return Err(anyhow!("Invalid projectname"));
         }
 
-        // Delete the git repository directory (metadata is stored within)
+        // Remove from auth_store
+        let key = ProjectInfo::make_key(&self.owner, &self.slug);
+        ProjectInfo::delete(&state.auth, key)
+            .map_err(|e| anyhow!("Failed to delete project info: {}", e))?;
+
+        // Delete the git repository directory
         let repo_path = state.config.git_root.join(&self.owner).join(&self.slug);
         tokio::fs::remove_dir_all(&repo_path).await?;
 
@@ -136,8 +151,7 @@ impl Project {
             slug,
             created_at: time::OffsetDateTime::now_utc(),
             name: name.to_string(),
-            description: "".to_string(),
-            website: "".to_string(),
+            description: String::new(),
             owner: user.slug.to_string(),
             public_access,
             main_branch: user.default_main_branch.to_string(),

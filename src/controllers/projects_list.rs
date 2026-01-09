@@ -5,9 +5,7 @@ use axum::{body::Body, extract::State, http::Response, response::Html};
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, Project, ProjectSummary, User, UserModel,
-    models::{AccessType, ContentPage},
-    services::session,
+    GlobalState, Project, ProjectSummary, User, UserModel, models::ContentPage, services::session,
     views::ThemedRender,
 };
 
@@ -32,44 +30,17 @@ pub async fn all_projects_list(
         vec![]
     };
 
-    // Get all users
-    let mut all_projects = Vec::new();
-    let Ok(mut entries) = tokio::fs::read_dir(&state.config.git_root).await else {
-        // If we can't read the git_root, just return empty list
-        let template = ProjectsListTemplate {
-            projects: &[],
-            logged_in_user,
-            sidebar_projects,
-            content_pages: state.config.content_pages.clone(),
-        };
-        return Ok(Html(template.render_with_theme()));
-    };
+    // Get all public projects from auth_store
+    let public_infos = state.auth.get_public_projects();
 
-    while let Some(entry) = entries.next_entry().await.ok().flatten() {
-        let file_name = entry.file_name();
-        let file_name_str = file_name.to_string_lossy();
-
-        // User metadata files are named !{username}.json
-        if file_name_str.starts_with('!') && file_name_str.ends_with(".json") {
-            let username = file_name_str
-                .strip_prefix('!')
-                .and_then(|s| s.strip_suffix(".json"))
-                .unwrap();
-
-            // Load the user
-            if let Some(user) = state.auth.get_user(username) {
-                // Get their projects
-                if let Ok(projects) = user.projects(&state).await {
-                    for project in projects {
-                        // Only include projects that allow at least Read access
-                        if project.public_access.is_allowed(AccessType::Read) {
-                            all_projects.push((user.clone(), project));
-                        }
-                    }
-                }
-            }
-        }
-    }
+    let mut all_projects: Vec<(Arc<User>, Project)> = public_infos
+        .iter()
+        .filter_map(|info| {
+            let project = Project::from_project_info(info)?;
+            let user = state.auth.get_user(&project.owner)?;
+            Some((user, project))
+        })
+        .collect();
 
     // Sort alphabetically by project name
     all_projects.sort_by(|a, b| a.1.name.to_lowercase().cmp(&b.1.name.to_lowercase()));

@@ -15,10 +15,7 @@ use crate::{
     AccessType, GlobalState, Project, User, UserModel,
     extractors::PathUserProject,
     models::ContentPage,
-    services::{
-        session,
-        validation::{validate_project_name, validate_uri},
-    },
+    services::{session, validation::validate_project_name},
     views::ThemedRender,
 };
 
@@ -42,7 +39,6 @@ pub struct ProjectSettingsForm {
     pub description: String,
     pub public_access: String,
     pub main_branch: String,
-    pub website: String,
 }
 
 pub async fn project_settings_get(
@@ -82,7 +78,6 @@ pub async fn project_settings_post(
     let name = form.name.trim();
     let description = form.description.trim();
     let main_branch = form.main_branch.trim();
-    let website = form.website.trim();
 
     let public_access = match AccessType::parse_public_access(&form.public_access) {
         Ok(level) => level,
@@ -93,12 +88,6 @@ pub async fn project_settings_post(
     };
 
     if let Err(msg) = validate_project_name(name) {
-        return render_project_settings_page(&state, current_user, owner, project, Some(msg)).await;
-    }
-
-    if !website.is_empty()
-        && let Err(msg) = validate_uri(website)
-    {
         return render_project_settings_page(&state, current_user, owner, project, Some(msg)).await;
     }
 
@@ -127,13 +116,8 @@ pub async fn project_settings_post(
     project.public_access = public_access;
     project.description = description.to_owned();
     project.main_branch = main_branch.to_owned();
-    project.website = website.to_owned();
 
-    if project
-        .save(&state, &current_user.name, &current_user.email)
-        .await
-        .is_err()
-    {
+    if project.save(&state).await.is_err() {
         // A proper error message would be nicer here
         return Redirect::to(&project.uri()).into_response();
     }

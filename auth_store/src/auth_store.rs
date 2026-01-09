@@ -8,6 +8,7 @@ use dashmap::DashMap;
 use uuid::Uuid;
 
 use crate::event::StoreEvent;
+use crate::project_info::ProjectInfo;
 use crate::{PasswordVerification, User};
 use crate::Session;
 use crate::SshKey;
@@ -20,6 +21,8 @@ pub struct AuthStore {
     session_map: DashMap<Uuid, Arc<Session>>,
     ssh_key_map: DashMap<String, Arc<SshKey>>,
     user_ssh_keys: DashMap<String, Vec<String>>,
+    project_map: DashMap<String, Arc<ProjectInfo>>,
+    owner_projects: DashMap<String, Vec<String>>,
 }
 
 impl AuthStore {
@@ -92,6 +95,30 @@ impl AuthStore {
                     }
                 }
             }
+            StoreEvent::ProjectInfo(project_info) => {
+                let key = project_info.key.clone();
+                if let Some(owner) = project_info.owner() {
+                    let owner = owner.to_string();
+                    // Remove old entry if updating
+                    if let Some(mut keys) = self.owner_projects.get_mut(&owner) {
+                        keys.retain(|k| k != &key);
+                    }
+                    self.project_map.insert(key.clone(), Arc::new(project_info));
+                    self.owner_projects
+                        .entry(owner)
+                        .or_default()
+                        .push(key);
+                }
+            }
+            StoreEvent::ProjectInfoDelete { key } => {
+                if let Some((_, project_info)) = self.project_map.remove(&key) {
+                    if let Some(owner) = project_info.owner() {
+                        if let Some(mut keys) = self.owner_projects.get_mut(owner) {
+                            keys.retain(|k| k != &key);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -122,6 +149,8 @@ impl AuthStore {
             session_map: DashMap::new(),
             ssh_key_map: DashMap::new(),
             user_ssh_keys: DashMap::new(),
+            project_map: DashMap::new(),
+            owner_projects: DashMap::new(),
         };
         ret.replay_log(path);
         ret
@@ -185,6 +214,40 @@ impl AuthStore {
                     .collect()
             })
             .unwrap_or_default()
+    }
+
+    /// Get a project by its composite key (~owner/slug)
+    pub fn get_project(&self, key: &str) -> Option<Arc<ProjectInfo>> {
+        self.project_map.get(key).map(|v| v.value().clone())
+    }
+
+    /// Get a project by owner and slug
+    pub fn get_project_by_owner_slug(&self, owner: &str, slug: &str) -> Option<Arc<ProjectInfo>> {
+        let key = ProjectInfo::make_key(owner, slug);
+        self.get_project(&key)
+    }
+
+    /// Get all projects for an owner
+    pub fn get_projects_for_owner(&self, owner: &str) -> Vec<Arc<ProjectInfo>> {
+        self.owner_projects
+            .get(owner)
+            .map(|keys| {
+                keys.iter()
+                    .filter_map(|key| self.project_map.get(key).map(|v| v.value().clone()))
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    /// Get all public projects (for explore/list pages)
+    /// Returns projects with Read or Write public access
+    pub fn get_public_projects(&self) -> Vec<Arc<ProjectInfo>> {
+        use crate::project_info::PublicAccess;
+        self.project_map
+            .iter()
+            .filter(|entry| entry.value().public_access != PublicAccess::None)
+            .map(|entry| entry.value().clone())
+            .collect()
     }
 }
 
