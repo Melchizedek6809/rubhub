@@ -29,6 +29,7 @@
                   bacon
                   mold
                   clang
+                  cargo-nextest
                 ];
 
                 RUSTFLAGS = "-C link-arg=-fuse-ld=mold";
