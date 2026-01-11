@@ -26,6 +26,7 @@
                   clippy
                   rust-analyzer
                   nodejs_24
+                  typescript-language-server
                   bacon
                   mold
                   clang
