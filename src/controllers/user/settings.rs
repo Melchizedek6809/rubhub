@@ -158,41 +158,41 @@ pub async fn handle_settings(
 
     // Check for duplicate keys owned by other users
     for key in &submitted_keys {
-        if let Some(existing) = state.auth.get_ssh_key(&key.public_key) {
-            if existing.user_slug != current_user.slug {
-                return Err((
-                    StatusCode::BAD_REQUEST,
-                    render_settings_page(
-                        &state,
-                        current_user,
-                        &ssh_keys_raw,
-                        Some("One of the SSH keys is already registered to another user"),
-                    )
-                    .await,
-                ));
-            }
+        if let Some(existing) = state.auth.get_ssh_key(&key.public_key)
+            && existing.user_slug != current_user.slug
+        {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                render_settings_page(
+                    &state,
+                    current_user,
+                    &ssh_keys_raw,
+                    Some("One of the SSH keys is already registered to another user"),
+                )
+                .await,
+            ));
         }
     }
 
     // Delete removed keys
     for key in &current_keys {
-        if !submitted_key_data.contains(key.public_key.as_str()) {
-            if let Err(err) = SshKey::delete(&state.auth, key.public_key.clone()) {
-                return Err(
-                    internal_error(&state, current_user, &ssh_keys_raw, &err.to_string()).await,
-                );
-            }
+        if !submitted_key_data.contains(key.public_key.as_str())
+            && let Err(err) = SshKey::delete(&state.auth, key.public_key.clone())
+        {
+            return Err(
+                internal_error(&state, current_user, &ssh_keys_raw, &err.to_string()).await,
+            );
         }
     }
 
     // Add new keys
     for key in submitted_keys {
-        if !current_key_data.contains(key.public_key.as_str()) {
-            if let Err(err) = key.save(&state.auth) {
-                return Err(
-                    internal_error(&state, current_user, &ssh_keys_raw, &err.to_string()).await,
-                );
-            }
+        if !current_key_data.contains(key.public_key.as_str())
+            && let Err(err) = key.save(&state.auth)
+        {
+            return Err(
+                internal_error(&state, current_user, &ssh_keys_raw, &err.to_string()).await,
+            );
         }
     }
 

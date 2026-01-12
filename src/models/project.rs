@@ -249,7 +249,7 @@ impl Project {
             let project = Self::load(state, user_slug, project_slug).await?;
             Ok((user, project))
         } else {
-            return Err(anyhow!("Cant load user"));
+            Err(anyhow!("Cant load user"))
         }
     }
 }

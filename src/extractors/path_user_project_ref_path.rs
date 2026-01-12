@@ -25,13 +25,12 @@ where
 
         let state = GlobalState::from_ref(state);
 
-        if let Some(user_slug) = user_slug.strip_prefix("~") {
-            if let Some(user) = state.auth.get_user(user_slug) {
-                if let Ok(project) = Project::load(&state, user_slug, &project_slug).await {
-                    return Ok(PathUserProjectRefPath(user, project, git_ref, path));
-                };
-            }
-        };
+        if let Some(user_slug) = user_slug.strip_prefix("~")
+            && let Some(user) = state.auth.get_user(user_slug)
+            && let Ok(project) = Project::load(&state, user_slug, &project_slug).await
+        {
+            return Ok(PathUserProjectRefPath(user, project, git_ref, path));
+        }
         Err((StatusCode::NOT_FOUND, "Path not found"))
     }
 }
@@ -54,13 +53,12 @@ where
 
         let state = GlobalState::from_ref(state);
 
-        if let Some(user_slug) = user_slug.strip_prefix("~") {
-            if let Some(user) = state.auth.get_user(user_slug) {
-                if let Ok(project) = Project::load(&state, user_slug, &project_slug).await {
-                    return Ok(PathUserProjectRef(user, project, git_ref));
-                };
-            }
-        };
+        if let Some(user_slug) = user_slug.strip_prefix("~")
+            && let Some(user) = state.auth.get_user(user_slug)
+            && let Ok(project) = Project::load(&state, user_slug, &project_slug).await
+        {
+            return Ok(PathUserProjectRef(user, project, git_ref));
+        }
         Err((StatusCode::NOT_FOUND, "Path not found"))
     }
 }

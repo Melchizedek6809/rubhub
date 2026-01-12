@@ -6,7 +6,8 @@ use crate::{
     models::{CommentFrontmatter, Issue, IssueComment, IssueStatus, IssueSummary},
     services::{
         repository::{
-            add_file_to_branch, branch_exists, create_orphan_branch, get_git_file, get_git_tree,
+            CommitParams, add_file_to_branch, branch_exists, create_orphan_branch, get_git_file,
+            get_git_tree,
         },
         validation::slugify,
     },
@@ -124,17 +125,17 @@ pub async fn ensure_issues_branch(
         project.name
     );
 
-    create_orphan_branch(
+    create_orphan_branch(CommitParams {
         state,
-        &user.slug,
-        &project.slug,
-        ISSUES_BRANCH,
-        "README.md",
-        &readme_content,
-        "Initialize issues branch",
-        "RubHub",
-        "noreply@rubhub.net",
-    )
+        user_name: &user.slug,
+        project_slug: &project.slug,
+        branch_name: ISSUES_BRANCH,
+        file_path: "README.md",
+        file_content: &readme_content,
+        commit_message: "Initialize issues branch",
+        author_name: "RubHub",
+        author_email: "noreply@rubhub.net",
+    })
     .await?;
 
     Ok(())
@@ -203,12 +204,10 @@ pub async fn list_issues(
                 let path = format!("{}/{}", issue_path, file);
                 if let Ok(c) =
                     get_git_file(state, user_slug, project_slug, ISSUES_BRANCH, &path).await
+                    && let Ok((fm, _)) = parse_frontmatter(&String::from_utf8_lossy(&c.data))
+                    && let Some(s) = fm.status
                 {
-                    if let Ok((fm, _)) = parse_frontmatter(&String::from_utf8_lossy(&c.data)) {
-                        if let Some(s) = fm.status {
-                            status = s;
-                        }
-                    }
+                    status = s;
                 }
             }
 
@@ -337,17 +336,17 @@ pub async fn create_issue(
 
     let file_path = format!("{}/{}/{}", ISSUES_DIR, dir_name, filename);
 
-    add_file_to_branch(
+    add_file_to_branch(CommitParams {
         state,
-        &project.owner,
-        &project.slug,
-        ISSUES_BRANCH,
-        &file_path,
-        &file_content,
-        &format!("Create issue: {}", title),
-        &user.name,
-        &user.email,
-    )
+        user_name: &project.owner,
+        project_slug: &project.slug,
+        branch_name: ISSUES_BRANCH,
+        file_path: &file_path,
+        file_content: &file_content,
+        commit_message: &format!("Create issue: {}", title),
+        author_name: &user.name,
+        author_email: &user.email,
+    })
     .await?;
 
     Ok(dir_name)
@@ -406,17 +405,17 @@ pub async fn add_comment(
         "Add comment".to_string()
     };
 
-    add_file_to_branch(
+    add_file_to_branch(CommitParams {
         state,
-        &project.owner,
-        &project.slug,
-        ISSUES_BRANCH,
-        &file_path,
-        &file_content,
-        &commit_msg,
-        &user.name,
-        &user.email,
-    )
+        user_name: &project.owner,
+        project_slug: &project.slug,
+        branch_name: ISSUES_BRANCH,
+        file_path: &file_path,
+        file_content: &file_content,
+        commit_message: &commit_msg,
+        author_name: &user.name,
+        author_email: &user.email,
+    })
     .await?;
 
     Ok(())

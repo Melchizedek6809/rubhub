@@ -15,6 +15,19 @@ use crate::{
     services::validation::validate_slug,
 };
 
+/// Parameters for creating a commit on a branch
+pub struct CommitParams<'a> {
+    pub state: &'a GlobalState,
+    pub user_name: &'a str,
+    pub project_slug: &'a str,
+    pub branch_name: &'a str,
+    pub file_path: &'a str,
+    pub file_content: &'a str,
+    pub commit_message: &'a str,
+    pub author_name: &'a str,
+    pub author_email: &'a str,
+}
+
 fn ensure_safe_component(value: &str) -> io::Result<()> {
     if value.is_empty() {
         return Err(io::Error::new(
@@ -509,29 +522,23 @@ pub async fn branch_exists(
 }
 
 /// Create an orphan branch with an initial commit containing one file
-pub async fn create_orphan_branch(
-    state: &GlobalState,
-    user_name: &str,
-    project_slug: &str,
-    branch_name: &str,
-    file_path: &str,
-    file_content: &str,
-    commit_message: &str,
-    author_name: &str,
-    author_email: &str,
-) -> Result<()> {
+pub async fn create_orphan_branch(params: CommitParams<'_>) -> Result<()> {
+    let state = params.state;
+    let user_name = params.user_name;
+    let project_slug = params.project_slug;
+
     // Capture state before operation
     let before = GitSummary::capture(state, user_name, project_slug);
 
     let state_clone = state.clone();
     let user_name_owned = user_name.to_string();
     let project_slug_owned = project_slug.to_string();
-    let branch_name_owned = branch_name.to_string();
-    let file_path = file_path.to_string();
-    let file_content = file_content.to_string();
-    let commit_message = commit_message.to_string();
-    let author_name = author_name.to_string();
-    let author_email = author_email.to_string();
+    let branch_name_owned = params.branch_name.to_string();
+    let file_path = params.file_path.to_string();
+    let file_content = params.file_content.to_string();
+    let commit_message = params.commit_message.to_string();
+    let author_name = params.author_name.to_string();
+    let author_email = params.author_email.to_string();
 
     tokio::task::spawn_blocking(move || -> Result<()> {
         let repo = get_git_repo(&state_clone, &user_name_owned, &project_slug_owned)
@@ -588,29 +595,23 @@ pub async fn create_orphan_branch(
 }
 
 /// Add a file to a branch and create a commit
-pub async fn add_file_to_branch(
-    state: &GlobalState,
-    user_name: &str,
-    project_slug: &str,
-    branch_name: &str,
-    file_path: &str,
-    file_content: &str,
-    commit_message: &str,
-    author_name: &str,
-    author_email: &str,
-) -> Result<()> {
+pub async fn add_file_to_branch(params: CommitParams<'_>) -> Result<()> {
+    let state = params.state;
+    let user_name = params.user_name;
+    let project_slug = params.project_slug;
+
     // Capture state before operation
     let before = GitSummary::capture(state, user_name, project_slug);
 
     let state_clone = state.clone();
     let user_name_owned = user_name.to_string();
     let project_slug_owned = project_slug.to_string();
-    let branch_name_owned = branch_name.to_string();
-    let file_path = file_path.to_string();
-    let file_content = file_content.to_string();
-    let commit_message = commit_message.to_string();
-    let author_name = author_name.to_string();
-    let author_email = author_email.to_string();
+    let branch_name_owned = params.branch_name.to_string();
+    let file_path = params.file_path.to_string();
+    let file_content = params.file_content.to_string();
+    let commit_message = params.commit_message.to_string();
+    let author_name = params.author_name.to_string();
+    let author_email = params.author_email.to_string();
 
     tokio::task::spawn_blocking(move || -> Result<()> {
         let repo = get_git_repo(&state_clone, &user_name_owned, &project_slug_owned)

@@ -8,9 +8,61 @@ use std::{
 
 use anyhow::{Context, Result};
 use rubhub_auth_store::AuthStore;
+use serde::Deserialize;
 use tokio::sync::broadcast;
 
 use crate::models::{ContentPage, RepoEvent};
+
+/// Expands ~ at the start of a path to the user's home directory
+fn expand_tilde(path: &str) -> PathBuf {
+    if let Some(rest) = path.strip_prefix("~/")
+        && let Some(home) = dirs::home_dir()
+    {
+        return home.join(rest);
+    } else if path == "~"
+        && let Some(home) = dirs::home_dir()
+    {
+        return home;
+    }
+    PathBuf::from(path)
+}
+
+/// Searches for a config file in standard locations
+fn find_config_file() -> Option<PathBuf> {
+    // Check RUBHUB_CONFIG env var first
+    if let Ok(path) = env::var("RUBHUB_CONFIG") {
+        let path = expand_tilde(&path);
+        if path.exists() {
+            return Some(path);
+        }
+    }
+
+    // Search paths in order of preference
+    let home = dirs::home_dir()?;
+    let paths = [
+        home.join(".rubhub/config.toml"),
+        home.join(".config/rubhub/config.toml"),
+        PathBuf::from("/usr/local/etc/rubhub/config.toml"),
+        PathBuf::from("/etc/rubhub/config.toml"),
+    ];
+
+    paths.into_iter().find(|p| p.exists())
+}
+
+/// TOML configuration file structure
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+struct ConfigFile {
+    dir_root: Option<String>,
+    http_bind_address: Option<String>,
+    ssh_bind_address: Option<String>,
+    base_url: Option<String>,
+    ssh_public_host: Option<String>,
+    reuse_port: Option<bool>,
+    site_content: Option<Vec<String>>,
+    index_content: Option<String>,
+    featured_projects: Option<Vec<String>>,
+}
 
 #[derive(Debug, Clone)]
 pub struct AppConfig {
@@ -31,7 +83,9 @@ pub struct AppConfig {
 
 impl Default for AppConfig {
     fn default() -> Self {
-        let dir_root = PathBuf::from("./data/");
+        let dir_root = dirs::home_dir()
+            .map(|h| h.join(".rubhub"))
+            .unwrap_or_else(|| PathBuf::from("./.rubhub"));
 
         let git_root = dir_root.join("git");
         let session_root = dir_root.join("sessions");
@@ -161,6 +215,64 @@ impl AppConfig {
         self
     }
 
+    /// Load configuration from TOML file if one exists
+    pub fn load_toml(self) -> Result<Self> {
+        let config_path = match find_config_file() {
+            Some(path) => path,
+            None => return Ok(self), // No config file found, use defaults
+        };
+
+        let content = fs::read_to_string(&config_path)
+            .with_context(|| format!("Failed to read config file: {}", config_path.display()))?;
+
+        let file_config: ConfigFile = toml::from_str(&content)
+            .with_context(|| format!("Failed to parse config file: {}", config_path.display()))?;
+
+        let mut config = self;
+
+        if let Some(dir_root) = file_config.dir_root {
+            config = config.set_dir_root(&expand_tilde(&dir_root).to_string_lossy());
+        }
+        if let Some(addr) = file_config.http_bind_address {
+            config = config.set_http_bind_addr(&addr)?;
+        }
+        if let Some(addr) = file_config.ssh_bind_address {
+            config = config.set_ssh_bind_addr(&addr)?;
+        }
+        if let Some(url) = file_config.base_url {
+            if url.trim().is_empty() {
+                anyhow::bail!("base_url cannot be empty in config file");
+            }
+            config = config.set_base_url(&url);
+        }
+        if let Some(host) = file_config.ssh_public_host {
+            config = config.set_ssh_public_host(&host);
+        }
+        if let Some(reuse_port) = file_config.reuse_port {
+            config = config.set_reuse_port(reuse_port);
+        }
+        if let Some(content_list) = file_config.site_content {
+            let spec = content_list.join(",");
+            let pages = parse_content_pages(&spec)
+                .context("Failed to parse site_content in config file")?;
+            config = config.set_content_pages(pages);
+        }
+        if let Some(spec) = file_config.index_content {
+            let page = parse_index_content(&spec)
+                .context("Failed to parse index_content in config file")?;
+            config = config.set_index_content(Some(page));
+        }
+        if let Some(projects_list) = file_config.featured_projects {
+            let spec = projects_list.join(",");
+            let projects = parse_featured_projects(&spec)
+                .context("Failed to parse featured_projects in config file")?;
+            config = config.set_featured_projects(projects);
+        }
+
+        Ok(config)
+    }
+
+    /// Load configuration from environment variables (overrides TOML)
     pub fn load_env(self) -> Result<Self> {
         let config = self;
 
@@ -218,14 +330,15 @@ impl AppConfig {
         };
 
         #[cfg(not(debug_assertions))]
-        validate_release_requirements(base_url_env.is_ok())?;
+        validate_release_requirements(config.base_url_is_set)?;
 
         Ok(config)
     }
 
     pub fn new() -> Result<Self> {
-        let config: Self = Self::default();
-        config.load_env()
+        let config = Self::default();
+        let config = config.load_toml()?; // Load from config file first
+        config.load_env() // Then apply env var overrides
     }
 
     pub fn build(self, process_start: Instant) -> Result<GlobalState> {

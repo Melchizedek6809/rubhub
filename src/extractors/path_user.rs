@@ -23,11 +23,11 @@ where
 
         let state = GlobalState::from_ref(state);
 
-        if let Some(user_slug) = user_slug.strip_prefix("~") {
-            if let Some(user) = state.auth.get_user(user_slug) {
-                return Ok(PathUser(user));
-            }
-        };
+        if let Some(user_slug) = user_slug.strip_prefix("~")
+            && let Some(user) = state.auth.get_user(user_slug)
+        {
+            return Ok(PathUser(user));
+        }
         Err((StatusCode::NOT_FOUND, "PathUser not found"))
     }
 }

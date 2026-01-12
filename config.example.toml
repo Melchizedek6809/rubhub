@@ -1,0 +1,39 @@
+# RubHub Configuration
+#
+# Config file search order:
+#   1. $RUBHUB_CONFIG environment variable (if set)
+#   2. ~/.rubhub/config.toml
+#   3. ~/.config/rubhub/config.toml
+#   4. /usr/local/etc/rubhub/config.toml
+#   5. /etc/rubhub/config.toml
+#
+# Environment variables override config file values.
+# All settings are optional - defaults are shown below.
+
+# Data directory (contains git/, sessions/, auth.ndjson, SSH keys)
+# Supports ~ for home directory expansion
+dir_root = "~/.rubhub/"
+
+# HTTP server bind address
+http_bind_address = "127.0.0.1:3000"
+
+# Public base URL (required in release builds)
+base_url = "https://rubhub.example.com"
+
+# SSH server bind address
+ssh_bind_address = "0.0.0.0:22"
+
+# SSH public hostname (shown to users for clone URLs)
+ssh_public_host = "rubhub.example.com"
+
+# Enable SO_REUSEPORT for zero-downtime restarts (Linux only)
+reuse_port = false
+
+# Custom content pages (Title:user/repo/file.md format)
+site_content = ["Contact:ben/rubhub-net/contact.md", "About:ben/rubhub-net/about.md"]
+
+# Custom index page content (user/repo/file.md format)
+index_content = "~ben/rubhub-net/index.md"
+
+# Featured projects on the homepage (~user/project format)
+featured_projects = ["~ben/rubhub", "~ben/nujel"]

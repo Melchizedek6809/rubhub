@@ -133,7 +133,10 @@ pub async fn project_new_post(
     }
 
     // Create bare repo first (metadata is stored within)
-    if let Err(_) = create_bare_repo(&state, user_slug.clone(), project.slug.clone()).await {
+    if create_bare_repo(&state, user_slug.clone(), project.slug.clone())
+        .await
+        .is_err()
+    {
         return render_new_project_page(
             &state,
             Some(current_user),
