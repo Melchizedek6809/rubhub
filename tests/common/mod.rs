@@ -2,6 +2,7 @@
 
 mod api;
 mod git;
+pub mod html;
 mod ssh;
 mod test_user;
 

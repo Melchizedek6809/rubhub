@@ -23,7 +23,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "project_blob.html")]
+#[template(path = "project/blob.html")]
 struct ProjectBlobTemplate<'a> {
     owner: Arc<User>,
     project: &'a Project,

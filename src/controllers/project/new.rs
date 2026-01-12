@@ -31,7 +31,7 @@ pub struct NewProjectForm {
 }
 
 #[derive(Template)]
-#[template(path = "project_new.html")]
+#[template(path = "project/new.html")]
 struct NewProjectTemplate<'a> {
     message: Option<&'a str>,
     logged_in_user: Option<Arc<User>>,

@@ -28,7 +28,7 @@ pub struct RegistrationForm {
 }
 
 #[derive(Template)]
-#[template(path = "registration.html")]
+#[template(path = "auth/registration.html")]
 struct RegistrationTemplate<'a> {
     message: Option<&'a str>,
     logged_in_user: Option<Arc<User>>,

@@ -22,7 +22,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "project_tree.html")]
+#[template(path = "project/tree.html")]
 struct ProjectTreeTemplate<'a> {
     owner: Arc<User>,
     project: &'a Project,

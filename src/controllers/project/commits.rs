@@ -27,7 +27,7 @@ pub struct Pagination {
 }
 
 #[derive(Template)]
-#[template(path = "project_commits.html")]
+#[template(path = "project/commits.html")]
 struct ProjectCommitsTemplate<'a> {
     owner: Arc<User>,
     project: &'a Project,

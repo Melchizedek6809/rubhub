@@ -28,7 +28,7 @@ pub struct IssueFilters {
 }
 
 #[derive(Template)]
-#[template(path = "issues_list.html")]
+#[template(path = "project/talk/list.html")]
 struct IssuesListTemplate<'a> {
     owner: Arc<User>,
     project: &'a Project,

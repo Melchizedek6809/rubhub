@@ -17,7 +17,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "issue_view.html")]
+#[template(path = "project/talk/view.html")]
 struct IssueViewTemplate<'a> {
     owner: Arc<User>,
     project: &'a Project,

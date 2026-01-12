@@ -29,7 +29,7 @@ pub struct UserSettingsForm {
 }
 
 #[derive(Template)]
-#[template(path = "user_settings.html")]
+#[template(path = "user/settings.html")]
 struct UserSettingsTemplate<'a> {
     user: Arc<User>,
     ssh_keys: &'a [String],

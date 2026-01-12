@@ -10,7 +10,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "projects_list.html")]
+#[template(path = "project/list.html")]
 struct ProjectsListTemplate<'a> {
     projects: &'a [ProjectSummary<'a>],
     logged_in_user: Option<Arc<User>>,

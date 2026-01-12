@@ -1,6 +1,6 @@
 mod common;
 
-use common::{Api, with_backend};
+use common::{Api, html, with_backend};
 
 #[tokio::test(flavor = "current_thread")]
 async fn test_issue_workflow() {
@@ -37,10 +37,7 @@ async fn test_issue_workflow() {
             issues_page.contains("First Issue"),
             "Issue title should appear in list"
         );
-        assert!(
-            issues_page.contains("opened by alice"),
-            "Author should appear in list"
-        );
+        html::assert_element_contains(&issues_page, ".issue-author", "alice");
         assert!(
             issues_page.contains("status-open"),
             "Issue should have open status"

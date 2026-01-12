@@ -23,7 +23,7 @@ pub struct LoginForm {
 }
 
 #[derive(Template)]
-#[template(path = "login.html")]
+#[template(path = "auth/login.html")]
 struct LoginTemplate<'a> {
     message: Option<&'a str>,
     logged_in_user: Option<Arc<User>>,
