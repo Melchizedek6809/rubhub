@@ -41,6 +41,7 @@ pub struct CommentFrontmatter {
 pub struct IssueComment {
     pub date: OffsetDateTime,
     pub author: String,
+    pub author_name: String,
     pub content_html: String,
     pub status_change: Option<IssueStatus>,
 }
@@ -61,6 +62,7 @@ pub struct IssueSummary {
     pub title: String,
     pub created_at: OffsetDateTime,
     pub author: String,
+    pub author_name: String,
     pub status: IssueStatus,
     pub comment_count: usize,
 }

@@ -37,16 +37,16 @@
           <div class="issues-list">
             {% for issue in issues %}
             <div class="issue-item issue-{{ issue.status.as_str() }}">
-              <a href="{{ issue.uri(&owner.slug, &project.slug) }}" class="issue-link">
-                <span class="issue-title">{{ issue.title }}</span>
+              <div class="issue-start">
+                <a href="{{ issue.uri(&owner.slug, &project.slug) }}" class="issue-title">{{ issue.title }}</a>
                 <span class="issue-meta">
-                  opened by {{ issue.author }} {{ issue.relative_time() }}
+                  opened by <a href="/~{{ issue.author }}" class="issue-author">{{ issue.author_name }}</a> {{ issue.relative_time() }}
                 </span>
-              </a>
+              </div>
               {% if issue.comment_count > 0 %}
-              <span class="issue-comment-count"><span class="icon i-message-square"></span> {{ issue.comment_count }}</span>
+              <a href="{{ issue.uri(&owner.slug, &project.slug) }}" class="issue-comment-count"><span class="icon i-message-square"></span> {{ issue.comment_count }}</a>
               {% endif %}
-              <span class="issue-status status-{{ issue.status.as_str() }}">{{ issue.status.as_str() }}</span>
+              <a href="{{ issue.uri(&owner.slug, &project.slug) }}" class="issue-status status-{{ issue.status.as_str() }}">{{ issue.status.as_str() }}</a>
             </div>
             {% endfor %}
           </div>

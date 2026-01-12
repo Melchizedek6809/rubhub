@@ -131,7 +131,7 @@
 	background: var(--background-color-bright);
 }
 
-.issue-link {
+.issue-start {
 	display: flex;
 	flex-direction: column;
 	gap: var(--space-xs);
@@ -142,11 +142,20 @@
 .issue-title {
 	color: var(--text-color);
 	font-weight: 500;
+	text-decoration: none;
 }
 
 .issue-meta {
 	color: var(--text-color-subdued);
 	font-size: 0.85rem;
+}
+
+a.issue-author,
+a.issue-comment-count,
+a.issue-status,
+a.comment-author {
+	color: var(--text-color);
+	text-decoration: none;
 }
 
 .issue-comment-count {

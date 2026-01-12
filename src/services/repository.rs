@@ -14,6 +14,7 @@ use crate::{
     models::{RepoEvent, RepoEventInfo, common::format_relative_time},
     services::validation::validate_slug,
 };
+use rubhub_auth_store::AuthStore;
 
 /// Parameters for creating a commit on a branch
 pub struct CommitParams<'a> {
@@ -136,6 +137,7 @@ pub async fn get_git_info(
     let Ok(res) = tokio::task::spawn_blocking(move || {
         let mut repo = get_git_repo(&state, &user_name, &project_slug)?;
         repo.object_cache_size(Some(4096 * 4096));
+        let auth = &state.auth;
 
         // Try to resolve as reference first, fall back to rev_parse for commit hashes
         let (commit, ref_name) = if let Ok(mut reference) = repo.find_reference(&branch) {
@@ -162,7 +164,7 @@ pub async fn get_git_info(
             .skip(offset.try_into().unwrap_or_default())
             .take(max_commits.try_into().unwrap_or_default())
             .flatten()
-            .flat_map(|c| c.object().map(|o| o.into()))
+            .flat_map(|c| c.object().map(|c| GitCommitInfo::from_commit(c, auth)))
             .collect();
 
         Some(GitRefInfo {
@@ -178,22 +180,29 @@ pub async fn get_git_info(
     res
 }
 
-impl From<Commit<'_>> for GitCommitInfo {
-    fn from(commit: Commit) -> Self {
+impl GitCommitInfo {
+    fn from_commit(commit: Commit, auth: &AuthStore) -> Self {
         let commit_id = commit.id().shorten_or_id().to_string();
-        let commit_author = commit
-            .author()
+        let author_ref = commit.author().ok();
+        let commit_author = author_ref
+            .as_ref()
             .map(|a| format!("{}", a.name))
             .unwrap_or_default();
+        let author_email = author_ref.as_ref().map(|a| a.email.to_string());
         let commit_message = commit
             .message()
             .map(|m| m.summary().to_string())
             .unwrap_or_default();
         let commit_time = commit.time().unwrap_or_default();
 
+        let author_user_slug = author_email
+            .as_ref()
+            .and_then(|email| auth.get_user_slug_by_email(email));
+
         Self {
             id: commit_id.to_string(),
             author: commit_author,
+            author_user_slug,
             message: commit_message,
             time: commit_time,
         }
@@ -474,6 +483,7 @@ impl GitSummary {
 pub struct GitCommitInfo {
     pub id: String,
     pub author: String,
+    pub author_user_slug: Option<String>,
     pub message: String,
     pub time: Time,
 }

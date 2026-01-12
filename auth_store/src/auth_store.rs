@@ -18,6 +18,7 @@ pub struct AuthStore {
     chan: mpsc::SyncSender<StoreEvent>,
 
     user_map: DashMap<String, Arc<User>>,
+    email_map: DashMap<String, String>, // email (lowercase) -> user_slug
     session_map: DashMap<Uuid, Arc<Session>>,
     ssh_key_map: DashMap<String, Arc<SshKey>>,
     user_ssh_keys: DashMap<String, Vec<String>>,
@@ -68,10 +69,21 @@ impl AuthStore {
             StoreEvent::Quit => return,
             StoreEvent::ReopenLog => return,
             StoreEvent::User(user) => {
+                // Handle email index: remove old email if user exists and email changed
+                if let Some(old_user) = self.user_map.get(&user.slug) {
+                    let old_email = old_user.email.to_lowercase();
+                    let new_email = user.email.to_lowercase();
+                    if old_email != new_email {
+                        self.email_map.remove(&old_email);
+                    }
+                }
+                self.email_map.insert(user.email.to_lowercase(), user.slug.clone());
                 self.user_map.insert(user.slug.clone(), Arc::new(user));
             },
             StoreEvent::UserDelete { slug } => {
-                self.user_map.remove(&slug);
+                if let Some((_, user)) = self.user_map.remove(&slug) {
+                    self.email_map.remove(&user.email.to_lowercase());
+                }
             },
             StoreEvent::Session(session) => {
                 self.session_map.insert(session.session_id.clone(), Arc::new(session));
@@ -146,6 +158,7 @@ impl AuthStore {
         let ret = Self {
             chan,
             user_map: DashMap::new(),
+            email_map: DashMap::new(),
             session_map: DashMap::new(),
             ssh_key_map: DashMap::new(),
             user_ssh_keys: DashMap::new(),
@@ -158,6 +171,10 @@ impl AuthStore {
 
     pub fn get_user(&self, slug: &str) -> Option<Arc<User>> {
         self.user_map.get(slug).map(|v| v.value().clone())
+    }
+
+    pub fn get_user_slug_by_email(&self, email: &str) -> Option<String> {
+        self.email_map.get(&email.to_lowercase()).map(|v| v.clone())
     }
 
     pub fn login_user(&self, slug: &str, password: &str) -> Option<Arc<User>> {

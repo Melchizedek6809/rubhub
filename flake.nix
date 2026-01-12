@@ -28,6 +28,7 @@
                   nodejs_24
                   typescript-language-server
                   bacon
+                  biome
                   mold
                   clang
                   cargo-nextest

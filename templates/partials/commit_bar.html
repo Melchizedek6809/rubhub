@@ -1,7 +1,11 @@
 <div class="commit-bar">
   {% if let Some(commit) = info.commits.first() %}
   <div class="commit">
+    {% if let Some(slug) = commit.author_user_slug %}
+    <a href="/~{{ slug }}" class="commit-author" title="{{ commit.author }}">{{ commit.author }}</a>
+    {% else %}
     <span class="commit-author" title="{{ commit.author }}">{{ commit.author }}</span>
+    {% endif %}
     <span class="commit-message" title="{{ commit.message }}">{{ commit.message }}</span>
     <span class="commit-id">{{ commit.id }}</span>
     <span class="commit-time">{{ commit.relative_time() }}</span>

@@ -211,11 +211,17 @@ pub async fn list_issues(
                 }
             }
 
+            let author_name = state
+                .auth
+                .get_user(&frontmatter.author)
+                .map(|u| u.name.clone())
+                .unwrap_or_else(|| frontmatter.author.clone());
             summaries.push(IssueSummary {
                 dir_name: entry.filename.clone(),
                 title,
                 created_at: frontmatter.date,
                 author: frontmatter.author,
+                author_name,
                 status,
                 comment_count: md_files.len().saturating_sub(1),
             });
@@ -273,9 +279,15 @@ pub async fn get_issue(
             markdown::to_html_with_options(&body, &markdown::Options::gfm()).unwrap_or_default();
         let html = ammonia::clean(&html);
 
+        let author_name = state
+            .auth
+            .get_user(&frontmatter.author)
+            .map(|u| u.name.clone())
+            .unwrap_or_else(|| frontmatter.author.clone());
         comments.push(IssueComment {
             date: frontmatter.date,
             author: frontmatter.author,
+            author_name,
             content_html: html,
             status_change: frontmatter.status,
         });

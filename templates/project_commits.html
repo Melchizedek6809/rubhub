@@ -27,7 +27,11 @@
             {% else %}
             {% for commit in info.commits %}
             <div class="commit">
+              {% if let Some(slug) = commit.author_user_slug %}
+              <a href="/~{{ slug }}" class="commit-author" title="{{ commit.author }}">{{ commit.author }}</a>
+              {% else %}
               <span class="commit-author" title="{{ commit.author }}">{{ commit.author }}</span>
+              {% endif %}
               <span class="commit-message" title="{{ commit.message }}">{{ commit.message }}</span>
               <a href="{{ project.uri_tree(&commit.id, "") }}" class="commit-id">{{ commit.id }}</a>
               <span class="commit-time">{{ commit.relative_time() }}</span>

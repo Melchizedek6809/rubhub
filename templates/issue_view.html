@@ -29,7 +29,7 @@
             {% for comment in issue.comments %}
             <div class="comment {% if loop.first %}comment-opening{% endif %}">
               <div class="comment-header">
-                <strong>{{ comment.author }}</strong>
+                <a href="/~{{ comment.author }}" class="comment-author"><strong>{{ comment.author_name }}</strong></a>
                 <span class="comment-date">{{ comment.relative_time() }}</span>
                 {% if let Some(status) = comment.status_change %}
                 <span class="status-change">changed status to {{ status.as_str() }}</span>
