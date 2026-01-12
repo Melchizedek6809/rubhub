@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
-rsync -avhe ssh ./ --exclude={'/.env','/.git','/data','/node_modules','/target','/dist'} --delete rubhub:~/src/rubhub
+rsync -avhze ssh ./ --exclude={'/.direnv','/.claude','/.env','/.git','/data','/node_modules','/target','/dist'} --delete rubhub:~/src/rubhub
 ssh rubhub 'cd src/rubhub && ./deploy.systemd'

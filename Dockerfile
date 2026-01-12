@@ -1,17 +1,16 @@
 # syntax=docker/dockerfile:1.6
 
 ##################
-# 1. Bun build
+# 1. Frontend build
 ##################
 
-FROM oven/bun:1.3-alpine AS bun
+FROM node:24-alpine as frontend
 WORKDIR /app
 
-COPY package.json bun.lock tsconfig.json biome.json ./
-RUN bun install --frozen-lockfile
-COPY scripts ./scripts
+COPY package.json package-lock.json tsconfig.json vite.config.ts ./
+RUN npm ci
 COPY frontend ./frontend
-RUN bun run ./scripts/build.ts
+RUN npm run build
 
 
 ##################
@@ -21,12 +20,12 @@ RUN bun run ./scripts/build.ts
 FROM rust:1.91-alpine3.22 AS rust-builder
 WORKDIR /app
 
-COPY Cargo.toml Cargo.lock dummy.rs ./
-RUN cargo build --release --locked --bin dummy-to-cache-dependencies
-
+COPY Cargo.toml Cargo.lock ./
 COPY src ./src
 COPY templates ./templates
-COPY --from=bun /app/dist ./dist
+COPY auth_store ./auth_store
+COPY public ./public
+COPY --from=frontend /app/dist ./dist
 RUN cargo build --release --locked
 
 

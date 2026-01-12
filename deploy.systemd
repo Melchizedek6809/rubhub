@@ -1,11 +1,17 @@
 #!/usr/bin/env bash
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
 
+# Build Frontend
 npm ci
 npm run build
-cargo build --release
-install -Dm0755 target/release/rubhub /usr/local/bin/rubhub
 
+# Build Backend (with the Frontend resources embedded)
+cargo build --release
+
+# Install executable / SystemD unit file
+install -Dm0755 target/release/rubhub /usr/local/bin/rubhub
 install -Dm0644 rubhub.service /etc/systemd/system/rubhub.service
+
+# Now reload/restart the rubhub service
 systemctl daemon-reload
 systemctl restart rubhub
