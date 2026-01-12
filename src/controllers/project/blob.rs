@@ -137,7 +137,7 @@ pub async fn project_blob_get(
         return Response::builder()
             .status(StatusCode::OK)
             .header(header::CONTENT_TYPE, mime_type.as_ref())
-            .body(Body::from(file_obj.data))
+            .body(Body::from(file_obj.clone()))
             .unwrap();
     }
 
@@ -146,12 +146,12 @@ pub async fn project_blob_get(
     let is_image = mime_type.type_() == mime_guess::mime::IMAGE;
 
     // Check if binary
-    let is_binary = file_obj.data.contains(&0u8);
+    let is_binary = file_obj.contains(&0u8);
 
     // Handle image files (binary or text-based like SVG)
     if is_image {
         let path_parts: Vec<String> = path.split('/').map(|s| s.to_string()).collect();
-        let file_size = file_obj.data.len();
+        let file_size = file_obj.len();
         let template = ProjectBlobTemplate {
             owner,
             project: &project,
@@ -185,7 +185,7 @@ pub async fn project_blob_get(
     // Handle other binary files
     if is_binary {
         let path_parts: Vec<String> = path.split('/').map(|s| s.to_string()).collect();
-        let file_size = file_obj.data.len();
+        let file_size = file_obj.len();
         let template = ProjectBlobTemplate {
             owner,
             project: &project,
@@ -217,8 +217,8 @@ pub async fn project_blob_get(
     }
 
     // Handle text files
-    let text_content = String::from_utf8_lossy(&file_obj.data).to_string();
-    let file_size = file_obj.data.len();
+    let text_content = String::from_utf8_lossy(&file_obj).to_string();
+    let file_size = file_obj.len();
     let line_count = text_content.lines().count();
 
     // Render markdown if it's a .md file and ?source is not specified

@@ -20,7 +20,7 @@ pub async fn render_content(page: &ContentPage, state: &GlobalState) -> Result<S
         {
             Ok(blob) => {
                 // Convert blob to UTF-8
-                let markdown_str = String::from_utf8_lossy(&blob.data);
+                let markdown_str = String::from_utf8_lossy(&blob);
 
                 // Render markdown with GitHub Flavored Markdown
                 let html =

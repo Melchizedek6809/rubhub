@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use askama::Template;
 use axum::{body::Body, extract::State, http::Response};
-use gix::objs::tree::EntryKind;
 use tower_cookies::Cookies;
 
 use crate::{
@@ -13,8 +12,8 @@ use crate::{
     services::{
         markdown::{self, Frontmatter},
         repository::{
-            GitRefInfo, GitSummary, GitTreeEntry, get_git_file, get_git_info, get_git_summary,
-            get_git_tree,
+            EntryKind, GitRefInfo, GitSummary, GitTreeEntry, get_git_file, get_git_info,
+            get_git_summary, get_git_tree,
         },
         session,
     },
@@ -134,10 +133,10 @@ async fn render_tree_page(
             // Check if README exists in current directory tree
             tree_entries
                 .iter()
-                .any(|e| e.filename == "README.md" && e.kind == EntryKind::Blob)
+                .any(|e| e.filename == "README.md" && e.kind.is_blob())
         })
         .map(|b| {
-            let content = String::from_utf8_lossy(&b.data);
+            let content = String::from_utf8_lossy(&b);
             let (frontmatter, html) = markdown::parse_and_render(&content);
             (Some(html), frontmatter)
         })

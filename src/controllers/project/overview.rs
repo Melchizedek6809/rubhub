@@ -76,7 +76,7 @@ async fn render_project_page(
         get_git_file(state, &owner.slug, &project.slug, &current, "README.md").await;
     let (readme_html, readme_frontmatter) = readme_result
         .map(|b| {
-            let content = String::from_utf8_lossy(&b.data);
+            let content = String::from_utf8_lossy(&b);
             let (frontmatter, html) = markdown::parse_and_render(&content);
             (Some(html), frontmatter)
         })

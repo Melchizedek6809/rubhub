@@ -6,8 +6,8 @@ use crate::{
     models::{CommentFrontmatter, Issue, IssueComment, IssueStatus, IssueSummary},
     services::{
         repository::{
-            CommitParams, add_file_to_branch, branch_exists, create_orphan_branch, get_git_file,
-            get_git_tree,
+            CommitParams, EntryKind, add_file_to_branch, branch_exists, create_orphan_branch,
+            get_git_file, get_git_tree,
         },
         validation::slugify,
     },
@@ -161,7 +161,7 @@ pub async fn list_issues(
     let mut summaries = vec![];
 
     for entry in tree {
-        if entry.kind != gix::objs::tree::EntryKind::Tree {
+        if entry.kind != EntryKind::Tree {
             continue;
         }
 
@@ -191,7 +191,7 @@ pub async fn list_issues(
                 Ok(c) => c,
                 Err(_) => continue,
             };
-        let content_str = String::from_utf8_lossy(&content.data);
+        let content_str = String::from_utf8_lossy(&content);
 
         if let Ok((frontmatter, _)) = parse_frontmatter(&content_str) {
             let title = frontmatter
@@ -204,7 +204,7 @@ pub async fn list_issues(
                 let path = format!("{}/{}", issue_path, file);
                 if let Ok(c) =
                     get_git_file(state, user_slug, project_slug, ISSUES_BRANCH, &path).await
-                    && let Ok((fm, _)) = parse_frontmatter(&String::from_utf8_lossy(&c.data))
+                    && let Ok((fm, _)) = parse_frontmatter(&String::from_utf8_lossy(&c))
                     && let Some(s) = fm.status
                 {
                     status = s;
@@ -262,7 +262,7 @@ pub async fn get_issue(
     for (i, filename) in md_files.iter().enumerate() {
         let path = format!("{}/{}", issue_path, filename);
         let content = get_git_file(state, user_slug, project_slug, ISSUES_BRANCH, &path).await?;
-        let content_str = String::from_utf8_lossy(&content.data);
+        let content_str = String::from_utf8_lossy(&content);
 
         let (frontmatter, body) = parse_frontmatter(&content_str)?;
 

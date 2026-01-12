@@ -8,7 +8,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::process::Command;
 use tokio::task::JoinHandle;
 
-use crate::services::repository::GitSummary;
+use crate::services::repository::{GitSummary, capture_summary, emit_repo_changes};
 use crate::{AccessType, GlobalState, Project};
 
 async fn ensure_host_key(path: &PathBuf, key_type: &str) -> Result<(), io::Error> {
@@ -122,7 +122,7 @@ impl Connection {
         rx_from_ssh: tokio::sync::mpsc::Receiver<Vec<u8>>,
     ) -> Result<(), russh::Error> {
         // Capture refs before push
-        let before = GitSummary::capture(&self.state, &owner_slug, &project_slug);
+        let before = capture_summary(&self.state, &owner_slug, &project_slug);
 
         self.handle_with_command_and_callback(
             "git-receive-pack".to_string(),
@@ -236,8 +236,8 @@ impl Connection {
             if exit_code == 0
                 && let Some((state, before)) = callback_data
             {
-                let after = GitSummary::capture(&state, before.owner(), before.project());
-                before.emit_changes(&after, &state);
+                let after = capture_summary(&state, before.owner(), before.project());
+                emit_repo_changes(&before, &after, &state);
             }
 
             let _ = handle.eof(id).await;

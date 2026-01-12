@@ -3650,11 +3650,11 @@ dependencies = [
  "axum",
  "dirs",
  "futures",
- "gix",
  "markdown",
  "mime_guess",
  "reqwest",
  "rubhub-auth-store",
+ "rubhub-repo",
  "rubhub-state",
  "russh",
  "rust-embed",
@@ -3663,7 +3663,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "smallvec",
  "tempfile",
  "time",
  "tokio",
@@ -3689,6 +3688,18 @@ dependencies = [
  "serde_yaml",
  "time",
  "uuid",
+]
+
+[[package]]
+name = "rubhub-repo"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "gix",
+ "smallvec",
+ "time",
+ "tokio",
+ "urlencoding",
 ]
 
 [[package]]

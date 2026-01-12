@@ -1,0 +1,13 @@
+[package]
+name = "rubhub-repo"
+version = "0.1.0"
+edition = "2024"
+license = "EUPL-1.2"
+
+[dependencies]
+gix = { version = "0.77", default-features = false, features = ["basic", "tree-editor"] }
+anyhow = "1"
+time = { version = "0.3", features = ["formatting"] }
+tokio = { version = "1.48", features = ["fs", "sync"] }
+smallvec = "1"
+urlencoding = "2.1"
