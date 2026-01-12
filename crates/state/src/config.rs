@@ -2,19 +2,15 @@ use std::{
     env, fs,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
-    sync::Arc,
-    time::Instant,
 };
 
 use anyhow::{Context, Result};
-use rubhub_auth_store::AuthStore;
 use serde::Deserialize;
-use tokio::sync::broadcast;
 
-use crate::models::{ContentPage, RepoEvent};
+use super::ContentPage;
 
 /// Expands ~ at the start of a path to the user's home directory
-fn expand_tilde(path: &str) -> PathBuf {
+pub fn expand_tilde(path: &str) -> PathBuf {
     if let Some(rest) = path.strip_prefix("~/")
         && let Some(home) = dirs::home_dir()
     {
@@ -28,7 +24,7 @@ fn expand_tilde(path: &str) -> PathBuf {
 }
 
 /// Searches for a config file in standard locations
-fn find_config_file() -> Option<PathBuf> {
+pub fn find_config_file() -> Option<PathBuf> {
     // Check RUBHUB_CONFIG env var first
     if let Ok(path) = env::var("RUBHUB_CONFIG") {
         let path = expand_tilde(&path);
@@ -252,19 +248,19 @@ impl AppConfig {
             config = config.set_reuse_port(reuse_port);
         }
         if let Some(content_list) = file_config.site_content {
-            let spec = content_list.join(",");
-            let pages = parse_content_pages(&spec)
-                .context("Failed to parse site_content in config file")?;
+            let pages: Vec<ContentPage> = content_list
+                .iter()
+                .filter_map(|spec| ContentPage::parse(spec).ok())
+                .collect();
             config = config.set_content_pages(pages);
         }
         if let Some(spec) = file_config.index_content {
-            let page = parse_index_content(&spec)
-                .context("Failed to parse index_content in config file")?;
-            config = config.set_index_content(Some(page));
+            if let Ok(page) = ContentPage::parse_index(&spec) {
+                config = config.set_index_content(Some(page));
+            }
         }
         if let Some(projects_list) = file_config.featured_projects {
-            let spec = projects_list.join(",");
-            let projects = parse_featured_projects(&spec)
+            let projects = parse_featured_projects(&projects_list.join(","))
                 .context("Failed to parse featured_projects in config file")?;
             config = config.set_featured_projects(projects);
         }
@@ -306,17 +302,23 @@ impl AppConfig {
         };
         let config = match env::var("SITE_CONTENT") {
             Ok(spec) => {
-                let pages = parse_content_pages(&spec)
-                    .context("Failed to parse SITE_CONTENT environment variable")?;
+                let pages: Vec<ContentPage> = spec
+                    .split(',')
+                    .map(|s| s.trim())
+                    .filter(|s| !s.is_empty())
+                    .filter_map(|s| ContentPage::parse(s).ok())
+                    .collect();
                 config.set_content_pages(pages)
             }
             _ => config,
         };
         let config = match env::var("INDEX_CONTENT") {
             Ok(spec) => {
-                let page = parse_index_content(&spec)
-                    .context("Failed to parse INDEX_CONTENT environment variable")?;
-                config.set_index_content(Some(page))
+                if let Ok(page) = ContentPage::parse_index(&spec) {
+                    config.set_index_content(Some(page))
+                } else {
+                    config
+                }
             }
             _ => config,
         };
@@ -340,18 +342,6 @@ impl AppConfig {
         let config = config.load_toml()?; // Load from config file first
         config.load_env() // Then apply env var overrides
     }
-
-    pub fn build(self, process_start: Instant) -> Result<GlobalState> {
-        GlobalState::new(self, process_start)
-    }
-}
-
-fn parse_content_pages(spec: &str) -> Result<Vec<ContentPage>> {
-    spec.split(',')
-        .map(|s| s.trim())
-        .filter(|s| !s.is_empty())
-        .map(ContentPage::parse)
-        .collect()
 }
 
 fn parse_featured_projects(spec: &str) -> Result<Vec<String>> {
@@ -372,51 +362,12 @@ fn parse_featured_projects(spec: &str) -> Result<Vec<String>> {
         .collect()
 }
 
-fn parse_index_content(spec: &str) -> Result<ContentPage> {
-    let path = spec.trim();
-
-    // Strip leading ~ if present
-    let path = path.strip_prefix("~").unwrap_or(path);
-
-    let parts: Vec<&str> = path.split('/').collect();
-    if parts.len() < 3 {
-        anyhow::bail!(
-            "Invalid path format: expected 'user/repo/file.md' or '~user/repo/file.md', got '{}'",
-            spec
-        );
-    }
-
-    let repo_owner = parts[0];
-    let repo_slug = parts[1];
-    let file_path = parts[2..].join("/");
-
-    if file_path.is_empty() {
-        anyhow::bail!("File path cannot be empty");
-    }
-
-    Ok(ContentPage {
-        title: "Index".to_string(),
-        slug: "index".to_string(),
-        repo_owner: repo_owner.to_string(),
-        repo_slug: repo_slug.to_string(),
-        file_path,
-    })
-}
-
 #[cfg_attr(debug_assertions, allow(dead_code))]
 fn validate_release_requirements(base_url_set: bool) -> Result<()> {
     if !base_url_set {
         anyhow::bail!("BASE_URL must be set in release builds");
     }
     Ok(())
-}
-
-#[derive(Debug, Clone)]
-pub struct GlobalState {
-    pub auth: Arc<AuthStore>,
-    pub config: Arc<AppConfig>,
-    pub process_start: Instant,
-    pub event_tx: broadcast::Sender<RepoEvent>,
 }
 
 #[cfg(test)]
@@ -432,39 +383,5 @@ mod tests {
     #[test]
     fn validate_release_requirements_ok_when_present() {
         assert!(validate_release_requirements(true).is_ok());
-    }
-}
-
-impl GlobalState {
-    pub fn uri(&self, path: &str) -> String {
-        format!("{}{}", self.config.base_url, path)
-    }
-
-    pub fn new(config: AppConfig, process_start: Instant) -> Result<Self> {
-        fs::create_dir_all(&config.dir_root)?;
-        fs::create_dir_all(&config.git_root)?;
-        fs::create_dir_all(&config.session_root)?;
-
-        let auth = AuthStore::new(config.dir_root.clone());
-        let auth = Arc::new(auth);
-
-        // Create broadcast channel for SSE events
-        // 256 buffer - lagging receivers will drop old events
-        let (event_tx, _) = broadcast::channel(256);
-
-        let state = Self {
-            auth,
-            process_start,
-            config: Arc::new(config),
-            event_tx,
-        };
-
-        Ok(state)
-    }
-
-    /// Emit a repository event to all SSE listeners
-    pub fn emit_event(&self, event: RepoEvent) {
-        // Ignore send errors (no receivers is fine)
-        let _ = self.event_tx.send(event);
     }
 }

@@ -1,0 +1,14 @@
+[package]
+name = "rubhub-state"
+version = "0.1.0"
+edition = "2024"
+license = "EUPL-1.2"
+
+[dependencies]
+rubhub-auth-store = { path = "../auth_store", version = "0.1.0" }
+anyhow = "1"
+dirs = "6"
+serde = { version = "1", features = ["derive"] }
+time = { version = "0.3", features = ["serde", "macros", "formatting", "parsing"] }
+tokio = { version = "1.48", features = ["sync"] }
+toml = "0.8"

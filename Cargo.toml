@@ -6,7 +6,8 @@ license = "EUPL-1.2"
 default-run = "rubhub"
 
 [dependencies]
-rubhub-auth-store = { path = "auth_store" }
+rubhub-auth-store = { path = "crates/auth_store", version = "0.1.0" }
+rubhub-state = { path = "crates/state", version = "0.1.0" }
 
 anyhow = "1"
 axum = { version = "0.8", features = ["ws", "multipart"] }

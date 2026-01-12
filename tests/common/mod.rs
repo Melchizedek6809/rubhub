@@ -52,7 +52,7 @@ where
 
     // Update config with actual addresses
     let config = config.update_bound_addresses(http_addr, ssh_addr);
-    let state = config.build(process_start).expect("GlobalState");
+    let state = GlobalState::new(config, process_start).expect("GlobalState");
 
     // Pass state to test - it can access:
     // - state.config.base_url for HTTP requests

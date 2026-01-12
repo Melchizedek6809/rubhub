@@ -1,3 +1,4 @@
+use std::future::Future;
 use std::io;
 use std::net::SocketAddr;
 use std::time::Duration;
@@ -13,12 +14,11 @@ mod http;
 mod models;
 mod services;
 mod ssh;
-mod state;
 mod views;
 
-pub use models::{AccessType, Project, ProjectSummary, RepoEvent, RepoEventInfo, UserModel};
+pub use models::{Project, ProjectSummary, UserModel};
 pub use rubhub_auth_store::User;
-pub use state::{AppConfig, GlobalState};
+pub use rubhub_state::{AccessType, AppConfig, ContentPage, GlobalState, RepoEvent, RepoEventInfo};
 use tokio::time::interval;
 
 /// Create and bind a TCP listener with appropriate socket options
@@ -143,8 +143,7 @@ pub fn run_multi_thread(config: AppConfig, process_start: std::time::Instant) {
         // Update config with actual addresses
         let config = config.update_bound_addresses(http_addr, ssh_addr);
 
-        let state = config
-            .build(process_start)
+        let state = GlobalState::new(config, process_start)
             .expect("Error creating GlobalState from AppConfig");
 
         let kill = std::future::pending::<()>();

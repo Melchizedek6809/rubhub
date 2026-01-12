@@ -3655,6 +3655,7 @@ dependencies = [
  "mime_guess",
  "reqwest",
  "rubhub-auth-store",
+ "rubhub-state",
  "russh",
  "rust-embed",
  "scraper",
@@ -3688,6 +3689,19 @@ dependencies = [
  "serde_yaml",
  "time",
  "uuid",
+]
+
+[[package]]
+name = "rubhub-state"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "dirs",
+ "rubhub-auth-store",
+ "serde",
+ "time",
+ "tokio",
+ "toml",
 ]
 
 [[package]]

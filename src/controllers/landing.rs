@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    GlobalState, Project, ProjectSummary, User, UserModel, models::ContentPage, services::session,
+    GlobalState, Project, ProjectSummary, User, UserModel, models::ContentPage, services::{content, session},
     views::ThemedRender,
 };
 use askama::Template;
@@ -47,7 +47,7 @@ pub async fn index(State(state): State<GlobalState>, cookies: Cookies) -> Html<S
 
     let index_content = match &state.config.index_content {
         Some(page) => {
-            page.render_content(&state).await.unwrap_or("Error rendering INDEX_CONTENT!".to_string())
+            content::render_content(page, &state).await.unwrap_or("Error rendering INDEX_CONTENT!".to_string())
         },
         None => "<p>Welcome to your new <a href=\"https://rubhub.net/~ben/rubhub\">rubhub</a> instance, please specify INDEX_CONTENT to remove this message.</p>".to_string(),
     };

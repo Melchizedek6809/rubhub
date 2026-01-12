@@ -23,7 +23,7 @@ WORKDIR /app
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
 COPY templates ./templates
-COPY auth_store ./auth_store
+COPY crates ./crates
 COPY public ./public
 COPY --from=frontend /app/dist ./dist
 RUN cargo build --release --locked

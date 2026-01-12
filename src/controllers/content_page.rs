@@ -10,7 +10,7 @@ use axum::{
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, Project, User, UserModel, models::ContentPage, services::session,
+    GlobalState, Project, User, UserModel, models::ContentPage, services::{content, session},
     views::ThemedRender,
 };
 
@@ -38,7 +38,7 @@ pub async fn render_content_page(
     };
 
     // Fetch and render markdown
-    let content_html = match page.render_content(&state).await {
+    let content_html = match content::render_content(&page, &state).await {
         Ok(html) => html,
         Err(e) => {
             eprintln!(
