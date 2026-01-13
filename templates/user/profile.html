@@ -2,7 +2,7 @@
   <head>
     <title>{{ user.name }}</title>
   </head>
-  
+
   <body>
     {% include "partials/sidebar.html" %}
     <main>
@@ -19,6 +19,8 @@
           {% include "partials/project_card.html" %}
           {% endfor %}
         </div>
+        {% else %}
+        <h4>No projects yet</h4>
         {% endif %}
 
         <br/>

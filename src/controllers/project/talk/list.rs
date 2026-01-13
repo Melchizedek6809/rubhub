@@ -53,19 +53,19 @@ pub async fn talk_list_get(
 ) -> Response<Body> {
     let logged_in_user = session::current_user(&state, &cookies).await.ok();
 
-    let access_level = project
-        .access_level(logged_in_user.as_ref().map(|u| u.slug.clone()))
-        .await;
-
-    if access_level == AccessType::None {
-        return crate::controllers::not_found(logged_in_user, state.config.content_pages.clone());
-    }
-
+    let content_pages = state.config.content_pages.clone();
     let sidebar_projects = if let Some(ref user) = logged_in_user {
         user.sidebar_projects(&state).await
     } else {
         vec![]
     };
+    let access_level = project
+        .access_level(logged_in_user.as_ref().map(|u| u.slug.clone()))
+        .await;
+
+    if access_level == AccessType::None {
+        return crate::controllers::not_found(logged_in_user, sidebar_projects, content_pages);
+    }
 
     let all_issues = issue::list_issues(&state, &owner.slug, &project.slug)
         .await
@@ -106,7 +106,7 @@ pub async fn talk_list_get(
         issues,
         logged_in_user,
         sidebar_projects,
-        content_pages: state.config.content_pages.clone(),
+        content_pages,
         active_tab: "talk",
         selected_branch: project.main_branch.clone(),
         current_status,

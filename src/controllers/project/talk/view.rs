@@ -37,14 +37,19 @@ pub async fn talk_view_get(
 ) -> Response<Body> {
     let logged_in_user = session::current_user(&state, &cookies).await.ok();
     let content_pages = state.config.content_pages.clone();
+    let sidebar_projects = if let Some(ref user) = logged_in_user {
+        user.sidebar_projects(&state).await
+    } else {
+        vec![]
+    };
 
     // Load user and project (handle ~ prefix)
     let user_slug = username.strip_prefix("~").unwrap_or(&username);
     let Some(owner) = state.auth.get_user(user_slug) else {
-        return crate::controllers::not_found(logged_in_user, content_pages);
+        return crate::controllers::not_found(logged_in_user, sidebar_projects, content_pages);
     };
     let Ok(project) = Project::load(&state, user_slug, &slug).await else {
-        return crate::controllers::not_found(logged_in_user, content_pages);
+        return crate::controllers::not_found(logged_in_user, sidebar_projects, content_pages);
     };
 
     let access_level = project
@@ -52,17 +57,11 @@ pub async fn talk_view_get(
         .await;
 
     if access_level == AccessType::None {
-        return crate::controllers::not_found(logged_in_user, content_pages);
+        return crate::controllers::not_found(logged_in_user, sidebar_projects, content_pages);
     }
 
     let Ok(issue) = issue::get_issue(&state, &owner.slug, &project.slug, &issue_dir).await else {
-        return crate::controllers::not_found(logged_in_user, content_pages);
-    };
-
-    let sidebar_projects = if let Some(ref user) = logged_in_user {
-        user.sidebar_projects(&state).await
-    } else {
-        vec![]
+        return crate::controllers::not_found(logged_in_user, sidebar_projects, content_pages);
     };
 
     let template = IssueViewTemplate {
@@ -72,7 +71,7 @@ pub async fn talk_view_get(
         issue,
         logged_in_user,
         sidebar_projects,
-        content_pages: state.config.content_pages.clone(),
+        content_pages,
         active_tab: "talk",
         selected_branch: project.main_branch.clone(),
     };

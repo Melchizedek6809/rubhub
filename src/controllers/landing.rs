@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
 use crate::{
-    GlobalState, Project, ProjectSummary, User, UserModel, models::ContentPage, services::{content, session},
+    GlobalState, Project, ProjectSummary, User, UserModel,
+    models::ContentPage,
+    services::{content, session},
     views::ThemedRender,
 };
 use askama::Template;

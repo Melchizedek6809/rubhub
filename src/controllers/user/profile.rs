@@ -27,6 +27,7 @@ pub async fn user_page(
 ) -> Result<Html<String>, Response<Body>> {
     let logged_in_user = session::current_user(&state, &cookies).await.ok();
 
+    let content_pages = state.config.content_pages.clone();
     let sidebar_projects = if let Some(ref user) = logged_in_user {
         user.sidebar_projects(&state).await
     } else {
@@ -42,10 +43,7 @@ pub async fn user_page(
         Ok(projects) => projects,
         Err(e) => {
             eprintln!("{:?}", e);
-            return Err(not_found(
-                logged_in_user,
-                state.config.content_pages.clone(),
-            ));
+            return Err(not_found(logged_in_user, sidebar_projects, content_pages));
         }
     };
 
@@ -66,7 +64,7 @@ pub async fn user_page(
         is_owner,
         logged_in_user,
         sidebar_projects,
-        content_pages: state.config.content_pages.clone(),
+        content_pages,
     };
     Ok(Html(template.render_with_theme()))
 }

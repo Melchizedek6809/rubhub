@@ -96,7 +96,14 @@ pub async fn get_git_file(
     branch: &str,
     path: &str,
 ) -> Result<Vec<u8>> {
-    rubhub_repo::get_git_file(&state.config.git_root, user_name, project_slug, branch, path).await
+    rubhub_repo::get_git_file(
+        &state.config.git_root,
+        user_name,
+        project_slug,
+        branch,
+        path,
+    )
+    .await
 }
 
 /// Get the entries in a directory from a repository
@@ -107,7 +114,14 @@ pub async fn get_git_tree(
     branch: &str,
     path: &str,
 ) -> Result<Vec<GitTreeEntry>> {
-    rubhub_repo::get_git_tree(&state.config.git_root, user_name, project_slug, branch, path).await
+    rubhub_repo::get_git_tree(
+        &state.config.git_root,
+        user_name,
+        project_slug,
+        branch,
+        path,
+    )
+    .await
 }
 
 /// Check if a branch exists in a repository
@@ -156,8 +170,7 @@ pub async fn create_orphan_branch(params: CommitParams<'_>) -> Result<()> {
     let git_root = &state.config.git_root;
 
     // Capture state before operation
-    let before =
-        rubhub_repo::capture_git_summary(git_root, params.user_name, params.project_slug);
+    let before = rubhub_repo::capture_git_summary(git_root, params.user_name, params.project_slug);
 
     // Convert to rubhub_repo::CommitParams
     let repo_params = rubhub_repo::CommitParams {
@@ -197,8 +210,7 @@ pub async fn add_file_to_branch(params: CommitParams<'_>) -> Result<()> {
     let git_root = &state.config.git_root;
 
     // Capture state before operation
-    let before =
-        rubhub_repo::capture_git_summary(git_root, params.user_name, params.project_slug);
+    let before = rubhub_repo::capture_git_summary(git_root, params.user_name, params.project_slug);
 
     // Convert to rubhub_repo::CommitParams
     let repo_params = rubhub_repo::CommitParams {

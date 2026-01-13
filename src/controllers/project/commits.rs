@@ -55,6 +55,7 @@ pub async fn project_commits_get(
 ) -> Response<Body> {
     let logged_in_user = session::current_user(&state, &cookies).await.ok();
 
+    let content_pages = state.config.content_pages.clone();
     let sidebar_projects = if let Some(ref user) = logged_in_user {
         user.sidebar_projects(&state).await
     } else {
@@ -66,10 +67,10 @@ pub async fn project_commits_get(
         .await;
 
     if access_level == AccessType::None {
-        return not_found(logged_in_user, vec![]);
+        return not_found(logged_in_user, sidebar_projects, content_pages);
     }
     let Some(summary) = get_git_summary(&state, &owner.slug, &project.slug).await else {
-        return not_found(logged_in_user, vec![]);
+        return not_found(logged_in_user, sidebar_projects, content_pages);
     };
 
     let page_size: i32 = 20;
@@ -114,7 +115,7 @@ pub async fn project_commits_get(
         active_tab: "",
         logged_in_user,
         sidebar_projects,
-        content_pages: state.config.content_pages.clone(),
+        content_pages,
     };
     template.response()
 }

@@ -24,22 +24,21 @@
   {% if let Some(user) = logged_in_user %}
   <a href="/projects" class="nav-btn" id="browse-link">Browse</a>
 
-  {# User's projects #}
-  {% if !sidebar_projects.is_empty() %}
     <div class="nav-section-header">
       <a href="/~{{ user.slug }}" class="nav-section-heading">Projects</a>
       <a href="/projects/new" class="nav-section-action" title="New Project"><span class="icon i-plus"></span></a>
     </div>
+    {% if !sidebar_projects.is_empty() %}
     {% for project in sidebar_projects %}
     <div class="nav-project-item">
       <a href="{{ project.uri() }}" class="nav-btn-secondary">{{ project.name }}</a>
       <a href="{{ project.uri_settings() }}" class="nav-project-settings" title="{{ project.name }} Settings"><span class="icon i-settings"></span></a>
     </div>
     {% endfor %}
-  {% endif %}
+    {% endif %}
 
   {% else %}
-  <a href="/projects" class="nav-btn" id="browse-link">Browse</a>
+    <a href="/projects" class="nav-btn" id="browse-link">Browse</a>
   {% endif %}
 
   <div class="flex-gap"></div>

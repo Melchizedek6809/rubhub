@@ -23,9 +23,8 @@ pub async fn render_content(page: &ContentPage, state: &GlobalState) -> Result<S
                 let markdown_str = String::from_utf8_lossy(&blob);
 
                 // Render markdown with GitHub Flavored Markdown
-                let html =
-                    markdown::to_html_with_options(&markdown_str, &markdown::Options::gfm())
-                        .unwrap_or_default();
+                let html = markdown::to_html_with_options(&markdown_str, &markdown::Options::gfm())
+                    .unwrap_or_default();
 
                 // Sanitize HTML to prevent XSS
                 return Ok(ammonia::clean(&html));

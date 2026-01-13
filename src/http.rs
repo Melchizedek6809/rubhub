@@ -15,7 +15,7 @@ use tower_governor::{
 };
 use tower_http::set_header::SetResponseHeaderLayer;
 
-use crate::{GlobalState, controllers, services::session};
+use crate::{GlobalState, UserModel, controllers, services::session};
 
 #[derive(Embed)]
 #[folder = "dist/"]
@@ -187,7 +187,13 @@ pub async fn http_server(
                             None => {
                                 let logged_in_user =
                                     session::current_user(&state, &cookies).await.ok();
-                                controllers::not_found(logged_in_user, vec![])
+                                let content_pages = state.config.content_pages.clone();
+                                let sidebar_projects = if let Some(ref user) = logged_in_user {
+                                    user.sidebar_projects(&state).await
+                                } else {
+                                    vec![]
+                                };
+                                controllers::not_found(logged_in_user, sidebar_projects, content_pages)
                             }
                         }
                     },
@@ -211,7 +217,13 @@ pub async fn http_server(
                             None => {
                                 let logged_in_user =
                                     session::current_user(&state, &cookies).await.ok();
-                                controllers::not_found(logged_in_user, vec![])
+                                let content_pages = state.config.content_pages.clone();
+                                let sidebar_projects = if let Some(ref user) = logged_in_user {
+                                    user.sidebar_projects(&state).await
+                                } else {
+                                    vec![]
+                                };
+                                controllers::not_found(logged_in_user, sidebar_projects, content_pages)
                             }
                         }
                     },

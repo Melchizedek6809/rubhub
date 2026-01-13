@@ -10,7 +10,8 @@ use axum::{
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, Project, User, models::ContentPage, services::session, views::ThemedRender,
+    GlobalState, Project, User, UserModel, models::ContentPage, services::session,
+    views::ThemedRender,
 };
 
 #[derive(Template)]
@@ -23,11 +24,12 @@ struct NotFoundTemplate {
 
 pub fn not_found(
     logged_in_user: Option<Arc<User>>,
+    sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
 ) -> Response<Body> {
     let template = NotFoundTemplate {
         logged_in_user,
-        sidebar_projects: vec![],
+        sidebar_projects,
         content_pages,
     };
     (StatusCode::NOT_FOUND, Html(template.render_with_theme())).into_response()
@@ -36,5 +38,15 @@ pub fn not_found(
 pub async fn not_found_get(State(state): State<GlobalState>, cookies: Cookies) -> Response<Body> {
     let logged_in_user = session::current_user(&state, &cookies).await.ok();
 
-    not_found(logged_in_user, state.config.content_pages.clone())
+    let sidebar_projects = if let Some(ref user) = logged_in_user {
+        user.sidebar_projects(&state).await
+    } else {
+        vec![]
+    };
+
+    not_found(
+        logged_in_user,
+        sidebar_projects,
+        state.config.content_pages.clone(),
+    )
 }

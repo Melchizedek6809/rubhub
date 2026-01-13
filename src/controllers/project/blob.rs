@@ -85,6 +85,7 @@ pub async fn project_blob_get(
 ) -> Response<Body> {
     let logged_in_user = session::current_user(&state, &cookies).await.ok();
 
+    let content_pages = state.config.content_pages.clone();
     let sidebar_projects = if let Some(ref user) = logged_in_user {
         user.sidebar_projects(&state).await
     } else {
@@ -96,18 +97,18 @@ pub async fn project_blob_get(
         .await;
 
     if access_level == AccessType::None {
-        return not_found(logged_in_user, vec![]);
+        return not_found(logged_in_user, sidebar_projects, content_pages);
     }
 
     let Some(summary) = get_git_summary(&state, &owner.slug, &project.slug).await else {
-        return not_found(logged_in_user, vec![]);
+        return not_found(logged_in_user, sidebar_projects, content_pages);
     };
 
     // Get file content
     let file_result = get_git_file(&state, &owner.slug, &project.slug, &git_ref, &path).await;
     let file_obj = match file_result {
         Ok(obj) => obj,
-        Err(_) => return not_found(logged_in_user, vec![]),
+        Err(_) => return not_found(logged_in_user, sidebar_projects, content_pages),
     };
 
     let ssh_clone_url = project.ssh_clone_url(&state.config.ssh_public_host);
@@ -173,7 +174,7 @@ pub async fn project_blob_get(
             source_url: None,
             logged_in_user,
             sidebar_projects,
-            content_pages: state.config.content_pages.clone(),
+            content_pages,
             active_tab: "code",
             mime_type: mime_type.to_string(),
             line_count: None,
@@ -207,7 +208,7 @@ pub async fn project_blob_get(
             source_url: None,
             logged_in_user,
             sidebar_projects,
-            content_pages: state.config.content_pages.clone(),
+            content_pages,
             active_tab: "code",
             mime_type: mime_type.to_string(),
             line_count: None,
@@ -253,7 +254,7 @@ pub async fn project_blob_get(
         source_url,
         logged_in_user,
         sidebar_projects,
-        content_pages: state.config.content_pages.clone(),
+        content_pages,
         active_tab: "code",
         mime_type: mime_type.to_string(),
         line_count: Some(line_count),

@@ -10,7 +10,9 @@ use axum::{
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, Project, User, UserModel, models::ContentPage, services::{content, session},
+    GlobalState, Project, User, UserModel,
+    models::ContentPage,
+    services::{content, session},
     views::ThemedRender,
 };
 
@@ -47,6 +49,7 @@ pub async fn render_content_page(
             );
             return crate::controllers::not_found(
                 logged_in_user,
+                sidebar_projects,
                 state.config.content_pages.clone(),
             );
         }
