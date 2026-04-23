@@ -17,10 +17,10 @@ dirs = "6"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"
-russh = "0.56"
+russh = "0.60"
 argon2 = { version = "0.5", features = ["password-hash"] }
 time = { version = "0.3", features = ["serde", "macros", "formatting", "parsing"] }
-tokio = { version = "1.48", features = ["macros", "process", "signal", "rt-multi-thread", "rt"] }
+tokio = { version = "1.52", features = ["macros", "process", "signal", "rt-multi-thread", "rt"] }
 toml = "0.8"
 tokio-stream = { version = "0.1", features = ["sync"] }
 futures = "0.3"
@@ -30,10 +30,10 @@ tower-http = { version = "0.6", features = ["fs", "set-header"] }
 urlencoding = "2.1"
 uuid = { version = "1", features = ["serde", "v4", "v7"] }
 markdown = "1"
-ammonia = "4.1"
+ammonia = "4"
 sd-notify = "0.4"
-rust-embed = "8.9"
-mime_guess = "2.0"
+rust-embed = "8"
+mime_guess = "2"
 tower_governor = "0.8"
 validator = "0.20"
 

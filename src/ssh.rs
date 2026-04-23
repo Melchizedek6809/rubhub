@@ -196,7 +196,7 @@ impl Connection {
                     Err(_) => break,
                 };
                 if stderr_handle
-                    .extended_data(stderr_id, 1, CryptoVec::from_slice(&buf[..n]))
+                    .extended_data(stderr_id, 1, Vec::from(&buf[..n]))
                     .await
                     .is_err()
                 {
@@ -218,7 +218,7 @@ impl Connection {
                 // println!("-> {}", String::from_utf8_lossy(&buf[..n]));
 
                 if handle
-                    .data(id, CryptoVec::from_slice(&buf[..n]))
+                    .data(id, Vec::from(&buf[..n]))
                     .await
                     .is_err()
                 {
