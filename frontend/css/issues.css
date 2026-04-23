@@ -174,17 +174,17 @@ a.comment-author {
 	text-transform: uppercase;
 }
 
-.status-open {
+a.status-open {
 	background: var(--primary-color-dark);
 	color: var(--white);
 }
 
-.status-completed {
+a.status-completed {
 	background: var(--success-color-dark);
 	color: var(--white);
 }
 
-.status-cancelled {
+a.status-cancelled {
 	background: var(--secondary-color-dark);
 	color: var(--white);
 }
