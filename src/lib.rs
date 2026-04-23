@@ -53,7 +53,7 @@ pub fn create_listeners(
 
 fn systemd_integration() {
     // Tell systemd we are ready (no-op if not under systemd)
-    let _ = notify(false, &[NotifyState::Ready]);
+    let _ = notify(&[NotifyState::Ready]);
 
     // WATCHDOG_USEC is only set if watchdog is enabled *and* systemd manages us
     let watchdog_usec = match std::env::var("WATCHDOG_USEC") {
@@ -75,7 +75,7 @@ fn systemd_integration() {
 
         loop {
             ticker.tick().await;
-            let _ = notify(false, &[NotifyState::Watchdog]);
+            let _ = notify(&[NotifyState::Watchdog]);
         }
     });
 }
