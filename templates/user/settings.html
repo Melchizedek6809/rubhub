@@ -49,6 +49,19 @@
           </label>
           <button type="submit"><span class="icon i-save"></span> Save</button>
         </form>
+
+        <div class="danger-zone card">
+          <h2>Danger Zone</h2>
+          <p>Deleting your account is permanent and cannot be undone. All of your repositories and account data will be deleted.</p>
+
+          <form method="post" action="/settings/delete/{{ delete_token }}" class="stack simple-form">
+            <label>
+              Type your user ID to confirm account deletion
+              <input name="confirmation" type="text" autocomplete="off" placeholder="{{ user.slug }}">
+            </label>
+            <button type="submit" class="danger-button"><span class="icon i-trash"></span> Delete Account</button>
+          </form>
+        </div>
       </section>
     </main>
   </body>

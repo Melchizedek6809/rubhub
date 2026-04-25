@@ -7,7 +7,7 @@ use argon2::{
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
-use crate::{event::StoreEvent, AuthStore};
+use crate::{AuthStore, event::StoreEvent};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct User {
@@ -31,7 +31,12 @@ pub enum PasswordVerification {
 }
 
 impl User {
-    pub fn new(slug: String, name: String, email: String, password: String) -> Result<Self, argon2::password_hash::Error> {
+    pub fn new(
+        slug: String,
+        name: String,
+        email: String,
+        password: String,
+    ) -> Result<Self, argon2::password_hash::Error> {
         let password_hash = hash_password(&password)?;
 
         Ok(Self {
@@ -46,6 +51,10 @@ impl User {
 
     pub fn save(self, store: &AuthStore) -> Result<(), SendError<StoreEvent>> {
         store.store_event(StoreEvent::User(self))
+    }
+
+    pub fn delete(store: &AuthStore, slug: String) -> Result<(), SendError<StoreEvent>> {
+        store.store_event(StoreEvent::UserDelete { slug })
     }
 
     pub(crate) fn verify_password_hash(&self, password: &str) -> PasswordVerification {
@@ -107,4 +116,81 @@ fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error>
     password_hasher()
         .hash_password(password.as_bytes(), &salt)
         .map(|hash| hash.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use tempfile::tempdir;
+
+    use crate::{AuthStore, Session};
+
+    use super::User;
+
+    #[test]
+    fn test_user_delete_removes_user_and_email_index() {
+        let dir = tempdir().unwrap();
+        let store = AuthStore::new(dir.path().to_path_buf());
+
+        let user = User::new(
+            "alice".to_string(),
+            "Alice".to_string(),
+            "alice@example.com".to_string(),
+            "password123456789".to_string(),
+        )
+        .unwrap();
+        user.save(&store).unwrap();
+
+        assert!(store.get_user("alice").is_some());
+        assert_eq!(
+            store.get_user_slug_by_email("alice@example.com"),
+            Some("alice".to_string())
+        );
+
+        User::delete(&store, "alice".to_string()).unwrap();
+
+        assert!(store.get_user("alice").is_none());
+        assert!(store.get_user_slug_by_email("alice@example.com").is_none());
+    }
+
+    #[test]
+    fn test_user_delete_replays_from_log() {
+        let dir = tempdir().unwrap();
+
+        {
+            let store = AuthStore::new(dir.path().to_path_buf());
+            let user = User::new(
+                "alice".to_string(),
+                "Alice".to_string(),
+                "alice@example.com".to_string(),
+                "password123456789".to_string(),
+            )
+            .unwrap();
+            user.save(&store).unwrap();
+            User::delete(&store, "alice".to_string()).unwrap();
+        }
+
+        let store = AuthStore::new(dir.path().to_path_buf());
+        assert!(store.get_user("alice").is_none());
+        assert!(store.get_user_slug_by_email("alice@example.com").is_none());
+    }
+
+    #[test]
+    fn test_session_delete_and_sessions_for_user() {
+        let dir = tempdir().unwrap();
+        let store = AuthStore::new(dir.path().to_path_buf());
+
+        let alice_session = Session::new("alice".to_string());
+        let alice_session_id = alice_session.session_id;
+        alice_session.save(&store).unwrap();
+
+        let bob_session = Session::new("bob".to_string());
+        bob_session.save(&store).unwrap();
+
+        assert_eq!(store.get_sessions_for_user("alice").len(), 1);
+
+        Session::delete(&store, alice_session_id).unwrap();
+
+        assert!(store.get_sessions_for_user("alice").is_empty());
+        assert_eq!(store.get_sessions_for_user("bob").len(), 1);
+    }
 }

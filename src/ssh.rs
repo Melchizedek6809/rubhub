@@ -217,11 +217,7 @@ impl Connection {
                 };
                 // println!("-> {}", String::from_utf8_lossy(&buf[..n]));
 
-                if handle
-                    .data(id, Vec::from(&buf[..n]))
-                    .await
-                    .is_err()
-                {
+                if handle.data(id, Vec::from(&buf[..n])).await.is_err() {
                     break;
                 }
             }

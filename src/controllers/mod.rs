@@ -18,4 +18,4 @@ pub use project::{
     project_tree_get, project_tree_root_get, talk_comment_post, talk_list_get, talk_new_get,
     talk_new_post, talk_view_get,
 };
-pub use user::{handle_settings, settings_page, user_keys_get, user_page};
+pub use user::{delete_account, handle_settings, settings_page, user_keys_get, user_page};

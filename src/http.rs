@@ -82,6 +82,10 @@ pub async fn http_server(
             get(controllers::settings_page).post(controllers::handle_settings),
         )
         .route(
+            "/settings/delete/{delete_token}",
+            post(controllers::delete_account),
+        )
+        .route(
             "/projects/new",
             get(controllers::project_new_get).post(controllers::project_new_post),
         )

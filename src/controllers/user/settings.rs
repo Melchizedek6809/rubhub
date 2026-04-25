@@ -3,18 +3,20 @@ use std::sync::Arc;
 use askama::Template;
 use axum::{
     Form,
-    extract::State,
+    extract::{Path, State},
     http::StatusCode,
     response::{Html, IntoResponse, Redirect, Response},
 };
+use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use russh::keys::ssh_key;
 use serde::Deserialize;
-use tower_cookies::Cookies;
+use time::OffsetDateTime;
+use tower_cookies::{Cookie, Cookies};
 
-use rubhub_auth_store::SshKey;
+use rubhub_auth_store::{ProjectInfo, Session, SshKey};
 
 use crate::{
-    GlobalState, Project, User, UserModel,
+    GlobalState, Project, RepoEvent, User, UserModel,
     models::ContentPage,
     services::{session as session_service, validation::validate_username},
     views::ThemedRender,
@@ -28,11 +30,17 @@ pub struct UserSettingsForm {
     pub ssh_keys: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct UserDeleteForm {
+    pub confirmation: String,
+}
+
 #[derive(Template)]
 #[template(path = "user/settings.html")]
 struct UserSettingsTemplate<'a> {
     user: Arc<User>,
     ssh_keys: &'a [String],
+    delete_token: String,
     message: Option<&'a str>,
     logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
@@ -45,6 +53,10 @@ fn find_invalid_ssh_keys(keys: &[String]) -> Vec<String> {
         .filter(|key| !key.is_empty() && ssh_key::PublicKey::from_openssh(key).is_err())
         .cloned()
         .collect()
+}
+
+fn account_delete_token(user_slug: &str) -> String {
+    URL_SAFE_NO_PAD.encode(user_slug)
 }
 
 pub async fn settings_page(
@@ -216,6 +228,101 @@ pub async fn handle_settings(
     .into_response())
 }
 
+pub async fn delete_account(
+    State(state): State<GlobalState>,
+    cookies: Cookies,
+    Path(delete_token): Path<String>,
+    Form(form): Form<UserDeleteForm>,
+) -> Result<Response, (StatusCode, Html<String>)> {
+    let current_user = match session_service::current_user(&state, &cookies).await {
+        Ok(user) => user,
+        Err(_) => return Ok(Redirect::to("/login").into_response()),
+    };
+
+    let ssh_keys: Vec<String> = state
+        .auth
+        .get_ssh_keys_for_user(&current_user.slug)
+        .iter()
+        .map(|k| k.to_authorized_keys_line())
+        .collect();
+
+    if delete_token != account_delete_token(&current_user.slug)
+        || form.confirmation.trim() != current_user.slug
+    {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            render_settings_page(
+                &state,
+                current_user,
+                &ssh_keys,
+                Some("Confirmation text did not match. Account was not deleted."),
+            )
+            .await,
+        ));
+    }
+
+    let project_infos = state.auth.get_projects_for_owner(&current_user.slug);
+    let projects: Vec<Project> = project_infos
+        .iter()
+        .filter_map(|info| Project::from_project_info(info))
+        .collect();
+    let ssh_keys = state.auth.get_ssh_keys_for_user(&current_user.slug);
+    let sessions = state.auth.get_sessions_for_user(&current_user.slug);
+
+    let user_git_path = state.config.git_root.join(&current_user.slug);
+    if let Err(err) = tokio::fs::remove_dir_all(&user_git_path).await
+        && err.kind() != std::io::ErrorKind::NotFound
+    {
+        return Err(internal_error(
+            &state,
+            current_user,
+            &[],
+            &format!("Failed to delete repositories: {err}"),
+        )
+        .await);
+    }
+
+    for info in project_infos {
+        if let Err(err) = ProjectInfo::delete(&state.auth, info.key.clone()) {
+            return Err(internal_error(&state, current_user, &[], &err.to_string()).await);
+        }
+    }
+
+    for key in ssh_keys {
+        if let Err(err) = SshKey::delete(&state.auth, key.public_key.clone()) {
+            return Err(internal_error(&state, current_user, &[], &err.to_string()).await);
+        }
+    }
+
+    for session in sessions {
+        if let Err(err) = Session::delete(&state.auth, session.session_id) {
+            return Err(internal_error(&state, current_user, &[], &err.to_string()).await);
+        }
+    }
+
+    if let Err(err) = User::delete(&state.auth, current_user.slug.clone()) {
+        return Err(internal_error(&state, current_user, &[], &err.to_string()).await);
+    }
+
+    for project in projects {
+        state.emit_event(RepoEvent::RepositoryDeleted {
+            owner: project.owner,
+            project: project.slug,
+            public_access: project.public_access,
+            timestamp: OffsetDateTime::now_utc(),
+        });
+    }
+
+    cookies.remove(
+        Cookie::build((session_service::SESSION_COOKIE, ""))
+            .path("/")
+            .max_age(time::Duration::seconds(0))
+            .build(),
+    );
+
+    Ok(Redirect::to("/").into_response())
+}
+
 async fn render_settings_page(
     state: &GlobalState,
     user: Arc<User>,
@@ -227,6 +334,7 @@ async fn render_settings_page(
     let template = UserSettingsTemplate {
         user: user.clone(),
         ssh_keys,
+        delete_token: account_delete_token(&user.slug),
         message,
         logged_in_user: Some(user),
         sidebar_projects,

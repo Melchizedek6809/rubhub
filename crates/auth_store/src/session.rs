@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::{event::StoreEvent, AuthStore};
+use crate::{AuthStore, event::StoreEvent};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Session {
@@ -28,5 +28,9 @@ impl Session {
 
     pub fn save(self, store: &AuthStore) -> Result<(), SendError<StoreEvent>> {
         store.store_event(StoreEvent::Session(self))
+    }
+
+    pub fn delete(store: &AuthStore, session_id: Uuid) -> Result<(), SendError<StoreEvent>> {
+        store.store_event(StoreEvent::SessionDelete { session_id })
     }
 }

@@ -1,17 +1,17 @@
+use dashmap::DashMap;
 use std::fs::{File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
 use std::sync::mpsc::SendError;
-use std::sync::{Arc,mpsc};
+use std::sync::{Arc, mpsc};
 use std::thread;
-use dashmap::DashMap;
 use uuid::Uuid;
 
+use crate::Session;
+use crate::SshKey;
 use crate::event::StoreEvent;
 use crate::project_info::ProjectInfo;
 use crate::{PasswordVerification, User};
-use crate::Session;
-use crate::SshKey;
 
 #[derive(Clone, Debug)]
 pub struct AuthStore {
@@ -47,11 +47,12 @@ impl AuthStore {
                         StoreEvent::Quit => {
                             file.flush().expect("Couldn't flush auth.ndjson on quit");
                             return;
-                        },
+                        }
                         _ => {
                             if let Ok(mut json) = serde_json::to_string(&event) {
                                 json.push('\n');
-                                file.write_all(json.as_bytes()).expect("Write to auth.ndjson failed");
+                                file.write_all(json.as_bytes())
+                                    .expect("Write to auth.ndjson failed");
                             } else {
                                 eprintln!("Writing event to auth.ndjson failed: {:?}", event);
                             }
@@ -77,29 +78,32 @@ impl AuthStore {
                         self.email_map.remove(&old_email);
                     }
                 }
-                self.email_map.insert(user.email.to_lowercase(), user.slug.clone());
+                self.email_map
+                    .insert(user.email.to_lowercase(), user.slug.clone());
                 self.user_map.insert(user.slug.clone(), Arc::new(user));
-            },
+            }
             StoreEvent::UserDelete { slug } => {
                 if let Some((_, user)) = self.user_map.remove(&slug) {
                     self.email_map.remove(&user.email.to_lowercase());
                 }
-            },
+            }
             StoreEvent::Session(session) => {
-                self.session_map.insert(session.session_id.clone(), Arc::new(session));
-            },
+                self.session_map
+                    .insert(session.session_id.clone(), Arc::new(session));
+            }
             StoreEvent::SessionDelete { session_id } => {
                 self.session_map.remove(&session_id);
-            },
+            }
             StoreEvent::SshKey(ssh_key) => {
                 let public_key = ssh_key.public_key.clone();
                 let user_slug = ssh_key.user_slug.clone();
-                self.ssh_key_map.insert(public_key.clone(), Arc::new(ssh_key));
+                self.ssh_key_map
+                    .insert(public_key.clone(), Arc::new(ssh_key));
                 self.user_ssh_keys
                     .entry(user_slug)
                     .or_default()
                     .push(public_key);
-            },
+            }
             StoreEvent::SshKeyDelete { public_key } => {
                 if let Some((_, ssh_key)) = self.ssh_key_map.remove(&public_key) {
                     if let Some(mut keys) = self.user_ssh_keys.get_mut(&ssh_key.user_slug) {
@@ -116,10 +120,7 @@ impl AuthStore {
                         keys.retain(|k| k != &key);
                     }
                     self.project_map.insert(key.clone(), Arc::new(project_info));
-                    self.owner_projects
-                        .entry(owner)
-                        .or_default()
-                        .push(key);
+                    self.owner_projects.entry(owner).or_default().push(key);
                 }
             }
             StoreEvent::ProjectInfoDelete { key } => {
@@ -134,7 +135,7 @@ impl AuthStore {
         }
     }
 
-    pub(crate) fn store_event(&self, event: StoreEvent) -> Result<(), SendError<StoreEvent>>  {
+    pub(crate) fn store_event(&self, event: StoreEvent) -> Result<(), SendError<StoreEvent>> {
         self.chan.send(event.clone())?;
         self.handle_event(event);
         Ok(())
@@ -142,7 +143,8 @@ impl AuthStore {
 
     fn replay_log(&self, path: PathBuf) {
         if let Ok(file) = File::open(path) {
-            BufReader::new(file).lines()
+            BufReader::new(file)
+                .lines()
                 .flatten()
                 .flat_map(|line| serde_json::from_str::<StoreEvent>(&line))
                 .for_each(|event| self.handle_event(event));
@@ -180,9 +182,7 @@ impl AuthStore {
     pub fn login_user(&self, slug: &str, password: &str) -> Option<Arc<User>> {
         if let Some(user) = self.get_user(slug) {
             match user.verify_password_hash(password) {
-                PasswordVerification::Valid => {
-                    Some(user)
-                },
+                PasswordVerification::Valid => Some(user),
                 PasswordVerification::ValidNeedsRehash { new_hash } => {
                     let mut new_user = user.as_ref().clone();
                     new_user.password_hash = new_hash;
@@ -191,11 +191,8 @@ impl AuthStore {
                     } else {
                         self.get_user(slug)
                     }
-                },
-                PasswordVerification::Error |
-                PasswordVerification::Invalid => {
-                    None
                 }
+                PasswordVerification::Error | PasswordVerification::Invalid => None,
             }
         } else {
             None
@@ -208,6 +205,14 @@ impl AuthStore {
         } else {
             None
         }
+    }
+
+    pub fn get_sessions_for_user(&self, user_slug: &str) -> Vec<Arc<Session>> {
+        self.session_map
+            .iter()
+            .filter(|entry| entry.value().user_slug == user_slug)
+            .map(|entry| entry.value().clone())
+            .collect()
     }
 
     pub fn get_ssh_key(&self, public_key: &str) -> Option<Arc<SshKey>> {
@@ -270,6 +275,8 @@ impl AuthStore {
 
 impl Drop for AuthStore {
     fn drop(&mut self) {
-        self.chan.send(StoreEvent::Quit).expect("Couldn't send quit to auth.ndjson writer thread");
+        self.chan
+            .send(StoreEvent::Quit)
+            .expect("Couldn't send quit to auth.ndjson writer thread");
     }
 }

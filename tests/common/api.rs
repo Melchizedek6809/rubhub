@@ -156,6 +156,42 @@ impl Api {
         Ok(self.client.get(&url).send().await?)
     }
 
+    /// Delete the current account.
+    pub async fn delete_account(&self, username: &str) -> Result<Response> {
+        let delete_token = base64_url_no_pad(username);
+        let form = [("confirmation", username)];
+
+        Ok(self
+            .client
+            .post(format!(
+                "{}/settings/delete/{}",
+                self.base_url, delete_token
+            ))
+            .form(&form)
+            .send()
+            .await?
+            .error_for_status()?)
+    }
+
+    /// Try to delete the current account with a custom token/confirmation.
+    pub async fn delete_account_raw(
+        &self,
+        delete_token: &str,
+        confirmation: &str,
+    ) -> Result<Response> {
+        let form = [("confirmation", confirmation)];
+
+        Ok(self
+            .client
+            .post(format!(
+                "{}/settings/delete/{}",
+                self.base_url, delete_token
+            ))
+            .form(&form)
+            .send()
+            .await?)
+    }
+
     /// Update project settings.
     pub async fn update_project_settings(
         &self,
@@ -247,4 +283,10 @@ impl Api {
             .await?
             .error_for_status()?)
     }
+}
+
+fn base64_url_no_pad(input: &str) -> String {
+    use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+
+    URL_SAFE_NO_PAD.encode(input)
 }
