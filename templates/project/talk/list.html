@@ -25,7 +25,7 @@
               <a href="{{ project.uri_talk() }}?status=cancelled" class="btn btn-filter issue-cancelled{% if current_status == "cancelled" %} active{% endif %}"><span class="icon i-x"></span><span class="filter-label">Closed</span> {{ count_cancelled }}</a>
             </div>
             {% if logged_in_user.is_some() %}
-            <a href="/~{{ owner.slug }}/{{ project.slug }}/talk/new" class="btn">
+            <a href="/~{{ owner.slug }}/{{ project.slug }}/talk/new" class="btn success-button">
               <span class="icon i-plus"></span> New Issue
             </a>
             {% endif %}

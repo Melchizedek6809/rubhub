@@ -10,7 +10,10 @@
         <div class="page-header">
           <h1 class="project-header"><a href="{{ user.uri() }}">{{ user.name }}</a></h1>
           {% if is_owner %}
-          <a class="btn" href="/settings"><span class="icon i-settings"></span> Settings</a>
+          <div class="actions">
+            <a class="btn" href="/settings"><span class="icon i-settings"></span> Settings</a>
+            <a class="btn success-button" href="/projects/new"><span class="icon i-plus"></span> New project</a>
+          </div>
           {% endif %}
         </div>
         {% if projects.len() > 0 %}
@@ -22,14 +25,6 @@
         {% else %}
         <h4>No projects yet</h4>
         {% endif %}
-
-        <br/>
-        <div class="page-header">
-          <h2 class="project-header"></h2>
-          {% if is_owner %}
-          <a class="btn" href="/projects/new"><span class="icon i-plus"></span> New project</a>
-          {% endif %}
-        </div>
       </section>
     </main>
   </body>

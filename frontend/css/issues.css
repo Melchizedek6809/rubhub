@@ -16,6 +16,15 @@
 	margin-top: 4px;
 }
 
+.btn-filter {
+	background: transparent;
+	padding: var(--space-xs) var(--space-m);
+	border-radius: var(--space-xs);
+	font-size: 0.875rem;
+	text-decoration: none;
+	border: 1px solid;
+}
+
 .issues-header > .btn {
 	margin-left: auto;
 }
@@ -54,15 +63,6 @@
 	.filter-label {
 		display: none;
 	}
-}
-
-.btn-filter {
-	background: transparent;
-	padding: var(--space-xs) var(--space-m);
-	border-radius: var(--space-xs);
-	font-size: 0.875rem;
-	text-decoration: none;
-	border: 1px solid;
 }
 
 .btn-filter.issue-open {

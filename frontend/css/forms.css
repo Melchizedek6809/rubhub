@@ -57,6 +57,17 @@ button:focus {
 	background-color: var(--error-color);
 }
 
+.success-button {
+	background: var(--success-color-dark);
+	color: var(--white);
+}
+
+.success-button:hover,
+.success-button:focus {
+	background-color: var(--success-color);
+	color: var(--black);
+}
+
 .danger-zone {
 	margin-top: var(--space-xl);
 	border: 2px solid var(--error-color);
