@@ -136,7 +136,10 @@
 }
 
 .image-view img {
+	display: block;
 	max-width: 100%;
-	max-height: var(--max-content-width);
+	max-height: 90vh;
+	width: auto;
+	height: auto;
 	object-fit: contain;
 }
