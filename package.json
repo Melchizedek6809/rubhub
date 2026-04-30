@@ -9,7 +9,9 @@
 		"dev": "rm -rf ./dist && NODE_ENV=development vite build --watch",
 		"format": "npx @biomejs/biome check --write",
 		"format:unsafe": "npx @biomejs/biome check --write --unsafe",
-		"test": "echo \"No tests defined yet\""
+		"test": "npm run check && npm run test:e2e",
+		"test:e2e": "npm run build && playwright test",
+		"test:e2e:ui": "npm run build && playwright test --ui"
 	},
 	"husky": {
 		"hooks": {
@@ -22,6 +24,7 @@
 		"prismjs": "^1.30.0"
 	},
 	"devDependencies": {
+		"@playwright/test": "^1.57.0",
 		"@biomejs/biome": "^2.3.8",
 		"typescript": "^6.0",
 		"vite": "^8.0.10"

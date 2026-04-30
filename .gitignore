@@ -42,5 +42,7 @@ yarn-error.log*
 **/*.tgz
 **/*.log
 **/*.bun
+/test-results
+/playwright-report
 
 .direnv/
