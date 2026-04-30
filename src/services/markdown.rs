@@ -1,5 +1,28 @@
+use std::{borrow::Cow, collections::HashSet};
+
 /// Parsed frontmatter as key-value pairs
 pub type Frontmatter = Vec<(String, String)>;
+
+#[derive(Clone, Debug)]
+pub struct MarkdownRenderContext {
+    base_url: String,
+}
+
+impl MarkdownRenderContext {
+    pub fn new(base_url: impl Into<String>) -> Self {
+        Self {
+            base_url: base_url.into(),
+        }
+    }
+
+    pub fn render(&self, content: &str) -> String {
+        render_markdown_with_context(content, Some(self))
+    }
+
+    pub fn parse_and_render(&self, content: &str) -> (Frontmatter, String) {
+        parse_and_render_with_context(content, Some(self))
+    }
+}
 
 /// Parse YAML frontmatter from markdown content.
 /// Returns (frontmatter properties, body content).
@@ -69,19 +92,88 @@ fn yaml_value_to_string(value: &serde_yaml::Value) -> Option<String> {
     }
 }
 
-/// Render markdown content to sanitized HTML
-pub fn render_markdown(content: &str) -> String {
+fn render_markdown_with_context(content: &str, context: Option<&MarkdownRenderContext>) -> String {
     let html =
         markdown::to_html_with_options(content, &markdown::Options::gfm()).unwrap_or_default();
-    ammonia::clean(&html)
+    sanitize_html(&html, context)
 }
 
-/// Parse frontmatter and render markdown body to HTML
-/// Returns (frontmatter properties, rendered HTML)
-pub fn parse_and_render(content: &str) -> (Frontmatter, String) {
+fn parse_and_render_with_context(
+    content: &str,
+    context: Option<&MarkdownRenderContext>,
+) -> (Frontmatter, String) {
     let (frontmatter, body) = parse_frontmatter(content);
-    let html = render_markdown(&body);
+    let html = render_markdown_with_context(&body, context);
     (frontmatter, html)
+}
+
+fn sanitize_html(html: &str, context: Option<&MarkdownRenderContext>) -> String {
+    let url_schemes: HashSet<&str> = ["http", "https", "mailto", "tel"].into_iter().collect();
+    let mut builder = ammonia::Builder::new();
+    builder.url_schemes(url_schemes);
+
+    if let Some(context) = context {
+        builder.url_relative(ammonia::UrlRelative::Custom(Box::new(
+            RelativeUrlResolver {
+                base_url: context.base_url.clone(),
+            },
+        )));
+    }
+
+    builder.clean(html).to_string()
+}
+
+struct RelativeUrlResolver {
+    base_url: String,
+}
+
+impl<'a> ammonia::UrlRelativeEvaluate<'a> for RelativeUrlResolver {
+    fn evaluate<'url>(&self, url: &'url str) -> Option<Cow<'url, str>> {
+        resolve_relative_url(url, &self.base_url).map(Cow::Owned)
+    }
+}
+
+fn resolve_relative_url(url: &str, base_url: &str) -> Option<String> {
+    if url.is_empty() || url.starts_with('#') || url.starts_with('/') {
+        return if url.starts_with("//") {
+            None
+        } else {
+            Some(url.to_string())
+        };
+    }
+
+    let (path_and_query, fragment) = split_once_keep_delimiter(url, '#');
+    let (path, query) = split_once_keep_delimiter(path_and_query, '?');
+    let mut rewritten = join_url_path(base_url, path);
+    rewritten.push_str(query);
+    rewritten.push_str(fragment);
+    Some(rewritten)
+}
+
+fn split_once_keep_delimiter(value: &str, delimiter: char) -> (&str, &str) {
+    match value.find(delimiter) {
+        Some(idx) => (&value[..idx], &value[idx..]),
+        None => (value, ""),
+    }
+}
+
+fn join_url_path(base_url: &str, relative_path: &str) -> String {
+    let mut parts: Vec<&str> = base_url
+        .split('/')
+        .filter(|part| !part.is_empty())
+        .collect();
+
+    for part in relative_path.split('/') {
+        match part {
+            "" | "." => {}
+            ".." => {
+                parts.pop();
+            }
+            part => parts.push(part),
+        }
+    }
+
+    format!("/{}", parts.join("/"))
 }
 
 #[cfg(test)]
@@ -112,5 +204,58 @@ mod tests {
         let (fm, body) = parse_frontmatter(content);
         assert_eq!(fm.len(), 1);
         assert!(body.is_empty());
+    }
+
+    #[test]
+    fn rewrites_relative_links_against_base_url() {
+        let context = MarkdownRenderContext::new("/~ben/hoshi/blob/main/docs/");
+        let html = context.render("[Guide](guide.md)");
+
+        assert!(html.contains("href=\"/~ben/hoshi/blob/main/docs/guide.md\""));
+    }
+
+    #[test]
+    fn rewrites_relative_images_against_base_url() {
+        let context = MarkdownRenderContext::new("/~ben/hoshi/blob/main/docs/");
+        let html = context.render("![Logo](assets/logo.png)");
+
+        assert!(html.contains("src=\"/~ben/hoshi/blob/main/docs/assets/logo.png\""));
+    }
+
+    #[test]
+    fn preserves_query_and_fragment_when_rewriting() {
+        let context = MarkdownRenderContext::new("/~ben/hoshi/blob/main/");
+        let html = context.render("![Diagram](diagram.svg?theme=dark#box)");
+
+        assert!(html.contains("src=\"/~ben/hoshi/blob/main/diagram.svg?theme=dark#box\""));
+    }
+
+    #[test]
+    fn resolves_parent_segments_without_leading_root_escape() {
+        let context = MarkdownRenderContext::new("/~ben/hoshi/blob/main/docs/guides/");
+        let html = context.render("[Readme](../README.md)");
+
+        assert!(html.contains("href=\"/~ben/hoshi/blob/main/docs/README.md\""));
+    }
+
+    #[test]
+    fn leaves_absolute_and_root_absolute_urls_alone() {
+        let context = MarkdownRenderContext::new("/~ben/hoshi/blob/main/");
+        let html = context.render(
+            "[Site](https://example.com) [Mail](mailto:test@example.com) [Root](/projects)",
+        );
+
+        assert!(html.contains("href=\"https://example.com\""));
+        assert!(html.contains("href=\"mailto:test@example.com\""));
+        assert!(html.contains("href=\"/projects\""));
+    }
+
+    #[test]
+    fn strips_unsafe_and_protocol_relative_urls() {
+        let context = MarkdownRenderContext::new("/~ben/hoshi/blob/main/");
+        let html = context.render("[Bad](javascript:alert(1)) ![Bad](//example.com/a.png)");
+
+        assert!(!html.contains("javascript:"));
+        assert!(!html.contains("src="));
     }
 }

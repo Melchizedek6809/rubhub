@@ -5,6 +5,7 @@ use crate::{
     GlobalState, Project, User,
     models::{CommentFrontmatter, Issue, IssueComment, IssueStatus, IssueSummary},
     services::{
+        markdown as markdown_service,
         repository::{
             CommitParams, EntryKind, add_file_to_branch, branch_exists, create_orphan_branch,
             get_git_file, get_git_tree,
@@ -274,10 +275,14 @@ pub async fn get_issue(
                 .unwrap_or_else(|| "(No title)".to_string());
         }
 
-        // Render markdown to HTML
-        let html =
-            markdown::to_html_with_options(&body, &markdown::Options::gfm()).unwrap_or_default();
-        let html = ammonia::clean(&html);
+        let html = markdown_service::MarkdownRenderContext::new(format!(
+            "/~{}/{}/blob/{}/{}",
+            user_slug,
+            project_slug,
+            urlencoding::encode(ISSUES_BRANCH),
+            issue_path
+        ))
+        .render(&body);
 
         let author_name = state
             .auth

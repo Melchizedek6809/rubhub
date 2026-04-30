@@ -138,7 +138,13 @@ async fn render_tree_page(
         })
         .map(|b| {
             let content = String::from_utf8_lossy(&b);
-            let (frontmatter, html) = markdown::parse_and_render(&content);
+            let base_url = if path.is_empty() {
+                project.uri_blob(&git_ref, "")
+            } else {
+                format!("{}/", project.uri_blob(&git_ref, &path))
+            };
+            let (frontmatter, html) =
+                markdown::MarkdownRenderContext::new(base_url).parse_and_render(&content);
             (Some(html), frontmatter)
         })
         .unwrap_or((None, vec![]));

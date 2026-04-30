@@ -78,7 +78,9 @@ async fn render_project_page(
     let (readme_html, readme_frontmatter) = readme_result
         .map(|b| {
             let content = String::from_utf8_lossy(&b);
-            let (frontmatter, html) = markdown::parse_and_render(&content);
+            let (frontmatter, html) =
+                markdown::MarkdownRenderContext::new(project.uri_blob(&current, ""))
+                    .parse_and_render(&content);
             (Some(html), frontmatter)
         })
         .unwrap_or((None, vec![]));

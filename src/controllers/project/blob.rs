@@ -4,7 +4,7 @@ use askama::Template;
 use axum::{
     body::Body,
     extract::{Query, State},
-    http::{Response, StatusCode, header},
+    http::{HeaderMap, Response, StatusCode, header},
 };
 use serde::Deserialize;
 use tower_cookies::Cookies;
@@ -80,6 +80,7 @@ fn human_readable_size(bytes: usize) -> String {
 pub async fn project_blob_get(
     State(state): State<GlobalState>,
     cookies: Cookies,
+    headers: HeaderMap,
     Query(params): Query<BlobParams>,
     PathUserProjectRefPath(owner, project, git_ref, path): PathUserProjectRefPath,
 ) -> Response<Body> {
@@ -132,19 +133,20 @@ pub async fn project_blob_get(
         None
     };
 
-    // Handle ?raw mode - return raw bytes with appropriate content-type
-    if params.raw.is_some() {
-        let mime_type = mime_guess::from_path(&path).first_or_octet_stream();
+    // Check if it's an image file (based on mime type)
+    let mime_type = mime_guess::from_path(&path).first_or_octet_stream();
+    let is_image = mime_type.type_() == mime_guess::mime::IMAGE;
+
+    // Handle raw mode - return file bytes with appropriate content-type.
+    // Images are also served raw for non-HTML requests, which lets markdown
+    // image tags use the same blob URL that opens the viewer during navigation.
+    if params.raw.is_some() || (is_image && wants_blob_bytes(&headers)) {
         return Response::builder()
             .status(StatusCode::OK)
             .header(header::CONTENT_TYPE, mime_type.as_ref())
             .body(Body::from(file_obj.clone()))
             .unwrap();
     }
-
-    // Check if it's an image file (based on mime type)
-    let mime_type = mime_guess::from_path(&path).first_or_octet_stream();
-    let is_image = mime_type.type_() == mime_guess::mime::IMAGE;
 
     // Check if binary
     let is_binary = file_obj.contains(&0u8);
@@ -225,7 +227,12 @@ pub async fn project_blob_get(
     // Render markdown if it's a .md file and ?source is not specified
     let (file_content, is_rendered_markdown, markdown_frontmatter) =
         if is_markdown && params.source.is_none() {
-            let (frontmatter, html) = markdown::parse_and_render(&text_content);
+            let base_url = match path.rsplit_once('/') {
+                Some((parent, _)) => format!("{}/", project.uri_blob(&git_ref, parent)),
+                None => project.uri_blob(&git_ref, ""),
+            };
+            let (frontmatter, html) =
+                markdown::MarkdownRenderContext::new(base_url).parse_and_render(&text_content);
             (html, true, frontmatter)
         } else {
             (text_content, false, vec![])
@@ -261,4 +268,48 @@ pub async fn project_blob_get(
         human_readable_size: human_readable_size(file_size),
     };
     template.response()
+}
+
+fn wants_blob_bytes(headers: &HeaderMap) -> bool {
+    let Some(accept) = headers
+        .get(header::ACCEPT)
+        .and_then(|value| value.to_str().ok())
+    else {
+        return false;
+    };
+
+    !accept
+        .split(',')
+        .filter_map(|part| part.trim().split(';').next())
+        .any(|mime| mime.eq_ignore_ascii_case("text/html"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn headers_with_accept(value: &str) -> HeaderMap {
+        let mut headers = HeaderMap::new();
+        headers.insert(header::ACCEPT, value.parse().unwrap());
+        headers
+    }
+
+    #[test]
+    fn missing_accept_header_keeps_viewer_behavior() {
+        assert!(!wants_blob_bytes(&HeaderMap::new()));
+    }
+
+    #[test]
+    fn html_accept_header_keeps_viewer_behavior() {
+        assert!(!wants_blob_bytes(&headers_with_accept(
+            "text/html,application/xhtml+xml,image/avif,*/*;q=0.8",
+        )));
+    }
+
+    #[test]
+    fn image_accept_header_requests_blob_bytes() {
+        assert!(wants_blob_bytes(&headers_with_accept(
+            "image/avif,image/webp,image/png,*/*;q=0.8",
+        )));
+    }
 }
