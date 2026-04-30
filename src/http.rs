@@ -73,6 +73,10 @@ pub async fn http_server(
             "/favicon.png",
             get(|| async { serve_public_asset("favicon.png") }),
         )
+        .route(
+            "/robots.txt",
+            get(|| async { serve_public_asset("robots.txt") }),
+        )
         .route("/login", get(controllers::login_page))
         .route("/registration", get(controllers::registration_page))
         .merge(auth_post_routes)

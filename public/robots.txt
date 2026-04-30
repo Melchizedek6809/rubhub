@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+Disallow: /~*/branches
+Disallow: /~*/tags
+Disallow: /~*/log/
+Disallow: /~*/tree/
+Disallow: /~*/blob/

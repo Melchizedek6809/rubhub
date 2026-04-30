@@ -4,6 +4,24 @@ use common::{Api, with_backend};
 use reqwest::StatusCode;
 
 #[tokio::test(flavor = "current_thread")]
+async fn robots_txt_is_served_from_root() {
+    with_backend(|state| async move {
+        let api = Api::new(&state.config.base_url);
+
+        let body = api.get_text("/robots.txt").await.unwrap();
+
+        assert!(body.contains("User-agent: *"));
+        assert!(body.contains("Allow: /"));
+        assert!(body.contains("Disallow: /~*/branches"));
+        assert!(body.contains("Disallow: /~*/tags"));
+        assert!(body.contains("Disallow: /~*/log/"));
+        assert!(body.contains("Disallow: /~*/tree/"));
+        assert!(body.contains("Disallow: /~*/blob/"));
+    })
+    .await;
+}
+
+#[tokio::test(flavor = "current_thread")]
 async fn auth_workflow() {
     with_backend(|state| async move {
         let api = Api::new(&state.config.base_url);
