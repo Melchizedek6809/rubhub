@@ -11,34 +11,30 @@ rubhub-repo = { path = "crates/repo", version = "0.1.0" }
 rubhub-state = { path = "crates/state", version = "0.1.0" }
 
 anyhow = "1"
-axum = { version = "0.8", features = ["ws", "multipart"] }
+axum = "0.8"
 askama = "0.15"
 base64 = "0.22"
-dirs = "6"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"
 russh = "0.60"
-argon2 = { version = "0.5", features = ["password-hash"] }
-time = { version = "0.3", features = ["serde", "macros", "formatting", "parsing"] }
+time = { version = "0.3", features = ["serde", "formatting", "parsing"] }
 tokio = { version = "1.52", features = ["macros", "process", "signal", "rt-multi-thread", "rt"] }
-toml = "1.1"
 tokio-stream = { version = "0.1", features = ["sync"] }
 futures = "0.3"
-tower = "0.5"
 tower-cookies = "0.11"
-tower-http = { version = "0.6", features = ["fs", "set-header"] }
+tower-http = { version = "0.6", features = ["set-header"] }
 urlencoding = "2.1"
-uuid = { version = "1", features = ["serde", "v4", "v7"] }
+uuid = "1"
 markdown = "1"
 ammonia = "4"
 sd-notify = "0.5"
 rust-embed = "8"
 mime_guess = "2"
-tower_governor = "0.8"
+tower_governor = { version = "0.8", default-features = false, features = ["axum"] }
 validator = "0.20"
 
 [dev-dependencies]
 tempfile = "3"
-reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls", "cookies"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "cookies"] }
 scraper = "0.26"
