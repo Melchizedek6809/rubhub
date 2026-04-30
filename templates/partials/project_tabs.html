@@ -1,4 +1,4 @@
-<div class="project-tabs">
+<nav class="project-tabs" aria-label="Project">
 	<a href="{{ project.uri() }}" class="tab {% if active_tab == "overview" %}active{% endif %}">
 		<span class="icon i-book-open-text"></span><span class="tab-label">Overview</span>
 	</a>
@@ -17,4 +17,4 @@
 			<span class="icon i-settings"></span><span class="tab-label">Settings</span>
 		</span>
 	{% endif %}
-</div>
+</nav>

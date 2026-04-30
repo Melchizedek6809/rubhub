@@ -1,11 +1,11 @@
 <div class="clone-url-wrapper">
   <div class="protocol-switcher">
     {% if logged_in_user.is_some() %}
-    <button class="protocol-btn active" data-protocol="ssh">SSH</button>
-    <button class="protocol-btn" data-protocol="http">HTTP</button>
+    <button class="protocol-btn active" type="button" data-protocol="ssh">SSH</button>
+    <button class="protocol-btn" type="button" data-protocol="http">HTTP</button>
     {% else %}
-    <button class="protocol-btn" data-protocol="ssh" disabled>SSH</button>
-    <button class="protocol-btn active" data-protocol="http">HTTP</button>
+    <button class="protocol-btn" type="button" data-protocol="ssh" disabled>SSH</button>
+    <button class="protocol-btn active" type="button" data-protocol="http">HTTP</button>
     {% endif %}
   </div>
   <div class="clone-url">

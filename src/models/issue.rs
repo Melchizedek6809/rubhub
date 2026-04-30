@@ -90,6 +90,12 @@ impl IssueSummary {
         let diff = now - self.created_at;
         format_relative_time(diff.whole_seconds())
     }
+
+    pub fn rfc3339_created_at(&self) -> String {
+        self.created_at
+            .format(&time::format_description::well_known::Rfc3339)
+            .unwrap_or_default()
+    }
 }
 
 impl IssueComment {
@@ -98,5 +104,11 @@ impl IssueComment {
         let now = OffsetDateTime::now_utc();
         let diff = now - self.date;
         format_relative_time(diff.whole_seconds())
+    }
+
+    pub fn rfc3339_date(&self) -> String {
+        self.date
+            .format(&time::format_description::well_known::Rfc3339)
+            .unwrap_or_default()
     }
 }

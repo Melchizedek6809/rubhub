@@ -128,6 +128,12 @@ impl GitCommitInfo {
         let diff = (now - self.time).whole_seconds();
         format_relative_time(diff)
     }
+
+    pub fn rfc3339_time(&self) -> String {
+        self.time
+            .format(&time::format_description::well_known::Rfc3339)
+            .unwrap_or_default()
+    }
 }
 
 /// Information about a git reference (branch/tag) and its commits

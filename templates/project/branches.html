@@ -28,7 +28,7 @@
                 <span class="commit-author" title="{{ commit.author }}">{{ commit.author }}</span>
                 <span class="commit-message" title="{{ commit.message }}">{{ commit.message }}</span>
                 <span class="commit-id">{{ commit.id }}</span>
-                <span class="commit-time">{{ commit.relative_time() }}</span>
+                <time class="commit-time" datetime="{{ commit.rfc3339_time() }}">{{ commit.relative_time() }}</time>
                 <a href="{{ project.uri_log(info.branch_name, 0) }}" class="commit-count"><span class="icon i-history"></span> {{ info.commit_count }} commit{% if info.commit_count != 1 %}s{% endif %}</a>
               </div>
               {% endif %}
