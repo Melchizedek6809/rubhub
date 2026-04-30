@@ -3,16 +3,16 @@
 //! These helpers provide more robust HTML testing that doesn't break
 //! when the HTML structure changes slightly.
 
-use scraper::{Html, Selector};
-
 /// Parse HTML and find elements matching a CSS selector.
 pub fn select(html: &str, selector: &str) -> Vec<String> {
-    let document = Html::parse_document(html);
-    let sel = Selector::parse(selector).expect("Invalid CSS selector");
+    let document = parse(html);
+    let parser = document.parser();
 
     document
-        .select(&sel)
-        .map(|el| el.text().collect::<String>())
+        .query_selector(selector)
+        .expect("Invalid CSS selector")
+        .filter_map(|handle| handle.get(parser))
+        .map(|node| node.inner_text(parser).into_owned())
         .collect()
 }
 
@@ -37,10 +37,13 @@ pub fn assert_element_contains(html: &str, selector: &str, expected: &str) {
 
 /// Assert that an element matching the selector exists.
 pub fn assert_element_exists(html: &str, selector: &str) {
-    let document = Html::parse_document(html);
-    let sel = Selector::parse(selector).expect("Invalid CSS selector");
+    let document = parse(html);
     assert!(
-        document.select(&sel).next().is_some(),
+        document
+            .query_selector(selector)
+            .expect("Invalid CSS selector")
+            .next()
+            .is_some(),
         "Expected element '{}' to exist",
         selector
     );
@@ -48,10 +51,13 @@ pub fn assert_element_exists(html: &str, selector: &str) {
 
 /// Assert that no element matching the selector exists.
 pub fn assert_element_not_exists(html: &str, selector: &str) {
-    let document = Html::parse_document(html);
-    let sel = Selector::parse(selector).expect("Invalid CSS selector");
+    let document = parse(html);
     assert!(
-        document.select(&sel).next().is_none(),
+        document
+            .query_selector(selector)
+            .expect("Invalid CSS selector")
+            .next()
+            .is_none(),
         "Expected element '{}' to NOT exist",
         selector
     );
@@ -64,7 +70,12 @@ pub fn get_text(html: &str, selector: &str) -> Option<String> {
 
 /// Count elements matching a selector.
 pub fn count_elements(html: &str, selector: &str) -> usize {
-    let document = Html::parse_document(html);
-    let sel = Selector::parse(selector).expect("Invalid CSS selector");
-    document.select(&sel).count()
+    parse(html)
+        .query_selector(selector)
+        .expect("Invalid CSS selector")
+        .count()
+}
+
+fn parse(html: &str) -> tl::VDom<'_> {
+    tl::parse(html, tl::ParserOptions::default()).expect("Invalid HTML")
 }

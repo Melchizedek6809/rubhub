@@ -1,4 +1,4 @@
-use validator::ValidateEmail;
+use email_address::EmailAddress;
 
 /// Special project slugs that are allowed despite starting with a period
 pub const SPECIAL_PROJECT_SLUGS: &[&str] = &[".profile"];
@@ -65,10 +65,10 @@ pub fn validate_email(email: &str) -> Result<(), &'static str> {
         return Err("E-Mail must be at least 3 characters.");
     }
 
-    if email.validate_email() {
+    if EmailAddress::is_valid(email) {
         Ok(())
     } else {
-        Err("Invalid E-Mail, all adresses must conform to the HTML5 E-Mail spec")
+        Err("Invalid E-Mail address.")
     }
 }
 
