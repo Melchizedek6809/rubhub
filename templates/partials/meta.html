@@ -1,0 +1,13 @@
+<title>{{ meta.title }}</title>
+<meta name="description" content="{{ meta.description }}">
+{% if let Some(canonical_url) = meta.canonical_url %}
+<link rel="canonical" href="{{ canonical_url }}">
+<meta property="og:url" content="{{ canonical_url }}">
+{% endif %}
+{% if let Some(robots) = meta.robots %}
+<meta name="robots" content="{{ robots }}">
+{% endif %}
+<meta property="og:title" content="{{ meta.title }}">
+<meta property="og:description" content="{{ meta.description }}">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">

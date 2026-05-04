@@ -15,7 +15,7 @@ use crate::{
     AccessType, GlobalState, Project, User, UserModel,
     extractors::PathUserProject,
     models::ContentPage,
-    services::{session, validation::validate_project_name},
+    services::{meta::PageMeta, session, validation::validate_project_name},
     views::ThemedRender,
 };
 
@@ -31,6 +31,7 @@ struct ProjectSettingsTemplate<'a> {
     content_pages: Vec<ContentPage>,
     active_tab: &'static str,
     selected_branch: String,
+    meta: PageMeta,
 }
 
 #[derive(Debug, Deserialize)]
@@ -133,6 +134,11 @@ async fn render_project_settings_page(
     message: Option<&str>,
 ) -> Response<Body> {
     let sidebar_projects = logged_in_user.sidebar_projects(state).await;
+    let meta = PageMeta::new(
+        format!("{}/{} settings - RubHub", owner.name, project.name),
+        "Project settings on RubHub.",
+    )
+    .robots("noindex,follow");
     let template = ProjectSettingsTemplate {
         owner,
         project: &project,
@@ -143,6 +149,7 @@ async fn render_project_settings_page(
         content_pages: state.config.content_pages.clone(),
         active_tab: "settings",
         selected_branch: project.main_branch.clone(),
+        meta,
     };
     template.response()
 }

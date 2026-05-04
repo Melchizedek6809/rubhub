@@ -3,6 +3,12 @@ mod common;
 use common::{Api, with_backend};
 use reqwest::StatusCode;
 
+fn assert_themed_404(body: &str) {
+    assert!(body.contains("<h1>404</h1>"));
+    assert!(body.contains("Page not found"));
+    assert!(body.contains("Browse"));
+}
+
 #[tokio::test(flavor = "current_thread")]
 async fn robots_txt_is_served_from_root() {
     with_backend(|state| async move {
@@ -17,6 +23,153 @@ async fn robots_txt_is_served_from_root() {
         assert!(body.contains("Disallow: /~*/log/"));
         assert!(body.contains("Disallow: /~*/tree/"));
         assert!(body.contains("Disallow: /~*/blob/"));
+        assert!(body.contains(&format!("Sitemap: {}/sitemap.xml", state.config.base_url)));
+    })
+    .await;
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn sitemap_lists_public_metadata_urls_only() {
+    with_backend(|state| async move {
+        let api = Api::new(&state.config.base_url);
+
+        api.register("alice", "alice@example.com", "alicepassword123")
+            .await
+            .unwrap();
+        api.create_project_with_access("Public Project", "Public", "read")
+            .await
+            .unwrap();
+        api.create_project_with_access("Private Project", "Private", "none")
+            .await
+            .unwrap();
+
+        let body = api.get_text("/sitemap.xml").await.unwrap();
+
+        assert!(body.contains("<urlset"));
+        assert!(body.contains(&format!("<loc>{}/</loc>", state.config.base_url)));
+        assert!(body.contains(&format!("<loc>{}/projects</loc>", state.config.base_url)));
+        assert!(body.contains(&format!("<loc>{}/~alice</loc>", state.config.base_url)));
+        assert!(body.contains(&format!(
+            "<loc>{}/~alice/public-project</loc>",
+            state.config.base_url
+        )));
+        assert!(!body.contains("private-project"));
+        assert!(!body.contains("/tree/"));
+        assert!(!body.contains("/blob/"));
+        assert!(!body.contains("/settings"));
+    })
+    .await;
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn public_project_page_renders_machine_readable_metadata() {
+    with_backend(|state| async move {
+        let api = Api::new(&state.config.base_url);
+
+        api.register("alice", "alice@example.com", "alicepassword123")
+            .await
+            .unwrap();
+        api.create_project("Public Project", "ignored during create")
+            .await
+            .unwrap();
+        api.update_project_settings(
+            "alice",
+            "public-project",
+            "Public Project",
+            "A precise public project description.",
+            "read",
+            "main",
+            "",
+        )
+        .await
+        .unwrap();
+
+        let body = api.get_text("/~alice/public-project").await.unwrap();
+
+        assert!(body.contains("<title>alice/Public Project - RubHub</title>"));
+        assert!(body.contains(
+            r#"<meta name="description" content="A precise public project description.">"#
+        ));
+        assert!(body.contains(&format!(
+            r#"<link rel="canonical" href="{}/~alice/public-project">"#,
+            state.config.base_url
+        )));
+    })
+    .await;
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn utility_pages_are_marked_noindex() {
+    with_backend(|state| async move {
+        let api = Api::new(&state.config.base_url);
+
+        let login = api.get_text("/login").await.unwrap();
+        assert!(login.contains(r#"<meta name="robots" content="noindex,follow">"#));
+
+        let registration = api.get_text("/registration").await.unwrap();
+        assert!(registration.contains(r#"<meta name="robots" content="noindex,follow">"#));
+
+        let missing = api.get_raw("/dist/missing").await.unwrap();
+        assert_eq!(missing.status(), StatusCode::NOT_FOUND);
+        let missing_body = missing.text().await.unwrap();
+        assert!(missing_body.contains(r#"<meta name="robots" content="noindex,follow">"#));
+    })
+    .await;
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn anonymous_profile_does_not_show_private_projects() {
+    with_backend(|state| async move {
+        let api = Api::new(&state.config.base_url);
+        let anonymous = Api::new(&state.config.base_url);
+
+        api.register("alice", "alice@example.com", "alicepassword123")
+            .await
+            .unwrap();
+        api.create_project_with_access("Public Project", "Public", "read")
+            .await
+            .unwrap();
+        api.create_project_with_access("Private Project", "Private", "none")
+            .await
+            .unwrap();
+
+        let body = anonymous.get_text("/~alice").await.unwrap();
+
+        assert!(body.contains("Public Project"));
+        assert!(!body.contains("Private Project"));
+    })
+    .await;
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn missing_and_hidden_resources_render_themed_404() {
+    with_backend(|state| async move {
+        let api = Api::new(&state.config.base_url);
+        let anonymous = Api::new(&state.config.base_url);
+
+        let missing_user = api.get_raw("/~missing-user").await.unwrap();
+        assert_eq!(missing_user.status(), StatusCode::NOT_FOUND);
+        assert_themed_404(&missing_user.text().await.unwrap());
+
+        api.register("alice", "alice@example.com", "alicepassword123")
+            .await
+            .unwrap();
+        api.create_project("Visible Project", "A project in the sidebar")
+            .await
+            .unwrap();
+        api.create_project_with_access("Private Project", "Secret", "none")
+            .await
+            .unwrap();
+
+        let missing_project = api.get_raw("/~alice/missing-project").await.unwrap();
+        assert_eq!(missing_project.status(), StatusCode::NOT_FOUND);
+        let missing_project_body = missing_project.text().await.unwrap();
+        assert_themed_404(&missing_project_body);
+        assert!(missing_project_body.contains("Visible Project"));
+
+        let private_project = anonymous.get_raw("/~alice/private-project").await.unwrap();
+        assert_eq!(private_project.status(), StatusCode::NOT_FOUND);
+        assert_themed_404(&private_project.text().await.unwrap());
     })
     .await;
 }

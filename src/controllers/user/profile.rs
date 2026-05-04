@@ -5,8 +5,12 @@ use axum::{body::Body, extract::State, http::Response, response::Html};
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, Project, ProjectSummary, User, UserModel, controllers::not_found,
-    extractors::PathUser, models::ContentPage, services::session, views::ThemedRender,
+    AccessType, GlobalState, Project, ProjectSummary, User, UserModel,
+    controllers::not_found,
+    extractors::PathUser,
+    models::ContentPage,
+    services::{meta::PageMeta, session},
+    views::ThemedRender,
 };
 
 #[derive(Template)]
@@ -18,6 +22,7 @@ struct UserTemplate<'a> {
     logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
+    meta: PageMeta,
 }
 
 pub async fn user_page(
@@ -47,7 +52,12 @@ pub async fn user_page(
         }
     };
 
-    let summaries: Vec<_> = projects
+    let visible_projects: Vec<_> = projects
+        .iter()
+        .filter(|project| is_owner || project.public_access != AccessType::None)
+        .collect();
+
+    let summaries: Vec<_> = visible_projects
         .iter()
         .map(|p| ProjectSummary {
             name: p.name.as_str(),
@@ -65,6 +75,16 @@ pub async fn user_page(
         logged_in_user,
         sidebar_projects,
         content_pages,
+        meta: PageMeta::new(
+            format!("{} - RubHub", owner.name),
+            format!(
+                "{} has {} public project{} on RubHub.",
+                owner.name,
+                summaries.len(),
+                if summaries.len() == 1 { "" } else { "s" }
+            ),
+        )
+        .canonical(&state.config.base_url, &owner.uri()),
     };
     Ok(Html(template.render_with_theme()))
 }

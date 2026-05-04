@@ -11,6 +11,7 @@ use crate::{
     models::ContentPage,
     services::{
         markdown::{self, Frontmatter},
+        meta::PageMeta,
         repository::{GitRefInfo, GitSummary, get_git_file, get_git_info, get_git_summary},
         session,
     },
@@ -34,6 +35,7 @@ struct ProjectTemplate<'a> {
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
     active_tab: &'static str,
+    meta: PageMeta,
 }
 
 async fn render_project_page(
@@ -94,6 +96,15 @@ async fn render_project_page(
     // let tree = tree.unwrap_or_default();
 
     let template = ProjectTemplate {
+        meta: PageMeta::new(
+            format!("{}/{} - RubHub", owner.name, project.name),
+            if project.description.trim().is_empty() {
+                format!("{} by {} on RubHub.", project.name, owner.name)
+            } else {
+                project.description.clone()
+            },
+        )
+        .canonical(&state.config.base_url, &project.uri()),
         owner,
         project: &project,
         access_level,

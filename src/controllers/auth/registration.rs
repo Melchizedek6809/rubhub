@@ -14,6 +14,7 @@ use crate::{
     GlobalState, Project, User, UserModel,
     models::ContentPage,
     services::{
+        meta::PageMeta,
         session,
         validation::{slugify, validate_email, validate_password, validate_username},
     },
@@ -34,6 +35,7 @@ struct RegistrationTemplate<'a> {
     logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
+    meta: PageMeta,
 }
 
 fn render_registration_page(message: Option<&str>) -> Html<String> {
@@ -42,6 +44,8 @@ fn render_registration_page(message: Option<&str>) -> Html<String> {
         logged_in_user: None,
         sidebar_projects: vec![],
         content_pages: vec![],
+        meta: PageMeta::new("Registration - RubHub", "Create a RubHub account.")
+            .robots("noindex,follow"),
     };
     Html(template.render_with_theme())
 }

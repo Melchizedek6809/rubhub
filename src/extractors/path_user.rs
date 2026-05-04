@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use axum::{
     extract::{FromRef, FromRequestParts, Path},
-    http::{StatusCode, request::Parts},
+    http::{Response, request::Parts},
 };
 
-use crate::{GlobalState, User};
+use crate::{GlobalState, User, extractors::themed_not_found};
 
 pub struct PathUser(pub Arc<User>);
 
@@ -14,20 +14,20 @@ where
     S: Send + Sync,
     GlobalState: FromRef<S>,
 {
-    type Rejection = (StatusCode, &'static str);
+    type Rejection = Response<axum::body::Body>;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let Path(user_slug): Path<String> = Path::from_request_parts(parts, state)
-            .await
-            .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid path parameter"))?;
+        let Ok(Path(user_slug)) = Path::<String>::from_request_parts(parts, state).await else {
+            return Err(themed_not_found(parts, state).await);
+        };
 
-        let state = GlobalState::from_ref(state);
+        let app_state = GlobalState::from_ref(state);
 
         if let Some(user_slug) = user_slug.strip_prefix("~")
-            && let Some(user) = state.auth.get_user(user_slug)
+            && let Some(user) = app_state.auth.get_user(user_slug)
         {
             return Ok(PathUser(user));
         }
-        Err((StatusCode::NOT_FOUND, "PathUser not found"))
+        Err(themed_not_found(parts, state).await)
     }
 }

@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use axum::{
     extract::{FromRef, FromRequestParts, Path},
-    http::{StatusCode, request::Parts},
+    http::{Response, request::Parts},
 };
 
-use crate::{GlobalState, Project, User};
+use crate::{GlobalState, Project, User, extractors::themed_not_found};
 
 /// Extractor for /tree/{ref}/*path and /blob/{ref}/*path routes
 pub struct PathUserProjectRefPath(pub Arc<User>, pub Project, pub String, pub String);
@@ -15,23 +15,24 @@ where
     S: Send + Sync,
     GlobalState: FromRef<S>,
 {
-    type Rejection = (StatusCode, &'static str);
+    type Rejection = Response<axum::body::Body>;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let Path((user_slug, project_slug, git_ref, path)): Path<(String, String, String, String)> =
-            Path::from_request_parts(parts, state)
-                .await
-                .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid path parameter"))?;
+        let Ok(Path((user_slug, project_slug, git_ref, path))) =
+            Path::<(String, String, String, String)>::from_request_parts(parts, state).await
+        else {
+            return Err(themed_not_found(parts, state).await);
+        };
 
-        let state = GlobalState::from_ref(state);
+        let app_state = GlobalState::from_ref(state);
 
         if let Some(user_slug) = user_slug.strip_prefix("~")
-            && let Some(user) = state.auth.get_user(user_slug)
-            && let Ok(project) = Project::load(&state, user_slug, &project_slug).await
+            && let Some(user) = app_state.auth.get_user(user_slug)
+            && let Ok(project) = Project::load(&app_state, user_slug, &project_slug).await
         {
             return Ok(PathUserProjectRefPath(user, project, git_ref, path));
         }
-        Err((StatusCode::NOT_FOUND, "Path not found"))
+        Err(themed_not_found(parts, state).await)
     }
 }
 
@@ -43,22 +44,23 @@ where
     S: Send + Sync,
     GlobalState: FromRef<S>,
 {
-    type Rejection = (StatusCode, &'static str);
+    type Rejection = Response<axum::body::Body>;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let Path((user_slug, project_slug, git_ref)): Path<(String, String, String)> =
-            Path::from_request_parts(parts, state)
-                .await
-                .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid path parameter"))?;
+        let Ok(Path((user_slug, project_slug, git_ref))) =
+            Path::<(String, String, String)>::from_request_parts(parts, state).await
+        else {
+            return Err(themed_not_found(parts, state).await);
+        };
 
-        let state = GlobalState::from_ref(state);
+        let app_state = GlobalState::from_ref(state);
 
         if let Some(user_slug) = user_slug.strip_prefix("~")
-            && let Some(user) = state.auth.get_user(user_slug)
-            && let Ok(project) = Project::load(&state, user_slug, &project_slug).await
+            && let Some(user) = app_state.auth.get_user(user_slug)
+            && let Ok(project) = Project::load(&app_state, user_slug, &project_slug).await
         {
             return Ok(PathUserProjectRef(user, project, git_ref));
         }
-        Err((StatusCode::NOT_FOUND, "Path not found"))
+        Err(themed_not_found(parts, state).await)
     }
 }

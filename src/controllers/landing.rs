@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use crate::{
-    GlobalState, Project, ProjectSummary, User, UserModel,
+    AccessType, GlobalState, Project, ProjectSummary, User, UserModel,
     models::ContentPage,
-    services::{content, session},
+    services::{content, meta::PageMeta, session},
     views::ThemedRender,
 };
 use askama::Template;
@@ -18,6 +18,7 @@ struct IndexTemplate<'a> {
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
     index_content: String,
+    meta: PageMeta,
 }
 
 pub async fn index(State(state): State<GlobalState>, cookies: Cookies) -> Html<String> {
@@ -31,8 +32,10 @@ pub async fn index(State(state): State<GlobalState>, cookies: Cookies) -> Html<S
 
     let mut projects: Vec<(Arc<User>, Project)> = vec![];
     for project_path in &state.config.featured_projects {
-        if let Ok(tuple) = Project::load_by_path(&state, project_path.clone()).await {
-            projects.push(tuple);
+        if let Ok((owner, project)) = Project::load_by_path(&state, project_path.clone()).await
+            && project.public_access != AccessType::None
+        {
+            projects.push((owner, project));
         }
     }
 
@@ -60,6 +63,11 @@ pub async fn index(State(state): State<GlobalState>, cookies: Cookies) -> Html<S
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
         index_content,
+        meta: PageMeta::new(
+            "RubHub",
+            "RubHub is a lightweight git forge built around plain git repositories.",
+        )
+        .canonical(&state.config.base_url, "/"),
     };
 
     Html(template.render_with_theme())

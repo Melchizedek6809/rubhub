@@ -17,6 +17,7 @@ use crate::{
     AccessType, GlobalState, Project, User, UserModel,
     models::{ContentPage, RepoEvent},
     services::{
+        meta::PageMeta,
         repository::create_bare_repo,
         session,
         validation::{is_reserved_project_name, validate_project_name},
@@ -37,6 +38,7 @@ struct NewProjectTemplate<'a> {
     logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
+    meta: PageMeta,
 }
 
 pub async fn project_new_get(
@@ -66,6 +68,8 @@ async fn render_new_project_page(
         logged_in_user,
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
+        meta: PageMeta::new("New project - RubHub", "Create a new RubHub project.")
+            .robots("noindex,follow"),
     };
     Html(template.render_with_theme())
 }

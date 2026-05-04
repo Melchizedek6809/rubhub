@@ -2,6 +2,7 @@ mod auth;
 mod content_page;
 mod events;
 mod landing;
+mod meta;
 mod not_found;
 mod project;
 mod user;
@@ -10,6 +11,7 @@ pub use auth::{handle_login, handle_registration, login_page, logout, registrati
 pub use content_page::render_content_page;
 pub use events::{global_events, project_events, user_events};
 pub use landing::index;
+pub use meta::{robots_txt, sitemap_xml};
 pub use not_found::{not_found, not_found_get};
 pub use project::{
     all_projects_list, git_info_refs, git_upload_pack, project_blob_get, project_branches_get,

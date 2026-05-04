@@ -18,7 +18,7 @@ use rubhub_auth_store::{ProjectInfo, Session, SshKey};
 use crate::{
     GlobalState, Project, RepoEvent, User, UserModel,
     models::ContentPage,
-    services::{session as session_service, validation::validate_username},
+    services::{meta::PageMeta, session as session_service, validation::validate_username},
     views::ThemedRender,
 };
 
@@ -45,6 +45,7 @@ struct UserSettingsTemplate<'a> {
     logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
+    meta: PageMeta,
 }
 
 /// Validate all SSH keys and return invalid ones
@@ -339,6 +340,8 @@ async fn render_settings_page(
         logged_in_user: Some(user),
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
+        meta: PageMeta::new("Settings - RubHub", "Account settings on RubHub.")
+            .robots("noindex,follow"),
     };
     Html(template.render_with_theme())
 }

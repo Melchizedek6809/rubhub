@@ -10,7 +10,9 @@ use axum::{
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, Project, User, UserModel, models::ContentPage, services::session,
+    GlobalState, Project, User, UserModel,
+    models::ContentPage,
+    services::{meta::PageMeta, session},
     views::ThemedRender,
 };
 
@@ -20,6 +22,7 @@ struct NotFoundTemplate {
     logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
+    meta: PageMeta,
 }
 
 pub fn not_found(
@@ -31,6 +34,11 @@ pub fn not_found(
         logged_in_user,
         sidebar_projects,
         content_pages,
+        meta: PageMeta::new(
+            "404 - Page not found",
+            "This RubHub page could not be found.",
+        )
+        .robots("noindex,follow"),
     };
     (StatusCode::NOT_FOUND, Html(template.render_with_theme())).into_response()
 }

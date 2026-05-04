@@ -4,6 +4,7 @@ use askama::Template;
 use axum::{body::Body, extract::State, http::Response, response::Html};
 use tower_cookies::Cookies;
 
+use crate::services::meta::PageMeta;
 use crate::{
     GlobalState, Project, ProjectSummary, User, UserModel, models::ContentPage, services::session,
     views::ThemedRender,
@@ -16,6 +17,7 @@ struct ProjectsListTemplate<'a> {
     logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
+    meta: PageMeta,
 }
 
 pub async fn all_projects_list(
@@ -62,6 +64,11 @@ pub async fn all_projects_list(
         logged_in_user,
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
+        meta: PageMeta::new(
+            "Browse All Projects - RubHub",
+            "Browse public git repositories hosted on this RubHub instance.",
+        )
+        .canonical(&state.config.base_url, "/projects"),
     };
     Ok(Html(template.render_with_theme()))
 }

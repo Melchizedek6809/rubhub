@@ -12,7 +12,7 @@ use tower_cookies::Cookies;
 use crate::{
     GlobalState, Project, User, UserModel,
     models::ContentPage,
-    services::{content, session},
+    services::{content, meta::PageMeta, session},
     views::ThemedRender,
 };
 
@@ -24,6 +24,7 @@ struct ContentPageTemplate<'a> {
     logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
+    meta: PageMeta,
 }
 
 pub async fn render_content_page(
@@ -61,6 +62,11 @@ pub async fn render_content_page(
         logged_in_user,
         sidebar_projects,
         content_pages: state.config.content_pages.clone(),
+        meta: PageMeta::new(
+            format!("{} - RubHub", page.title),
+            format!("{} on RubHub.", page.title),
+        )
+        .canonical(&state.config.base_url, &page.url_path()),
     };
 
     Response::builder()

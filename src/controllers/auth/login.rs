@@ -12,7 +12,7 @@ use tower_cookies::Cookies;
 use crate::{
     GlobalState, Project, User,
     models::{ContentPage, UserModel},
-    services::session,
+    services::{meta::PageMeta, session},
     views::ThemedRender,
 };
 
@@ -29,6 +29,7 @@ struct LoginTemplate<'a> {
     logged_in_user: Option<Arc<User>>,
     sidebar_projects: Vec<Project>,
     content_pages: Vec<ContentPage>,
+    meta: PageMeta,
 }
 
 fn render_login_page(message: Option<&str>) -> Html<String> {
@@ -37,6 +38,7 @@ fn render_login_page(message: Option<&str>) -> Html<String> {
         logged_in_user: None,
         sidebar_projects: vec![],
         content_pages: vec![],
+        meta: PageMeta::new("Login - RubHub", "Log in to RubHub.").robots("noindex,follow"),
     };
     Html(template.render_with_theme())
 }
