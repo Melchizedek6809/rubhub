@@ -1,6 +1,6 @@
 <html>
   <head>
-    <title>New Issue - {{ owner.name }}/{{ project.name }}</title>
+    <title>New Post - {{ owner.name }}/{{ project.name }}</title>
   </head>
 
   <body>
@@ -24,14 +24,14 @@
 
         <form method="post" action="/~{{ owner.slug }}/{{ project.slug }}/talk/new" class="stack card simple-form">
           <label>
-            Title
-            <input type="text" name="title" autofocus autocomplete="off" required placeholder="Issue title">
+            Subject
+            <input type="text" name="title" autofocus autocomplete="off" required placeholder="Title">
           </label>
           <label>
-            Description (Markdown supported)
-            <textarea name="content" rows="10" required placeholder="Describe your issue here..."></textarea>
+            Message
+            <textarea name="content" rows="10" required placeholder="Your message..."></textarea>
           </label>
-          <button type="submit" class="success-button"><span class="icon i-plus"></span> Create Issue</button>
+          <button type="submit" class="success-button"><span class="icon i-plus"></span> Post</button>
         </form>
       </section>
     </main>
