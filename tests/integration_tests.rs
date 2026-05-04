@@ -65,6 +65,7 @@ async fn sitemap_lists_public_metadata_urls_only() {
 async fn public_project_page_renders_machine_readable_metadata() {
     with_backend(|state| async move {
         let api = Api::new(&state.config.base_url);
+        let long_description = "Long description ".repeat(300);
 
         api.register("alice", "alice@example.com", "alicepassword123")
             .await
@@ -76,7 +77,7 @@ async fn public_project_page_renders_machine_readable_metadata() {
             "alice",
             "public-project",
             "Public Project",
-            "A precise public project description.",
+            &long_description,
             "read",
             "main",
             "",
@@ -85,11 +86,13 @@ async fn public_project_page_renders_machine_readable_metadata() {
         .unwrap();
 
         let body = api.get_text("/~alice/public-project").await.unwrap();
+        let expected_description = format!("{}...", &"Long description ".repeat(10)[..157]);
 
         assert!(body.contains("<title>alice/Public Project - RubHub</title>"));
-        assert!(body.contains(
-            r#"<meta name="description" content="A precise public project description.">"#
-        ));
+        assert!(body.contains(&format!(
+            r#"<meta name="description" content="{expected_description}">"#
+        )));
+        assert!(!body.contains(&long_description));
         assert!(body.contains(&format!(
             r#"<link rel="canonical" href="{}/~alice/public-project">"#,
             state.config.base_url

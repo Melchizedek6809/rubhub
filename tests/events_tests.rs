@@ -2,80 +2,34 @@ mod common;
 
 use common::{Api, with_backend};
 use reqwest::header::CONTENT_TYPE;
+use rubhub::{AccessType, RepoEvent, RepoEventInfo};
+use time::OffsetDateTime;
 
 #[tokio::test(flavor = "current_thread")]
-async fn test_global_events_endpoint_returns_sse_content_type() {
-    with_backend(|state| async move {
-        let api = Api::new(&state.config.base_url);
-
-        // Create a user and project first
-        api.register("testuser", "test@example.com", "password123456789")
-            .await
-            .unwrap();
-
-        api.create_project("Test Project", "A test project")
-            .await
-            .unwrap();
-
-        // Make request to global events endpoint
-        let response = api.get_raw("/.events").await.unwrap();
-
-        assert_eq!(response.status(), 200);
-        assert_eq!(
-            response.headers().get(CONTENT_TYPE).unwrap(),
-            "text/event-stream"
-        );
-    })
-    .await;
-}
-
-#[tokio::test(flavor = "current_thread")]
-async fn test_user_events_endpoint_returns_sse_content_type() {
+async fn event_endpoints_return_sse_content_type() {
     with_backend(|state| async move {
         let api = Api::new(&state.config.base_url);
 
         api.register("testuser", "test@example.com", "password123456789")
             .await
             .unwrap();
-
         api.create_project("Test Project", "A test project")
             .await
             .unwrap();
 
-        let response = api.get_raw("/~testuser/.events").await.unwrap();
+        for path in [
+            "/.events",
+            "/~testuser/.events",
+            "/~testuser/test-project/.events",
+        ] {
+            let response = api.get_raw(path).await.unwrap();
 
-        assert_eq!(response.status(), 200);
-        assert_eq!(
-            response.headers().get(CONTENT_TYPE).unwrap(),
-            "text/event-stream"
-        );
-    })
-    .await;
-}
-
-#[tokio::test(flavor = "current_thread")]
-async fn test_project_events_endpoint_returns_sse_content_type() {
-    with_backend(|state| async move {
-        let api = Api::new(&state.config.base_url);
-
-        api.register("testuser", "test@example.com", "password123456789")
-            .await
-            .unwrap();
-
-        api.create_project("Test Project", "A test project")
-            .await
-            .unwrap();
-
-        let response = api
-            .get_raw("/~testuser/test-project/.events")
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), 200);
-        assert_eq!(
-            response.headers().get(CONTENT_TYPE).unwrap(),
-            "text/event-stream"
-        );
+            assert_eq!(response.status(), 200);
+            assert_eq!(
+                response.headers().get(CONTENT_TYPE).unwrap(),
+                "text/event-stream"
+            );
+        }
     })
     .await;
 }
@@ -109,22 +63,10 @@ async fn test_project_events_access_control() {
 }
 
 #[tokio::test(flavor = "current_thread")]
-async fn test_event_emission() {
-    use rubhub::{RepoEvent, RepoEventInfo};
-    use time::OffsetDateTime;
-
+async fn emitted_branch_event_reaches_subscribers() {
     with_backend(|state| async move {
-        let api = Api::new(&state.config.base_url);
+        let mut events = state.event_tx.subscribe();
 
-        api.register("testuser", "test@example.com", "password123456789")
-            .await
-            .unwrap();
-
-        api.create_project("Test Project", "A test project")
-            .await
-            .unwrap();
-
-        // Emit a test event
         state.emit_event(RepoEvent::BranchUpdated {
             info: RepoEventInfo {
                 owner: "testuser".to_string(),
@@ -135,27 +77,25 @@ async fn test_event_emission() {
             branch: "main".to_string(),
         });
 
-        // Verify the endpoint is accessible
-        // (Testing actual event reception would require async streaming which is complex)
-        let response = api.get_raw("/.events").await.unwrap();
-        assert_eq!(response.status(), 200);
+        let received = events.recv().await.unwrap();
+        match received {
+            RepoEvent::BranchUpdated { info, branch } => {
+                assert_eq!(info.owner, "testuser");
+                assert_eq!(info.project, "test-project");
+                assert_eq!(info.commit_hash, "abc123");
+                assert_eq!(branch, "main");
+            }
+            other => panic!("expected branch event, got {other:?}"),
+        }
     })
     .await;
 }
 
 #[tokio::test(flavor = "current_thread")]
-async fn test_create_event_emission() {
-    use rubhub::{AccessType, RepoEvent};
-    use time::OffsetDateTime;
-
+async fn emitted_create_event_reaches_subscribers() {
     with_backend(|state| async move {
-        let api = Api::new(&state.config.base_url);
+        let mut events = state.event_tx.subscribe();
 
-        api.register("testuser", "test@example.com", "password123456789")
-            .await
-            .unwrap();
-
-        // Emit a create event
         state.emit_event(RepoEvent::RepositoryCreated {
             owner: "testuser".to_string(),
             project: "test-project".to_string(),
@@ -163,29 +103,29 @@ async fn test_create_event_emission() {
             timestamp: OffsetDateTime::now_utc(),
         });
 
-        // Verify event was emitted (basic test - channel accepts the event)
-        // Full streaming verification would require async stream consumption
+        let received = events.recv().await.unwrap();
+        match received {
+            RepoEvent::RepositoryCreated {
+                owner,
+                project,
+                public_access,
+                ..
+            } => {
+                assert_eq!(owner, "testuser");
+                assert_eq!(project, "test-project");
+                assert_eq!(public_access, AccessType::Read);
+            }
+            other => panic!("expected create event, got {other:?}"),
+        }
     })
     .await;
 }
 
 #[tokio::test(flavor = "current_thread")]
-async fn test_delete_event_emission() {
-    use rubhub::{AccessType, RepoEvent};
-    use time::OffsetDateTime;
-
+async fn emitted_delete_event_reaches_subscribers() {
     with_backend(|state| async move {
-        let api = Api::new(&state.config.base_url);
+        let mut events = state.event_tx.subscribe();
 
-        api.register("testuser", "test@example.com", "password123456789")
-            .await
-            .unwrap();
-
-        api.create_project("Test Project", "A test project")
-            .await
-            .unwrap();
-
-        // Emit a delete event
         state.emit_event(RepoEvent::RepositoryDeleted {
             owner: "testuser".to_string(),
             project: "test-project".to_string(),
@@ -193,8 +133,20 @@ async fn test_delete_event_emission() {
             timestamp: OffsetDateTime::now_utc(),
         });
 
-        // Verify event was emitted (basic test - channel accepts the event)
-        // Full streaming verification would require async stream consumption
+        let received = events.recv().await.unwrap();
+        match received {
+            RepoEvent::RepositoryDeleted {
+                owner,
+                project,
+                public_access,
+                ..
+            } => {
+                assert_eq!(owner, "testuser");
+                assert_eq!(project, "test-project");
+                assert_eq!(public_access, AccessType::Read);
+            }
+            other => panic!("expected delete event, got {other:?}"),
+        }
     })
     .await;
 }
