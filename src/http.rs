@@ -1,11 +1,12 @@
 use axum::{
     Router,
+    body::Body,
     extract::{Path, State},
-    http::{HeaderName, HeaderValue, header},
+    http::{HeaderName, HeaderValue, Response, header},
     response::IntoResponse,
     routing::{get, post},
 };
-use rust_embed::Embed;
+use rust_embed::{Embed, RustEmbed};
 use std::net::SocketAddr;
 use std::time::Duration;
 use tokio::net::TcpListener;
@@ -15,7 +16,7 @@ use tower_governor::{
 };
 use tower_http::set_header::SetResponseHeaderLayer;
 
-use crate::{GlobalState, UserModel, controllers, services::session};
+use crate::{GlobalState, controllers, controllers::context::PageContext};
 
 #[derive(Embed)]
 #[folder = "dist/"]
@@ -25,17 +26,26 @@ struct EmbeddedDist;
 #[folder = "public/"]
 struct EmbeddedPublic;
 
-fn serve_public_asset(path: &str) -> impl IntoResponse {
-    match EmbeddedPublic::get(path) {
-        Some(asset) => {
-            let mime = mime_guess::from_path(path).first_or_octet_stream();
-            (
-                [(header::CONTENT_TYPE, mime.as_ref())],
-                asset.data.into_owned(),
-            )
-                .into_response()
-        }
-        None => (axum::http::StatusCode::NOT_FOUND, "Asset not found").into_response(),
+fn embedded_asset_response<E: RustEmbed>(path: &str) -> Option<Response<Body>> {
+    E::get(path).map(|asset| {
+        let mime = mime_guess::from_path(path).first_or_octet_stream();
+        (
+            [(header::CONTENT_TYPE, mime.as_ref())],
+            asset.data.into_owned(),
+        )
+            .into_response()
+    })
+}
+
+async fn embedded_asset_or_not_found<E: RustEmbed>(
+    path: &str,
+    state: &GlobalState,
+    cookies: &Cookies,
+) -> Response<Body> {
+    if let Some(response) = embedded_asset_response::<E>(path) {
+        response
+    } else {
+        PageContext::load(state, cookies).await.not_found()
     }
 }
 
@@ -67,11 +77,21 @@ pub async fn http_server(
         .route("/", get(controllers::index))
         .route(
             "/favicon.ico",
-            get(|| async { serve_public_asset("favicon.ico") }),
+            get(
+                |State(state): State<GlobalState>, cookies: Cookies| async move {
+                    embedded_asset_or_not_found::<EmbeddedPublic>("favicon.ico", &state, &cookies)
+                        .await
+                },
+            ),
         )
         .route(
             "/favicon.png",
-            get(|| async { serve_public_asset("favicon.png") }),
+            get(
+                |State(state): State<GlobalState>, cookies: Cookies| async move {
+                    embedded_asset_or_not_found::<EmbeddedPublic>("favicon.png", &state, &cookies)
+                        .await
+                },
+            ),
         )
         .route("/robots.txt", get(controllers::robots_txt))
         .route("/sitemap.xml", get(controllers::sitemap_xml))
@@ -181,27 +201,7 @@ pub async fn http_server(
                     |Path(path): Path<String>,
                      State(state): State<GlobalState>,
                      cookies: Cookies| async move {
-                        match EmbeddedDist::get(path.as_str()) {
-                            Some(asset) => {
-                                let mime = mime_guess::from_path(&path).first_or_octet_stream();
-                                (
-                                    [(header::CONTENT_TYPE, mime.as_ref())],
-                                    asset.data.into_owned(),
-                                )
-                                    .into_response()
-                            }
-                            None => {
-                                let logged_in_user =
-                                    session::current_user(&state, &cookies).await.ok();
-                                let content_pages = state.config.content_pages.clone();
-                                let sidebar_projects = if let Some(ref user) = logged_in_user {
-                                    user.sidebar_projects(&state).await
-                                } else {
-                                    vec![]
-                                };
-                                controllers::not_found(logged_in_user, sidebar_projects, content_pages)
-                            }
-                        }
+                        embedded_asset_or_not_found::<EmbeddedDist>(&path, &state, &cookies).await
                     },
                 ),
             )
@@ -211,27 +211,7 @@ pub async fn http_server(
                     |Path(path): Path<String>,
                      State(state): State<GlobalState>,
                      cookies: Cookies| async move {
-                        match EmbeddedPublic::get(path.as_str()) {
-                            Some(asset) => {
-                                let mime = mime_guess::from_path(&path).first_or_octet_stream();
-                                (
-                                    [(header::CONTENT_TYPE, mime.as_ref())],
-                                    asset.data.into_owned(),
-                                )
-                                    .into_response()
-                            }
-                            None => {
-                                let logged_in_user =
-                                    session::current_user(&state, &cookies).await.ok();
-                                let content_pages = state.config.content_pages.clone();
-                                let sidebar_projects = if let Some(ref user) = logged_in_user {
-                                    user.sidebar_projects(&state).await
-                                } else {
-                                    vec![]
-                                };
-                                controllers::not_found(logged_in_user, sidebar_projects, content_pages)
-                            }
-                        }
+                        embedded_asset_or_not_found::<EmbeddedPublic>(&path, &state, &cookies).await
                     },
                 ),
             )

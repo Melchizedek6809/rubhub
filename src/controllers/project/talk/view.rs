@@ -11,8 +11,9 @@ use tower_cookies::Cookies;
 
 use crate::{
     AccessType, GlobalState, Project, User, UserModel,
+    controllers::context::{PageContext, ProjectPageContext},
     models::{ContentPage, Issue, IssueStatus},
-    services::{issue, session},
+    services::issue,
     views::ThemedRender,
 };
 
@@ -35,43 +36,41 @@ pub async fn talk_view_get(
     cookies: Cookies,
     Path((username, slug, issue_dir)): Path<(String, String, String)>,
 ) -> Response<Body> {
-    let logged_in_user = session::current_user(&state, &cookies).await.ok();
-    let content_pages = state.config.content_pages.clone();
-    let sidebar_projects = if let Some(ref user) = logged_in_user {
-        user.sidebar_projects(&state).await
-    } else {
-        vec![]
-    };
+    let page_context = PageContext::load(&state, &cookies).await;
 
     // Load user and project (handle ~ prefix)
     let user_slug = username.strip_prefix("~").unwrap_or(&username);
     let Some(owner) = state.auth.get_user(user_slug) else {
-        return crate::controllers::not_found(logged_in_user, sidebar_projects, content_pages);
+        return page_context.not_found();
     };
     let Ok(project) = Project::load(&state, user_slug, &slug).await else {
-        return crate::controllers::not_found(logged_in_user, sidebar_projects, content_pages);
+        return page_context.not_found();
     };
 
     let access_level = project
-        .access_level(logged_in_user.as_ref().map(|u| u.slug.clone()))
+        .access_level(page_context.logged_in_user.as_ref().map(|u| u.slug.clone()))
         .await;
-
-    if access_level == AccessType::None {
-        return crate::controllers::not_found(logged_in_user, sidebar_projects, content_pages);
-    }
+    let project_context = if access_level == AccessType::None {
+        return page_context.not_found();
+    } else {
+        ProjectPageContext {
+            page: page_context,
+            access_level,
+        }
+    };
 
     let Ok(issue) = issue::get_issue(&state, &owner.slug, &project.slug, &issue_dir).await else {
-        return crate::controllers::not_found(logged_in_user, sidebar_projects, content_pages);
+        return project_context.not_found();
     };
 
     let template = IssueViewTemplate {
         owner,
         project: &project,
-        access_level,
+        access_level: project_context.access_level,
         issue,
-        logged_in_user,
-        sidebar_projects,
-        content_pages,
+        logged_in_user: project_context.page.logged_in_user,
+        sidebar_projects: project_context.page.sidebar_projects,
+        content_pages: project_context.page.content_pages,
         active_tab: "talk",
         selected_branch: project.main_branch.clone(),
     };

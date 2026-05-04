@@ -25,7 +25,6 @@ impl GlobalState {
     pub fn new(config: AppConfig, process_start: Instant) -> Result<Self> {
         fs::create_dir_all(&config.dir_root)?;
         fs::create_dir_all(&config.git_root)?;
-        fs::create_dir_all(&config.session_root)?;
 
         let auth = AuthStore::new(config.dir_root.clone());
         let auth = Arc::new(auth);

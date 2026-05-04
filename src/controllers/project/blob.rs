@@ -11,13 +11,12 @@ use tower_cookies::Cookies;
 
 use crate::{
     AccessType, GlobalState, Project, User,
-    controllers::not_found,
+    controllers::context::ProjectRepoContext,
     extractors::PathUserProjectRefPath,
     models::{ContentPage, user::UserModel},
     services::{
         markdown::{self, Frontmatter},
-        repository::{GitRefInfo, GitSummary, get_git_file, get_git_info, get_git_summary},
-        session,
+        repository::{GitRefInfo, GitSummary, get_git_file, get_git_info},
     },
     views::ThemedRender,
 };
@@ -84,36 +83,18 @@ pub async fn project_blob_get(
     Query(params): Query<BlobParams>,
     PathUserProjectRefPath(owner, project, git_ref, path): PathUserProjectRefPath,
 ) -> Response<Body> {
-    let logged_in_user = session::current_user(&state, &cookies).await.ok();
-
-    let content_pages = state.config.content_pages.clone();
-    let sidebar_projects = if let Some(ref user) = logged_in_user {
-        user.sidebar_projects(&state).await
-    } else {
-        vec![]
-    };
-
-    let access_level = project
-        .access_level(logged_in_user.as_ref().map(|user| user.slug.clone()))
-        .await;
-
-    if access_level == AccessType::None {
-        return not_found(logged_in_user, sidebar_projects, content_pages);
-    }
-
-    let Some(summary) = get_git_summary(&state, &owner.slug, &project.slug).await else {
-        return not_found(logged_in_user, sidebar_projects, content_pages);
+    let repo_context = match ProjectRepoContext::load(&state, &cookies, &owner.slug, &project).await
+    {
+        Ok(context) => context,
+        Err(response) => return response,
     };
 
     // Get file content
     let file_result = get_git_file(&state, &owner.slug, &project.slug, &git_ref, &path).await;
     let file_obj = match file_result {
         Ok(obj) => obj,
-        Err(_) => return not_found(logged_in_user, sidebar_projects, content_pages),
+        Err(_) => return repo_context.project.not_found(),
     };
-
-    let ssh_clone_url = project.ssh_clone_url(&state.config.ssh_public_host);
-    let http_clone_url = project.http_clone_url(&state.config.base_url);
 
     let info = get_git_info(&state, &owner.slug, &project.slug, &git_ref, 1, 0).await;
 
@@ -158,10 +139,10 @@ pub async fn project_blob_get(
         let template = ProjectBlobTemplate {
             owner,
             project: &project,
-            access_level,
-            ssh_clone_url,
-            http_clone_url,
-            summary,
+            access_level: repo_context.project.access_level,
+            ssh_clone_url: repo_context.ssh_clone_url,
+            http_clone_url: repo_context.http_clone_url,
+            summary: repo_context.summary,
             info,
             selected_branch,
             file_path: path.clone(),
@@ -174,9 +155,9 @@ pub async fn project_blob_get(
             markdown_frontmatter: vec![],
             raw_url,
             source_url: None,
-            logged_in_user,
-            sidebar_projects,
-            content_pages,
+            logged_in_user: repo_context.project.page.logged_in_user,
+            sidebar_projects: repo_context.project.page.sidebar_projects,
+            content_pages: repo_context.project.page.content_pages,
             active_tab: "code",
             mime_type: mime_type.to_string(),
             line_count: None,
@@ -192,10 +173,10 @@ pub async fn project_blob_get(
         let template = ProjectBlobTemplate {
             owner,
             project: &project,
-            access_level,
-            ssh_clone_url,
-            http_clone_url,
-            summary,
+            access_level: repo_context.project.access_level,
+            ssh_clone_url: repo_context.ssh_clone_url,
+            http_clone_url: repo_context.http_clone_url,
+            summary: repo_context.summary,
             info,
             selected_branch,
             file_path: path.clone(),
@@ -208,9 +189,9 @@ pub async fn project_blob_get(
             markdown_frontmatter: vec![],
             raw_url,
             source_url: None,
-            logged_in_user,
-            sidebar_projects,
-            content_pages,
+            logged_in_user: repo_context.project.page.logged_in_user,
+            sidebar_projects: repo_context.project.page.sidebar_projects,
+            content_pages: repo_context.project.page.content_pages,
             active_tab: "code",
             mime_type: mime_type.to_string(),
             line_count: None,
@@ -243,10 +224,10 @@ pub async fn project_blob_get(
     let template = ProjectBlobTemplate {
         owner,
         project: &project,
-        access_level,
-        ssh_clone_url,
-        http_clone_url,
-        summary,
+        access_level: repo_context.project.access_level,
+        ssh_clone_url: repo_context.ssh_clone_url,
+        http_clone_url: repo_context.http_clone_url,
+        summary: repo_context.summary,
         info,
         selected_branch,
         file_path: path.clone(),
@@ -259,9 +240,9 @@ pub async fn project_blob_get(
         markdown_frontmatter,
         raw_url,
         source_url,
-        logged_in_user,
-        sidebar_projects,
-        content_pages,
+        logged_in_user: repo_context.project.page.logged_in_user,
+        sidebar_projects: repo_context.project.page.sidebar_projects,
+        content_pages: repo_context.project.page.content_pages,
         active_tab: "code",
         mime_type: mime_type.to_string(),
         line_count: Some(line_count),

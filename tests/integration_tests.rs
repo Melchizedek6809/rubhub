@@ -208,6 +208,7 @@ async fn auth_workflow() {
 
         api.logout().await.unwrap();
 
+        assert!(state.auth.get_sessions_for_user("test").is_empty());
         api.assert_contains("/~test", "Settings").await.unwrap_err();
         api.login("test", "zxc").await.unwrap_err();
 

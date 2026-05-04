@@ -13,9 +13,10 @@ use tower_cookies::Cookies;
 
 use crate::{
     AccessType, GlobalState, Project, UserModel,
+    controllers::context::ProjectPageContext,
     extractors::PathUserProject,
     models::{ContentPage, IssueStatus, IssueSummary},
-    services::{issue, session},
+    services::issue,
     views::ThemedRender,
 };
 
@@ -51,21 +52,10 @@ pub async fn talk_list_get(
     Query(filters): Query<IssueFilters>,
     PathUserProject(owner, project): PathUserProject,
 ) -> Response<Body> {
-    let logged_in_user = session::current_user(&state, &cookies).await.ok();
-
-    let content_pages = state.config.content_pages.clone();
-    let sidebar_projects = if let Some(ref user) = logged_in_user {
-        user.sidebar_projects(&state).await
-    } else {
-        vec![]
+    let project_context = match ProjectPageContext::load(&state, &cookies, &project).await {
+        Ok(context) => context,
+        Err(response) => return response,
     };
-    let access_level = project
-        .access_level(logged_in_user.as_ref().map(|u| u.slug.clone()))
-        .await;
-
-    if access_level == AccessType::None {
-        return crate::controllers::not_found(logged_in_user, sidebar_projects, content_pages);
-    }
 
     let all_issues = issue::list_issues(&state, &owner.slug, &project.slug)
         .await
@@ -102,11 +92,11 @@ pub async fn talk_list_get(
     let template = IssuesListTemplate {
         owner,
         project: &project,
-        access_level,
+        access_level: project_context.access_level,
         issues,
-        logged_in_user,
-        sidebar_projects,
-        content_pages,
+        logged_in_user: project_context.page.logged_in_user,
+        sidebar_projects: project_context.page.sidebar_projects,
+        content_pages: project_context.page.content_pages,
         active_tab: "talk",
         selected_branch: project.main_branch.clone(),
         current_status,

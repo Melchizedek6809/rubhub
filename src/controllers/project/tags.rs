@@ -6,13 +6,10 @@ use tower_cookies::Cookies;
 
 use crate::{
     AccessType, GlobalState, Project, User, UserModel,
-    controllers::not_found,
+    controllers::context::ProjectRepoContext,
     extractors::PathUserProject,
     models::ContentPage,
-    services::{
-        repository::{GitRefInfo, get_git_info, get_git_summary},
-        session,
-    },
+    services::repository::{GitRefInfo, get_git_info},
     views::ThemedRender,
 };
 
@@ -35,28 +32,14 @@ pub async fn project_tags_get(
     cookies: Cookies,
     PathUserProject(owner, project): PathUserProject,
 ) -> Response<Body> {
-    let logged_in_user = session::current_user(&state, &cookies).await.ok();
-
-    let content_pages = state.config.content_pages.clone();
-    let sidebar_projects = if let Some(ref user) = logged_in_user {
-        user.sidebar_projects(&state).await
-    } else {
-        vec![]
-    };
-
-    let access_level = project
-        .access_level(logged_in_user.as_ref().map(|user| user.slug.clone()))
-        .await;
-
-    if access_level == AccessType::None {
-        return not_found(logged_in_user, sidebar_projects, content_pages);
-    }
-    let Some(summary) = get_git_summary(&state, &owner.slug, &project.slug).await else {
-        return not_found(logged_in_user, sidebar_projects, content_pages);
+    let repo_context = match ProjectRepoContext::load(&state, &cookies, &owner.slug, &project).await
+    {
+        Ok(context) => context,
+        Err(response) => return response,
     };
 
     let mut tags: Vec<GitRefInfo> = vec![];
-    for b in summary.tags() {
+    for b in repo_context.summary.tags() {
         if let Some(info) = get_git_info(&state, &owner.slug, &project.slug, b, 1, 0).await {
             tags.push(info);
         }
@@ -65,12 +48,12 @@ pub async fn project_tags_get(
     let template = ProjectTagsTemplate {
         owner,
         project: &project,
-        access_level,
+        access_level: repo_context.project.access_level,
         selected_branch: &project.main_branch,
         tags,
-        logged_in_user,
-        sidebar_projects,
-        content_pages,
+        logged_in_user: repo_context.project.page.logged_in_user,
+        sidebar_projects: repo_context.project.page.sidebar_projects,
+        content_pages: repo_context.project.page.content_pages,
         active_tab: "",
     };
     template.response()

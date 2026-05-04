@@ -1,5 +1,6 @@
 mod auth;
 mod content_page;
+pub(crate) mod context;
 mod events;
 mod landing;
 mod meta;

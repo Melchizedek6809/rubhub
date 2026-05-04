@@ -12,11 +12,8 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    AccessType, GlobalState, Project, User, UserModel,
-    extractors::PathUserProject,
-    models::ContentPage,
-    services::{issue, session},
-    views::ThemedRender,
+    AccessType, GlobalState, Project, User, UserModel, controllers::context::require_user,
+    extractors::PathUserProject, models::ContentPage, services::issue, views::ThemedRender,
 };
 
 #[derive(Template)]
@@ -44,9 +41,9 @@ pub async fn talk_new_get(
     cookies: Cookies,
     PathUserProject(owner, project): PathUserProject,
 ) -> Response<Body> {
-    let current_user = match session::current_user(&state, &cookies).await {
+    let current_user = match require_user(&state, &cookies).await {
         Ok(user) => user,
-        Err(_) => return Redirect::to("/login").into_response(),
+        Err(response) => return response,
     };
 
     let access_level = project.access_level(Some(current_user.slug.clone())).await;
@@ -65,9 +62,9 @@ pub async fn talk_new_post(
     PathUserProject(owner, project): PathUserProject,
     Form(form): Form<NewIssueForm>,
 ) -> Response<Body> {
-    let current_user = match session::current_user(&state, &cookies).await {
+    let current_user = match require_user(&state, &cookies).await {
         Ok(user) => user,
-        Err(_) => return Redirect::to("/login").into_response(),
+        Err(response) => return response,
     };
 
     let access_level = project.access_level(Some(current_user.slug.clone())).await;

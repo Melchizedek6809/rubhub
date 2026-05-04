@@ -9,9 +9,8 @@ use serde::Deserialize;
 use tower_cookies::Cookies;
 
 use crate::{
-    AccessType, GlobalState, Project,
-    models::IssueStatus,
-    services::{issue, session},
+    AccessType, GlobalState, Project, controllers::context::require_user, models::IssueStatus,
+    services::issue,
 };
 
 #[derive(Debug, Deserialize)]
@@ -26,9 +25,9 @@ pub async fn talk_comment_post(
     Path((username, slug, issue_dir)): Path<(String, String, String)>,
     Form(form): Form<AddCommentForm>,
 ) -> Response<Body> {
-    let current_user = match session::current_user(&state, &cookies).await {
+    let current_user = match require_user(&state, &cookies).await {
         Ok(user) => user,
-        Err(_) => return Redirect::to("/login").into_response(),
+        Err(response) => return response,
     };
 
     let user_slug = username.strip_prefix("~").unwrap_or(&username);

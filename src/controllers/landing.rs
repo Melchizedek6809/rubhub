@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
 use crate::{
-    AccessType, GlobalState, Project, ProjectSummary, User, UserModel,
+    AccessType, GlobalState, Project, ProjectSummary, User,
+    controllers::context::PageContext,
     models::ContentPage,
-    services::{content, meta::PageMeta, session},
+    services::{content, meta::PageMeta},
     views::ThemedRender,
 };
 use askama::Template;
@@ -22,13 +23,7 @@ struct IndexTemplate<'a> {
 }
 
 pub async fn index(State(state): State<GlobalState>, cookies: Cookies) -> Html<String> {
-    let logged_in_user = session::current_user(&state, &cookies).await.ok();
-
-    let sidebar_projects = if let Some(ref user) = logged_in_user {
-        user.sidebar_projects(&state).await
-    } else {
-        vec![]
-    };
+    let page_context = PageContext::load(&state, &cookies).await;
 
     let mut projects: Vec<(Arc<User>, Project)> = vec![];
     for project_path in &state.config.featured_projects {
@@ -59,9 +54,9 @@ pub async fn index(State(state): State<GlobalState>, cookies: Cookies) -> Html<S
 
     let template = IndexTemplate {
         featured: &featured,
-        logged_in_user,
-        sidebar_projects,
-        content_pages: state.config.content_pages.clone(),
+        logged_in_user: page_context.logged_in_user,
+        sidebar_projects: page_context.sidebar_projects,
+        content_pages: page_context.content_pages,
         index_content,
         meta: PageMeta::new(
             "RubHub",

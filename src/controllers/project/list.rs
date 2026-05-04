@@ -4,10 +4,9 @@ use askama::Template;
 use axum::{body::Body, extract::State, http::Response, response::Html};
 use tower_cookies::Cookies;
 
-use crate::services::meta::PageMeta;
 use crate::{
-    GlobalState, Project, ProjectSummary, User, UserModel, models::ContentPage, services::session,
-    views::ThemedRender,
+    GlobalState, Project, ProjectSummary, User, controllers::context::PageContext,
+    models::ContentPage, services::meta::PageMeta, views::ThemedRender,
 };
 
 #[derive(Template)]
@@ -24,13 +23,7 @@ pub async fn all_projects_list(
     State(state): State<GlobalState>,
     cookies: Cookies,
 ) -> Result<Html<String>, Response<Body>> {
-    let logged_in_user = session::current_user(&state, &cookies).await.ok();
-
-    let sidebar_projects = if let Some(ref user) = logged_in_user {
-        user.sidebar_projects(&state).await
-    } else {
-        vec![]
-    };
+    let page_context = PageContext::load(&state, &cookies).await;
 
     // Get all public projects from auth_store
     let public_infos = state.auth.get_public_projects();
@@ -61,9 +54,9 @@ pub async fn all_projects_list(
 
     let template = ProjectsListTemplate {
         projects: &summaries,
-        logged_in_user,
-        sidebar_projects,
-        content_pages: state.config.content_pages.clone(),
+        logged_in_user: page_context.logged_in_user,
+        sidebar_projects: page_context.sidebar_projects,
+        content_pages: page_context.content_pages,
         meta: PageMeta::new(
             "Browse All Projects - RubHub",
             "Browse public git repositories hosted on this RubHub instance.",

@@ -11,13 +11,10 @@ use tower_cookies::Cookies;
 
 use crate::{
     AccessType, GlobalState, Project, User,
-    controllers::not_found,
+    controllers::context::ProjectRepoContext,
     extractors::PathUserProjectBranch,
     models::{ContentPage, user::UserModel},
-    services::{
-        repository::{GitRefInfo, GitSummary, get_git_info, get_git_summary},
-        session,
-    },
+    services::repository::{GitRefInfo, GitSummary, get_git_info},
     views::ThemedRender,
 };
 
@@ -53,24 +50,10 @@ pub async fn project_commits_get(
     Query(q): Query<Pagination>,
     PathUserProjectBranch(owner, project, current): PathUserProjectBranch,
 ) -> Response<Body> {
-    let logged_in_user = session::current_user(&state, &cookies).await.ok();
-
-    let content_pages = state.config.content_pages.clone();
-    let sidebar_projects = if let Some(ref user) = logged_in_user {
-        user.sidebar_projects(&state).await
-    } else {
-        vec![]
-    };
-
-    let access_level = project
-        .access_level(logged_in_user.as_ref().map(|user| user.slug.clone()))
-        .await;
-
-    if access_level == AccessType::None {
-        return not_found(logged_in_user, sidebar_projects, content_pages);
-    }
-    let Some(summary) = get_git_summary(&state, &owner.slug, &project.slug).await else {
-        return not_found(logged_in_user, sidebar_projects, content_pages);
+    let repo_context = match ProjectRepoContext::load(&state, &cookies, &owner.slug, &project).await
+    {
+        Ok(context) => context,
+        Err(response) => return response,
     };
 
     let page_size: i32 = 20;
@@ -88,9 +71,6 @@ pub async fn project_commits_get(
     let commit_count = info.as_ref().map(|i| i.commit_count).unwrap_or(0);
     let page_count = commit_count / page_size;
 
-    let ssh_clone_url = project.ssh_clone_url(&state.config.ssh_public_host);
-    let http_clone_url = project.http_clone_url(&state.config.base_url);
-
     let selected_branch = info
         .as_ref()
         .map(|i| i.branch_name.to_string())
@@ -102,20 +82,20 @@ pub async fn project_commits_get(
     let template = ProjectCommitsTemplate {
         owner,
         project: &project,
-        ssh_clone_url,
-        http_clone_url,
-        summary,
+        ssh_clone_url: repo_context.ssh_clone_url,
+        http_clone_url: repo_context.http_clone_url,
+        summary: repo_context.summary,
         info,
         selected_branch,
         current_page,
         page_count,
         page_min,
         page_max,
-        access_level,
+        access_level: repo_context.project.access_level,
         active_tab: "",
-        logged_in_user,
-        sidebar_projects,
-        content_pages,
+        logged_in_user: repo_context.project.page.logged_in_user,
+        sidebar_projects: repo_context.project.page.sidebar_projects,
+        content_pages: repo_context.project.page.content_pages,
     };
     template.response()
 }

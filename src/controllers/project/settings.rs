@@ -13,9 +13,10 @@ use tower_cookies::Cookies;
 
 use crate::{
     AccessType, GlobalState, Project, User, UserModel,
+    controllers::context::require_user,
     extractors::PathUserProject,
     models::ContentPage,
-    services::{meta::PageMeta, session, validation::validate_project_name},
+    services::{meta::PageMeta, validation::validate_project_name},
     views::ThemedRender,
 };
 
@@ -47,9 +48,9 @@ pub async fn project_settings_get(
     cookies: Cookies,
     PathUserProject(owner, project): PathUserProject,
 ) -> Response<Body> {
-    let current_user = match session::current_user(&state, &cookies).await {
+    let current_user = match require_user(&state, &cookies).await {
         Ok(user) => user,
-        Err(_) => return Redirect::to("/login").into_response(),
+        Err(response) => return response,
     };
 
     let access_level = project.access_level(Some(current_user.slug.clone())).await;
@@ -66,9 +67,9 @@ pub async fn project_settings_post(
     PathUserProject(owner, mut project): PathUserProject,
     Form(form): Form<ProjectSettingsForm>,
 ) -> Response<Body> {
-    let current_user = match session::current_user(&state, &cookies).await {
+    let current_user = match require_user(&state, &cookies).await {
         Ok(user) => user,
-        Err(_) => return Redirect::to("/login").into_response(),
+        Err(response) => return response,
     };
 
     let access_level = project.access_level(Some(current_user.slug.clone())).await;

@@ -64,7 +64,6 @@ struct ConfigFile {
 pub struct AppConfig {
     pub dir_root: PathBuf,
     pub git_root: PathBuf,
-    pub session_root: PathBuf,
     pub http_bind_addr: SocketAddr,
     pub ssh_bind_addr: SocketAddr,
     pub ssh_public_host: String,
@@ -84,8 +83,6 @@ impl Default for AppConfig {
             .unwrap_or_else(|| PathBuf::from("./.rubhub"));
 
         let git_root = dir_root.join("git");
-        let session_root = dir_root.join("sessions");
-
         let ip = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
         let port = 3000;
         let http_bind_addr = SocketAddr::new(ip, port);
@@ -105,7 +102,6 @@ impl Default for AppConfig {
         Self {
             dir_root,
             git_root,
-            session_root,
             http_bind_addr,
             ssh_bind_addr,
             ssh_public_host,
@@ -125,11 +121,8 @@ impl AppConfig {
         let dir_root = PathBuf::from(dir_root);
 
         let git_root = dir_root.join("git");
-        let session_root = dir_root.join("sessions");
-
         self.dir_root = dir_root;
         self.git_root = git_root;
-        self.session_root = session_root;
 
         self
     }

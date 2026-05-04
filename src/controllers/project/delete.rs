@@ -10,8 +10,8 @@ use time::OffsetDateTime;
 use tower_cookies::Cookies;
 
 use crate::{
-    AccessType, GlobalState, UserModel, extractors::PathUserProject, models::RepoEvent,
-    services::session,
+    AccessType, GlobalState, UserModel, controllers::context::require_user,
+    extractors::PathUserProject, models::RepoEvent,
 };
 
 #[derive(Debug, Deserialize)]
@@ -26,9 +26,9 @@ pub async fn project_delete_post(
     Form(form): Form<ProjectDeleteForm>,
 ) -> Response<Body> {
     // Authenticate user
-    let current_user = match session::current_user(&state, &cookies).await {
+    let current_user = match require_user(&state, &cookies).await {
         Ok(user) => user,
-        Err(_) => return Redirect::to("/login").into_response(),
+        Err(response) => return response,
     };
 
     // Verify Admin access (owner only)

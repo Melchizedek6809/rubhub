@@ -6,14 +6,13 @@ use tower_cookies::Cookies;
 
 use crate::{
     AccessType, GlobalState, Project, User, UserModel,
-    controllers::not_found,
+    controllers::context::ProjectRepoContext,
     extractors::PathUserProject,
     models::ContentPage,
     services::{
         markdown::{self, Frontmatter},
         meta::PageMeta,
-        repository::{GitRefInfo, GitSummary, get_git_file, get_git_info, get_git_summary},
-        session,
+        repository::{GitRefInfo, GitSummary, get_git_file, get_git_info},
     },
     views::ThemedRender,
 };
@@ -45,29 +44,11 @@ async fn render_project_page(
     project: Project,
     branch: Option<String>,
 ) -> Response<Body> {
-    let logged_in_user = session::current_user(state, &cookies).await.ok();
-
-    let content_pages = state.config.content_pages.clone();
-    let sidebar_projects = if let Some(ref user) = logged_in_user {
-        user.sidebar_projects(state).await
-    } else {
-        vec![]
+    let repo_context = match ProjectRepoContext::load(state, &cookies, &owner.slug, &project).await
+    {
+        Ok(context) => context,
+        Err(response) => return response,
     };
-
-    let access_level = project
-        .access_level(logged_in_user.as_ref().map(|user| user.slug.clone()))
-        .await;
-
-    if access_level == AccessType::None {
-        return not_found(logged_in_user, sidebar_projects, content_pages);
-    }
-
-    let Some(summary) = get_git_summary(state, &owner.slug, &project.slug).await else {
-        return not_found(logged_in_user, sidebar_projects, content_pages);
-    };
-
-    let ssh_clone_url = project.ssh_clone_url(&state.config.ssh_public_host);
-    let http_clone_url = project.http_clone_url(&state.config.base_url);
 
     let current = match branch {
         Some(branch) => branch,
@@ -107,17 +88,17 @@ async fn render_project_page(
         .canonical(&state.config.base_url, &project.uri()),
         owner,
         project: &project,
-        access_level,
-        ssh_clone_url,
-        http_clone_url,
-        summary,
+        access_level: repo_context.project.access_level,
+        ssh_clone_url: repo_context.ssh_clone_url,
+        http_clone_url: repo_context.http_clone_url,
+        summary: repo_context.summary,
         info,
         selected_branch,
         readme_html,
         readme_frontmatter,
-        logged_in_user,
-        sidebar_projects,
-        content_pages,
+        logged_in_user: repo_context.project.page.logged_in_user,
+        sidebar_projects: repo_context.project.page.sidebar_projects,
+        content_pages: repo_context.project.page.content_pages,
         active_tab: "overview",
     };
     template.response()

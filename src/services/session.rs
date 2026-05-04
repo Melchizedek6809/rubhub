@@ -14,9 +14,7 @@ pub const SESSION_COOKIE: &str = "session_id";
 pub async fn logout(state: &GlobalState, cookies: Cookies) -> Redirect {
     if let Some(existing) = cookies.get(SESSION_COOKIE) {
         if let Ok(session_id) = Uuid::parse_str(existing.value()) {
-            let path = session_id.to_string();
-            let path = state.config.session_root.join(&path);
-            if let Err(e) = tokio::fs::remove_file(path).await {
+            if let Err(e) = Session::delete(&state.auth, session_id) {
                 eprintln!("Logout error: {:?}", e);
             };
         }

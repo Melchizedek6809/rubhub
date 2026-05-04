@@ -10,9 +10,10 @@ use axum::{
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, Project, User, UserModel,
+    GlobalState, Project, User,
+    controllers::context::PageContext,
     models::ContentPage,
-    services::{content, meta::PageMeta, session},
+    services::{content, meta::PageMeta},
     views::ThemedRender,
 };
 
@@ -32,13 +33,7 @@ pub async fn render_content_page(
     cookies: Cookies,
     page: ContentPage,
 ) -> Response<Body> {
-    let logged_in_user = session::current_user(&state, &cookies).await.ok();
-
-    let sidebar_projects = if let Some(ref user) = logged_in_user {
-        user.sidebar_projects(&state).await
-    } else {
-        vec![]
-    };
+    let page_context = PageContext::load(&state, &cookies).await;
 
     // Fetch and render markdown
     let content_html = match content::render_content(&page, &state).await {
@@ -48,20 +43,16 @@ pub async fn render_content_page(
                 "Error rendering content page '{}' ({}:{}): {}",
                 page.title, page.repo_owner, page.repo_slug, e
             );
-            return crate::controllers::not_found(
-                logged_in_user,
-                sidebar_projects,
-                state.config.content_pages.clone(),
-            );
+            return page_context.not_found();
         }
     };
 
     let template = ContentPageTemplate {
         page_title: &page.title,
         content_html,
-        logged_in_user,
-        sidebar_projects,
-        content_pages: state.config.content_pages.clone(),
+        logged_in_user: page_context.logged_in_user,
+        sidebar_projects: page_context.sidebar_projects,
+        content_pages: page_context.content_pages,
         meta: PageMeta::new(
             format!("{} - RubHub", page.title),
             format!("{} on RubHub.", page.title),

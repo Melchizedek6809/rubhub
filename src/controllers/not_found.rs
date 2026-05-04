@@ -10,10 +10,8 @@ use axum::{
 use tower_cookies::Cookies;
 
 use crate::{
-    GlobalState, Project, User, UserModel,
-    models::ContentPage,
-    services::{meta::PageMeta, session},
-    views::ThemedRender,
+    GlobalState, Project, User, controllers::context::PageContext, models::ContentPage,
+    services::meta::PageMeta, views::ThemedRender,
 };
 
 #[derive(Template)]
@@ -44,17 +42,5 @@ pub fn not_found(
 }
 
 pub async fn not_found_get(State(state): State<GlobalState>, cookies: Cookies) -> Response<Body> {
-    let logged_in_user = session::current_user(&state, &cookies).await.ok();
-
-    let sidebar_projects = if let Some(ref user) = logged_in_user {
-        user.sidebar_projects(&state).await
-    } else {
-        vec![]
-    };
-
-    not_found(
-        logged_in_user,
-        sidebar_projects,
-        state.config.content_pages.clone(),
-    )
+    PageContext::load(&state, &cookies).await.not_found()
 }

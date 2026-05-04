@@ -6,11 +6,8 @@ use tower_cookies::Cookies;
 
 use crate::{
     AccessType, GlobalState, Project, ProjectSummary, User, UserModel,
-    controllers::not_found,
-    extractors::PathUser,
-    models::ContentPage,
-    services::{meta::PageMeta, session},
-    views::ThemedRender,
+    controllers::context::PageContext, extractors::PathUser, models::ContentPage,
+    services::meta::PageMeta, views::ThemedRender,
 };
 
 #[derive(Template)]
@@ -30,16 +27,10 @@ pub async fn user_page(
     cookies: Cookies,
     PathUser(owner): PathUser,
 ) -> Result<Html<String>, Response<Body>> {
-    let logged_in_user = session::current_user(&state, &cookies).await.ok();
+    let page_context = PageContext::load(&state, &cookies).await;
 
-    let content_pages = state.config.content_pages.clone();
-    let sidebar_projects = if let Some(ref user) = logged_in_user {
-        user.sidebar_projects(&state).await
-    } else {
-        vec![]
-    };
-
-    let is_owner = logged_in_user
+    let is_owner = page_context
+        .logged_in_user
         .as_ref()
         .map(|user| user.slug == owner.slug)
         .unwrap_or(false);
@@ -48,7 +39,7 @@ pub async fn user_page(
         Ok(projects) => projects,
         Err(e) => {
             eprintln!("{:?}", e);
-            return Err(not_found(logged_in_user, sidebar_projects, content_pages));
+            return Err(page_context.not_found());
         }
     };
 
@@ -72,9 +63,9 @@ pub async fn user_page(
         user: &owner,
         projects: &summaries,
         is_owner,
-        logged_in_user,
-        sidebar_projects,
-        content_pages,
+        logged_in_user: page_context.logged_in_user,
+        sidebar_projects: page_context.sidebar_projects,
+        content_pages: page_context.content_pages,
         meta: PageMeta::new(
             format!("{} - RubHub", owner.name),
             format!(
