@@ -31,6 +31,7 @@
                   biome
                   mold
                   clang
+                  cargo-audit
                   cargo-nextest
                 ];
 
