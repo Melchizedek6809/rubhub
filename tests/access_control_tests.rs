@@ -77,8 +77,8 @@ async fn test_public_write_access_disabled() {
             .create_project_with_access("Open Source", "Everyone can contribute", "write")
             .await
             .unwrap();
-        let body = response.text().await.unwrap();
-        assert!(body.contains("Public write access is disabled."));
+        assert_eq!(response.status().as_u16(), 200);
+        assert!(!state.config.git_root.join("alice/open-source").exists());
 
         api.create_project_with_access("Open Source", "Everyone can read", "read")
             .await

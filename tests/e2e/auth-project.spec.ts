@@ -38,29 +38,29 @@ function createTestProject(prefix = "E2E Project"): TestProject {
 
 async function registerUser(page: Page, user: TestUser) {
 	await page.goto("/registration");
-	await page.getByLabel("Username").fill(user.username);
-	await page.getByLabel("E-Mail").fill(user.email);
-	await page.getByLabel("Password").fill(user.password);
-	await page.getByRole("button", { name: "Create account" }).click();
+	await page.locator('input[name="username"]').fill(user.username);
+	await page.locator('input[name="email"]').fill(user.email);
+	await page.locator('input[name="password"]').fill(user.password);
+	await page.locator('form[action="/registration"] button[type="submit"]').click();
 
 	await expect(page).toHaveURL(new RegExp(`/~${user.username}$`));
 }
 
 async function expectLoggedInAs(page: Page, user: TestUser) {
 	await expect(page.locator(".username-link").first()).toHaveText(user.username);
-	await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
+	await expect(page.locator('form[action="/logout"] button[type="submit"]').first()).toBeVisible();
 }
 
 async function logout(page: Page) {
-	await page.getByRole("button", { name: "Logout" }).click();
-	await expect(page.getByRole("link", { name: "Login" }).first()).toBeVisible();
+	await page.locator('form[action="/logout"] button[type="submit"]').first().click();
+	await expect(page.locator('a[href="/login"]').first()).toBeVisible();
 }
 
 async function login(page: Page, user: TestUser) {
 	await page.goto("/login");
-	await page.getByLabel("Username").fill(user.username);
-	await page.getByLabel("Password").fill(user.password);
-	await page.getByRole("button", { name: "Log in" }).click();
+	await page.locator('input[name="username"]').fill(user.username);
+	await page.locator('input[name="password"]').fill(user.password);
+	await page.locator('form[action="/login"] button[type="submit"]').click();
 
 	await expect(page).toHaveURL(new RegExp(`/~${user.username}$`));
 }
@@ -68,7 +68,7 @@ async function login(page: Page, user: TestUser) {
 async function createProject(page: Page, user: TestUser, project: TestProject) {
 	await page.goto("/projects/new");
 	await page.locator('input[name="name"]').fill(project.name);
-	await page.getByRole("button", { name: "Create project" }).click();
+	await page.locator('form[action="/projects/new"] button[type="submit"]').click();
 
 	await expect(page).toHaveURL(new RegExp(`/~${user.username}/${project.slug}$`));
 	await expect(
@@ -85,7 +85,7 @@ async function updateProjectDescription(
 ) {
 	await page.goto(`/~${user.username}/${project.slug}/settings`);
 	await page.locator('textarea[name="description"]').fill(project.description);
-	await page.getByRole("button", { name: "Save" }).click();
+	await page.locator('form[action$="/settings"] button[type="submit"]').first().click();
 
 	await expect(page).toHaveURL(
 		new RegExp(`/~${user.username}/${project.slug}/settings$`),
@@ -162,17 +162,17 @@ async function deleteProject(page: Page, user: TestUser, project: TestProject) {
 	});
 
 	await page.goto(`/~${user.username}/${project.slug}/settings`);
-	await page.getByRole("button", { name: "Delete Project" }).click();
+	await page.locator("#project-delete-button").click();
 	await expect(page).toHaveURL(new RegExp(`/~${user.username}$`));
 }
 
 async function deleteUser(page: Page, user: TestUser) {
 	await page.goto("/settings");
 	await page.locator('input[name="confirmation"]').fill(user.username);
-	await page.getByRole("button", { name: "Delete Account" }).click();
+	await page.locator('form[action^="/settings/delete/"] button[type="submit"]').click();
 
 	await expect(page).toHaveURL("/");
-	await expect(page.getByRole("link", { name: "Login" }).first()).toBeVisible();
+	await expect(page.locator('a[href="/login"]').first()).toBeVisible();
 }
 
 test("user can register, log in, create a project, and publish a description", async ({

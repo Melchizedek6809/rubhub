@@ -33,11 +33,11 @@
 
           <div class="form-row">
             <label>
-              Public access
+              Visibility
               <select name="public_access">
-                <option value="none" {% if project.public_access==AccessType::None %}selected{% endif %}>None
+                <option value="none" {% if project.public_access==AccessType::None %}selected{% endif %}>Private
                 </option>
-                <option value="read" {% if project.public_access==AccessType::Read %}selected{% endif %}>Read
+                <option value="read" {% if project.public_access==AccessType::Read %}selected{% endif %}>Public
                 </option>
               </select>
             </label>

@@ -17,11 +17,12 @@
             <input type="text" autofocus name="name" autocomplete="off">
           </label>
           <label>
-            Public access
-              <select name="public_access">
-                <option value="none">None</option>
-                <option value="read" selected>Read</option>
-              </select>
+            Visibility
+            <select name="public_access">
+              <option value="read" selected>Public</option>
+              <option value="none">Private</option>
+            </select>
+            <small>Public repositories can be viewed and cloned by anyone. Private repositories are only visible to you.</small>
           </label>
           <button type="submit" class="success-button">Create project</button>
         </form>
