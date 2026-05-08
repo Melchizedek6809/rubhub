@@ -79,15 +79,21 @@ pub async fn project_new_post(
     cookies: Cookies,
     Form(form): Form<NewProjectForm>,
 ) -> Response<Body> {
-    let selected_public_access = form
-        .public_access
-        .as_deref()
-        .and_then(|value| AccessType::parse_public_access(value).ok())
-        .unwrap_or(AccessType::Read);
-
     let current_user = match session::current_user(&state, &cookies).await {
         Ok(user) => user,
         Err(_) => return Redirect::to("/login").into_response(),
+    };
+
+    let selected_public_access = match form.public_access.as_deref() {
+        Some(value) => match AccessType::parse_public_access(value) {
+            Ok(level) => level,
+            Err(msg) => {
+                return render_new_project_page(&state, Some(current_user), Some(msg))
+                    .await
+                    .into_response();
+            }
+        },
+        None => AccessType::Read,
     };
 
     let name = form.name.trim();

@@ -34,7 +34,7 @@ impl AccessType {
         match value.to_ascii_lowercase().as_str() {
             "none" => Ok(AccessType::None),
             "read" => Ok(AccessType::Read),
-            "write" => Ok(AccessType::Write),
+            "write" => Err("Public write access is disabled."),
             "admin" => Err("Public admin access is not allowed."),
             _ => Err("Invalid access level."),
         }
@@ -42,5 +42,18 @@ impl AccessType {
 
     pub fn is_allowed(&self, required_level: AccessType) -> bool {
         (*self as u8) >= (required_level as u8)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::AccessType;
+
+    #[test]
+    fn public_write_access_is_rejected() {
+        assert_eq!(
+            AccessType::parse_public_access("write"),
+            Err("Public write access is disabled.")
+        );
     }
 }

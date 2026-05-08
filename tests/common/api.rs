@@ -100,7 +100,7 @@ impl Api {
 
     /// Create a new project with custom public_access level.
     ///
-    /// public_access should be one of: "none", "read", "write"
+    /// public_access should be one of: "none", "read".
     pub async fn create_project_with_access(
         &self,
         name: &str,

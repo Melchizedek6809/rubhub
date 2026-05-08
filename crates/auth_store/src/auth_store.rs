@@ -13,6 +13,36 @@ use crate::event::StoreEvent;
 use crate::project_info::ProjectInfo;
 use crate::{PasswordVerification, User};
 
+#[cfg(unix)]
+fn private_open_options() -> OpenOptions {
+    use std::os::unix::fs::OpenOptionsExt;
+
+    let mut options = OpenOptions::new();
+    options.create(true).append(true).mode(0o600);
+    options
+}
+
+#[cfg(not(unix))]
+fn private_open_options() -> OpenOptions {
+    let mut options = OpenOptions::new();
+    options.create(true).append(true);
+    options
+}
+
+#[cfg(unix)]
+fn set_private_file_permissions(file: &File) -> std::io::Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let mut permissions = file.metadata()?.permissions();
+    permissions.set_mode(0o600);
+    file.set_permissions(permissions)
+}
+
+#[cfg(not(unix))]
+fn set_private_file_permissions(_file: &File) -> std::io::Result<()> {
+    Ok(())
+}
+
 #[derive(Clone, Debug)]
 pub struct AuthStore {
     chan: mpsc::SyncSender<StoreEvent>,
@@ -32,11 +62,10 @@ impl AuthStore {
 
         thread::spawn(move || {
             loop {
-                let mut file = OpenOptions::new()
-                    .create(true)
-                    .append(true)
+                let mut file = private_open_options()
                     .open(path.clone())
                     .expect("Couldn't open auth.ndjson");
+                set_private_file_permissions(&file).expect("Couldn't set auth.ndjson permissions");
 
                 for event in rx.iter() {
                     match event {
@@ -201,7 +230,25 @@ impl AuthStore {
 
     pub fn get_user_by_session(&self, session_id: Uuid) -> Option<Arc<User>> {
         if let Some(session) = self.session_map.get(&session_id) {
+            if session.expires_at <= time::OffsetDateTime::now_utc() {
+                drop(session);
+                let _ = self.store_event(StoreEvent::SessionDelete { session_id });
+                return None;
+            }
             self.get_user(&session.user_slug)
+        } else {
+            None
+        }
+    }
+
+    pub fn get_session(&self, session_id: Uuid) -> Option<Arc<Session>> {
+        if let Some(session) = self.session_map.get(&session_id) {
+            if session.expires_at <= time::OffsetDateTime::now_utc() {
+                drop(session);
+                let _ = self.store_event(StoreEvent::SessionDelete { session_id });
+                return None;
+            }
+            Some(session.value().clone())
         } else {
             None
         }

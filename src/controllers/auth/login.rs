@@ -44,9 +44,10 @@ fn render_login_page(message: Option<&str>) -> Html<String> {
 }
 
 fn internal_error<E: std::fmt::Display>(err: E) -> (axum::http::StatusCode, Html<String>) {
+    eprintln!("login error: {err}");
     (
         axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-        render_login_page(Some(&format!("{err}"))),
+        render_login_page(Some("Something went wrong.")),
     )
 }
 

@@ -31,7 +31,7 @@ impl Project {
         match pa {
             PublicAccess::None => AccessType::None,
             PublicAccess::Read => AccessType::Read,
-            PublicAccess::Write => AccessType::Write,
+            PublicAccess::Write => AccessType::Read,
         }
     }
 
@@ -270,5 +270,28 @@ impl<'a> ProjectSummary<'a> {
 
     pub fn owner_uri(&self) -> String {
         format!("/~{}", self.owner_slug)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rubhub_auth_store::{ProjectInfo, PublicAccess};
+
+    use super::Project;
+
+    #[test]
+    fn stored_public_write_loads_as_public_read() {
+        let info = ProjectInfo::new(
+            "alice",
+            "wiki",
+            "Wiki".to_string(),
+            String::new(),
+            "main".to_string(),
+            PublicAccess::Write,
+        );
+
+        let project = Project::from_project_info(&info).unwrap();
+
+        assert_eq!(project.public_access, crate::AccessType::Read);
     }
 }

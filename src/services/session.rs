@@ -36,10 +36,20 @@ pub async fn current_user(state: &GlobalState, cookies: &Cookies) -> Result<Arc<
         .ok_or(anyhow!("No Session Cookie"))?;
     let session_id = Uuid::parse_str(cookie.value())?;
 
+    let session = state
+        .auth
+        .get_session(session_id)
+        .ok_or(anyhow!("Invalid session"))?;
+
+    if session.expires_at <= time::OffsetDateTime::now_utc() {
+        let _ = Session::delete(&state.auth, session_id);
+        return Err(anyhow!("Session expired"));
+    }
+
     state
         .auth
-        .get_user_by_session(session_id)
-        .ok_or(anyhow!("Invalid session"))
+        .get_user(&session.user_slug)
+        .ok_or(anyhow!("Invalid session user"))
 }
 
 pub async fn create_session(state: &GlobalState, cookies: &Cookies, user_slug: &str) -> Result<()> {

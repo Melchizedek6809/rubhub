@@ -236,6 +236,12 @@ async fn test_http_clone_private_repo_blocked() {
         api.logout().await.unwrap();
 
         // HTTP clone should fail for private repo
+        let info_refs = api
+            .get_raw("/~alice/private/info/refs?service=git-upload-pack")
+            .await
+            .unwrap();
+        assert_eq!(info_refs.status().as_u16(), 404);
+
         let http_work = temp_dir.join("http_clone_private");
         std::fs::create_dir_all(&http_work).unwrap();
 

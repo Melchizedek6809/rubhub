@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::path::Path;
+use std::process::Command;
 
 use anyhow::{Result, anyhow};
 use gix::bstr::BString;
@@ -63,6 +64,54 @@ fn get_git_repo(git_root: &Path, user_name: &str, project_slug: &str) -> Option<
     }
 }
 
+fn configure_bare_repo(path: &Path) -> Result<(), RepoError> {
+    std::fs::create_dir_all(path.join("hooks-disabled"))?;
+
+    let config_values = [
+        ("receive.fsckObjects", "true"),
+        ("transfer.fsckObjects", "true"),
+        ("fetch.fsckObjects", "true"),
+        ("core.hooksPath", "hooks-disabled"),
+    ];
+
+    for (key, value) in config_values {
+        let status = Command::new("git")
+            .arg("-C")
+            .arg(path)
+            .arg("config")
+            .arg("--local")
+            .arg(key)
+            .arg(value)
+            .status()?;
+
+        if !status.success() {
+            return Err(RepoError::Git(format!(
+                "git config failed for {key}"
+            )));
+        }
+    }
+
+    Ok(())
+}
+
+fn ensure_safe_branch_name(branch: &str) -> Result<(), RepoError> {
+    if branch.trim() != branch || branch.contains('\n') || branch.contains('\r') {
+        return Err(RepoError::InvalidPath("invalid branch name".into()));
+    }
+
+    let status = Command::new("git")
+        .arg("check-ref-format")
+        .arg("--branch")
+        .arg(branch)
+        .status()?;
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err(RepoError::InvalidPath("invalid branch name".into()))
+    }
+}
+
 /// Create a new bare git repository
 pub async fn create_bare_repo(
     git_root: &Path,
@@ -79,6 +128,7 @@ pub async fn create_bare_repo(
 
     tokio::task::spawn_blocking(move || {
         gix::init_bare(&path).map_err(|e| RepoError::Git(e.to_string()))?;
+        configure_bare_repo(&path)?;
         Ok::<_, RepoError>(())
     })
     .await
@@ -94,6 +144,7 @@ pub async fn set_git_head(
     project_slug: &str,
     head_branch: &str,
 ) -> Result<()> {
+    ensure_safe_branch_name(head_branch)?;
     let contents = format!("ref: refs/heads/{}\n", head_branch);
     let path = git_root.join(user_name).join(project_slug).join("HEAD");
     fs::write(path, contents).await?;

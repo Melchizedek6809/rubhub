@@ -11,8 +11,23 @@ use tokio::task::JoinHandle;
 use crate::services::repository::{GitSummary, capture_summary, emit_repo_changes};
 use crate::{AccessType, GlobalState, Project};
 
+#[cfg(unix)]
+fn set_private_file_permissions(path: &PathBuf) -> Result<(), io::Error> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let mut permissions = fs::metadata(path)?.permissions();
+    permissions.set_mode(0o600);
+    fs::set_permissions(path, permissions)
+}
+
+#[cfg(not(unix))]
+fn set_private_file_permissions(_path: &PathBuf) -> Result<(), io::Error> {
+    Ok(())
+}
+
 async fn ensure_host_key(path: &PathBuf, key_type: &str) -> Result<(), io::Error> {
     if path.exists() {
+        set_private_file_permissions(path)?;
         return Ok(());
     }
 
@@ -30,6 +45,7 @@ async fn ensure_host_key(path: &PathBuf, key_type: &str) -> Result<(), io::Error
         .await?;
 
     if status.success() {
+        set_private_file_permissions(path)?;
         eprintln!("No {key_type} SSH key found, generated one using ssh-keygen");
         Ok(())
     } else {
@@ -169,6 +185,7 @@ impl Connection {
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
+            .kill_on_drop(true)
             .spawn()?;
 
         let mut git_stdin = child.stdin.take().ok_or(russh::Error::SendError)?;

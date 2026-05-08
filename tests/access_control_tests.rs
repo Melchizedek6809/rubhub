@@ -61,19 +61,26 @@ async fn test_private_repo_access_denied() {
     .await;
 }
 
-/// Test that any authenticated user can push to a public-write repo.
+/// Test that public write access is no longer available.
 #[tokio::test(flavor = "current_thread")]
-async fn test_public_write_access() {
+async fn test_public_write_access_disabled() {
     with_backend(|state| async move {
         let api = Api::new(&state.config.base_url);
         let temp_dir = state.config.dir_root.as_path();
 
-        // Alice creates a public-write project
+        // Alice cannot create a public-write project.
         let alice = TestUser::create(&api, temp_dir, "alice", &state.config.ssh_public_host)
             .await
             .unwrap();
 
-        api.create_project_with_access("Open Source", "Everyone can contribute", "write")
+        let response = api
+            .create_project_with_access("Open Source", "Everyone can contribute", "write")
+            .await
+            .unwrap();
+        let body = response.text().await.unwrap();
+        assert!(body.contains("Public write access is disabled."));
+
+        api.create_project_with_access("Open Source", "Everyone can read", "read")
             .await
             .unwrap();
 
@@ -98,7 +105,7 @@ async fn test_public_write_access() {
 
         api.logout().await.unwrap();
 
-        // Bob registers and can clone and push to the public-write repo
+        // Bob registers and can clone but not push to the public-read repo.
         let bob = TestUser::create(&api, temp_dir, "bob", &state.config.ssh_public_host)
             .await
             .unwrap();
@@ -124,14 +131,9 @@ async fn test_public_write_access() {
             .await
             .unwrap();
 
-        // Push should succeed (public write access)
+        // Push should fail because public write access is disabled.
         let push_result = bob_git.push_ssh(&bob_repo, "origin", "main").await.unwrap();
-        assert_push_success(&push_result);
-
-        // Verify commit is visible on web
-        api.assert_contains("/~alice/open-source", "Add contributing guide")
-            .await
-            .unwrap();
+        assert_push_failure(&push_result);
     })
     .await;
 }

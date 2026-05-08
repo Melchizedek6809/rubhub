@@ -87,7 +87,7 @@ async fn internal_error(
     eprintln!("auth error: {err}");
     (
         StatusCode::INTERNAL_SERVER_ERROR,
-        render_settings_page(state, user, ssh_keys, Some(err)).await,
+        render_settings_page(state, user, ssh_keys, Some("Something went wrong.")).await,
     )
 }
 

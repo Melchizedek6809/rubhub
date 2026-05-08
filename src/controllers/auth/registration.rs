@@ -51,9 +51,10 @@ fn render_registration_page(message: Option<&str>) -> Html<String> {
 }
 
 fn internal_error<E: std::fmt::Display>(err: E) -> (StatusCode, Html<String>) {
+    eprintln!("registration error: {err}");
     (
         StatusCode::INTERNAL_SERVER_ERROR,
-        render_registration_page(Some(&format!("{err}"))),
+        render_registration_page(Some("Something went wrong.")),
     )
 }
 

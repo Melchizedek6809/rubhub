@@ -32,7 +32,7 @@ pub async fn git_info_refs(
         .await;
 
     if access_level == AccessType::None {
-        return Err(StatusCode::FORBIDDEN);
+        return Err(StatusCode::NOT_FOUND);
     }
 
     // Only support git-upload-pack (read-only)
@@ -54,6 +54,7 @@ pub async fn git_info_refs(
         .arg(&repo_path)
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::null())
+        .kill_on_drop(true)
         .spawn()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
@@ -114,7 +115,7 @@ pub async fn git_upload_pack(
         .await;
 
     if access_level == AccessType::None {
-        return Err(StatusCode::FORBIDDEN);
+        return Err(StatusCode::NOT_FOUND);
     }
 
     // Build repository path
@@ -132,6 +133,7 @@ pub async fn git_upload_pack(
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::null())
+        .kill_on_drop(true)
         .spawn()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 

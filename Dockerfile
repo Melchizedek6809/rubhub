@@ -37,8 +37,10 @@ FROM alpine:3.22
 WORKDIR /app
 
 RUN apk add --no-cache git curl openssh
+RUN addgroup -S rubhub && adduser -S -G rubhub -h /app rubhub
 
 COPY --from=rust-builder /app/target/release/rubhub /usr/local/bin/rubhub
+RUN mkdir -p /app/data && chown -R rubhub:rubhub /app
 VOLUME ["/app/data"]
 
 ENV HTTP_BIND_ADDRESS=0.0.0.0 \
@@ -47,6 +49,8 @@ ENV HTTP_BIND_ADDRESS=0.0.0.0 \
 	SSH_PORT=2222
 
 EXPOSE 3000 2222
+
+USER rubhub
 
 HEALTHCHECK --interval=60s --timeout=5s --start-period=10s --retries=3 \
 	CMD curl -f http://127.0.0.1:3000/ || exit 1

@@ -193,4 +193,30 @@ mod tests {
         assert!(store.get_sessions_for_user("alice").is_empty());
         assert_eq!(store.get_sessions_for_user("bob").len(), 1);
     }
+
+    #[test]
+    fn test_expired_session_is_rejected_and_removed() {
+        let dir = tempdir().unwrap();
+        let store = AuthStore::new(dir.path().to_path_buf());
+
+        let user = User::new(
+            "alice".to_string(),
+            "Alice".to_string(),
+            "alice@example.com".to_string(),
+            "password123456789".to_string(),
+        )
+        .unwrap();
+        user.save(&store).unwrap();
+
+        let session = Session {
+            session_id: uuid::Uuid::now_v7(),
+            expires_at: time::OffsetDateTime::now_utc() - time::Duration::seconds(1),
+            user_slug: "alice".to_string(),
+        };
+        let session_id = session.session_id;
+        session.save(&store).unwrap();
+
+        assert!(store.get_user_by_session(session_id).is_none());
+        assert!(store.get_session(session_id).is_none());
+    }
 }
