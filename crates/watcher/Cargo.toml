@@ -1,0 +1,12 @@
+[package]
+name = "rubhub-watcher"
+version = "0.1.0"
+edition = "2024"
+license = "EUPL-1.2"
+
+[dependencies]
+anyhow = "1"
+eventsource-client = { version = "0.17", features = ["hyper-rustls-native-roots"] }
+futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
+tokio = { version = "1", features = ["macros", "rt"] }
+reqwest = "0.13"

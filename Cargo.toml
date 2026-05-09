@@ -5,6 +5,15 @@ edition = "2024"
 license = "EUPL-1.2"
 default-run = "rubhub"
 
+[workspace]
+members = [
+    "crates/auth_store",
+    "crates/repo",
+    "crates/state",
+    "crates/watcher",
+]
+resolver = "2"
+
 [dependencies]
 rubhub-auth-store = { path = "crates/auth_store", version = "0.1.0" }
 rubhub-repo = { path = "crates/repo", version = "0.1.0" }
