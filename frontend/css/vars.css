@@ -17,21 +17,10 @@
 	--white: #eaf6ff;
 	--black: #232528;
 
-	--primary-color-dark: #2f2f8f;
 	--primary-color: #3d4bfc;
-	--primary-color-bright: #9f90ff;
-
-	--secondary-color-dark: #92701d;
-	--secondary-color: #ffc31e;
-	--secondary-color-bright: #ffda85;
-
-	--error-color-dark: #441107;
+	--secondary-color: #bf8314;
 	--error-color: #9b120c;
-	--error-color-bright: #f5342c;
-
-	--success-color-dark: #21843c;
-	--success-color: #04e762;
-	--success-color-bright: #95f3a2;
+	--success-color: #21843c;
 
 	--body-font: system-ui, sans-serif;
 	--code-font:

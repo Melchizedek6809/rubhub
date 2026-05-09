@@ -71,7 +71,7 @@
 }
 
 .btn-filter.issue-open:hover {
-	background: var(--primary-color-dark);
+	background: var(--primary-color);
 	color: var(--white);
 }
 
@@ -81,18 +81,18 @@
 }
 
 .btn-filter.issue-completed {
-	border-color: var(--success-color-dark);
-	color: var(--success-color-dark);
+	border-color: var(--success-color);
+	color: var(--success-color);
 }
 
 .btn-filter.issue-completed:hover {
-	background: var(--success-color-dark);
+	background: var(--success-color);
 	color: var(--white);
 }
 
 .btn-filter.issue-completed.active {
-	background: var(--success-color-dark);
-	border-color: var(--success-color-dark);
+	background: var(--success-color);
+	border-color: var(--success-color);
 	color: var(--white);
 }
 
@@ -102,13 +102,13 @@
 }
 
 .btn-filter.issue-cancelled:hover {
-	background: var(--secondary-color-dark);
+	background: var(--secondary-color);
 	color: var(--white);
 }
 
 .btn-filter.issue-cancelled.active {
-	background: var(--secondary-color-dark);
-	border-color: var(--secondary-color-dark);
+	background: var(--secondary-color);
+	border-color: var(--secondary-color);
 	color: var(--white);
 }
 
@@ -175,17 +175,17 @@ a.comment-author {
 }
 
 a.status-open {
-	background: var(--primary-color-dark);
+	background: var(--primary-color);
 	color: var(--white);
 }
 
 a.status-completed {
-	background: var(--success-color-dark);
+	background: var(--success-color);
 	color: var(--white);
 }
 
 a.status-cancelled {
-	background: var(--secondary-color-dark);
+	background: var(--secondary-color);
 	color: var(--white);
 }
 

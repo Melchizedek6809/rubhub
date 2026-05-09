@@ -212,7 +212,7 @@
 	}
 
 	#mobile-header .show-navigation.active {
-		background: var(--primary-color-dark);
+		background: var(--primary-color);
 	}
 
 	#sidebar-top,

@@ -1,28 +1,25 @@
-<div class="clone-url-wrapper">
-  <div class="protocol-switcher">
-    {% if logged_in_user.is_some() %}
-    <button class="protocol-btn active" type="button" data-protocol="ssh">SSH</button>
-    <button class="protocol-btn" type="button" data-protocol="http">HTTP</button>
-    {% else %}
-    <button class="protocol-btn" type="button" data-protocol="ssh" disabled>SSH</button>
-    <button class="protocol-btn active" type="button" data-protocol="http">HTTP</button>
-    {% endif %}
-  </div>
-  <div class="clone-url">
-    <input
-      id="clone-url-input"
-      name="cloneUrl"
-      type="text"
-      readonly
-      value="{% if logged_in_user.is_some() %}{{ ssh_clone_url }}{% else %}{{ http_clone_url }}{% endif %}"
-      data-ssh-url="{{ ssh_clone_url }}"
-      data-http-url="{{ http_clone_url }}"
-    />
-    <button
-      class="copy-button"
-      type="button"
-      title="Copy to clipboard"
-      copy-value="{% if logged_in_user.is_some() %}{{ ssh_clone_url }}{% else %}{{ http_clone_url }}{% endif %}"
-    ><span class="icon i-clipboard-copy"></span></button>
-  </div>
+<div class="clone-url btn-group">
+  {% if logged_in_user.is_some() %}
+  <button class="toggle-btn active" type="button" data-protocol="ssh">SSH</button>
+  <button class="toggle-btn" type="button" data-protocol="http">HTTP</button>
+  {% else %}
+  <button class="toggle-btn" type="button" data-protocol="ssh">SSH</button>
+  <button class="toggle-btn active" type="button" data-protocol="http">HTTP</button>
+  {% endif %}
+  <input
+    name="cloneUrl"
+    type="text"
+    readonly
+    value="{% if logged_in_user.is_some() %}{{ ssh_clone_url }}{% else %}{{ http_clone_url }}{% endif %}"
+    data-ssh-url="{{ ssh_clone_url }}"
+    data-http-url="{{ http_clone_url }}"
+  />
+  <button
+    class="copy-button"
+    type="button"
+    title="Copy to clipboard"
+    copy-value="{% if logged_in_user.is_some() %}{{ ssh_clone_url }}{% else %}{{ http_clone_url }}{% endif %}"
+   >
+    <span class="icon i-clipboard-copy"></span>
+  </button>
 </div>

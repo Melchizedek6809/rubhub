@@ -110,35 +110,44 @@ const initCopyButtons = () => {
 setTimeout(initCopyButtons, 0);
 
 const initProtocolSwitcher = () => {
-	const buttons = document.querySelectorAll<HTMLButtonElement>(".protocol-btn");
-	const input = document.querySelector<HTMLInputElement>("#clone-url-input");
-	const copyButton = document.querySelector<HTMLButtonElement>(".copy-button");
+	const urls = document.querySelectorAll<HTMLDivElement>(".clone-url");
+	for (const url of urls) {
+		const input = url.querySelector<HTMLInputElement>(`input[name="cloneUrl"]`);
+		const sshUrl = input.getAttribute("data-ssh-url");
+		const httpUrl = input.getAttribute("data-http-url");
+		if (!input || !sshUrl || !httpUrl) {
+			continue;
+		}
 
-	if (!input || buttons.length === 0) return;
-
-	const sshUrl = input.getAttribute("data-ssh-url");
-	const httpUrl = input.getAttribute("data-http-url");
-
-	for (const btn of buttons) {
-		if (btn.disabled) continue;
-
-		btn.onclick = () => {
-			const protocol = btn.getAttribute("data-protocol");
-
-			// Update active state
-			for (const b of buttons) b.classList.remove("active");
-			btn.classList.add("active");
-
-			// Update URL
-			const url = protocol === "ssh" ? sshUrl : httpUrl;
-			if (url) {
-				input.value = url;
-				if (copyButton) copyButton.setAttribute("copy-value", url);
-			}
-		};
+		const btns = url.querySelectorAll<HTMLButtonElement>("button.toggle-btn");
+		for (const btn of btns) {
+			btn.addEventListener("click", () => {
+				if (btn.getAttribute("data-protocol") === "ssh") {
+					input.value = sshUrl;
+				} else {
+					input.value = httpUrl;
+				}
+			});
+		}
 	}
 };
 setTimeout(initProtocolSwitcher, 0);
+
+const initToggleButtons = () => {
+	const groups = document.querySelectorAll<HTMLElement>(".btn-group");
+	for (const group of groups) {
+		const btns = group.querySelectorAll<HTMLElement>(".toggle-btn");
+		for (const btn of btns) {
+			btn.addEventListener("click", () => {
+				for (const b of btns) {
+					b.classList.remove("active");
+				}
+				btn.classList.add("active");
+			});
+		}
+	}
+};
+setTimeout(initToggleButtons, 0);
 
 const initProjectDelete = () => {
 	const deleteButton = document.querySelector<HTMLButtonElement>(

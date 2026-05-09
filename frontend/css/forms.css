@@ -26,29 +26,33 @@ button {
 button.active,
 button:hover,
 button:focus {
-	background-color: var(--primary-color-dark);
+	background-color: var(--primary-color);
 }
 
+.toggle-btn,
 .btn-outline {
 	background: transparent;
 	color: var(--primary-color);
-	border: 1px solid var(--primary-color-dark);
+	border: 1px solid var(--primary-color);
 	transition:
 		color 300ms ease-in-out,
 		background-color 300ms ease-in-out,
 		border 30ms ease-in-out;
 }
 
+.toggle-btn.active,
+.toggle-btn:hover,
+.toggle-btn:focus,
 .btn-outline.active,
 .btn-outline:hover,
 .btn-outline:focus {
 	color: var(--white);
-	background-color: var(--primary-color-dark);
-	border-color: var(--primary-color-dark);
+	background-color: var(--primary-color);
+	border-color: var(--primary-color);
 }
 
 .danger-button {
-	background: var(--error-color-bright);
+	background: var(--error-color);
 	color: var(--white);
 }
 
@@ -58,7 +62,7 @@ button:focus {
 }
 
 .success-button {
-	background: var(--success-color-dark);
+	background: var(--success-color);
 	color: var(--white);
 }
 
@@ -75,7 +79,7 @@ button:focus {
 }
 
 .danger-zone h2 {
-	color: var(--error-color-bright);
+	color: var(--error-color);
 	margin-top: 0;
 }
 
@@ -85,7 +89,7 @@ input {
 	padding: var(--space-m);
 	background: var(--background-color);
 	color: var(--text-color);
-	border: solid 1px var(--primary-color);
+	border: solid 2px var(--primary-color);
 	border-radius: var(--space-s);
 	margin-bottom: var(--space-m);
 	width: 100%;
@@ -117,7 +121,7 @@ input[readonly] {
 .auth-card {
 	padding: 16px;
 	border-radius: 8px;
-	background: var(--background-color-bright);
+	background: var(--background-color);
 }
 
 .auth-card form {
@@ -178,7 +182,7 @@ textarea {
 	border-radius: var(--space-s);
 	display: block;
 	height: 2rem;
-	background: var(--success-color-dark);
+	background: var(--success-color);
 	color: var(--white);
 	cursor: pointer;
 	opacity: 0;
@@ -192,7 +196,7 @@ textarea {
 .button-popup::after {
 	content: "";
 	display: block;
-	border-bottom: solid var(--space-s) var(--success-color-dark);
+	border-bottom: solid var(--space-s) var(--success-color);
 	border-left: solid var(--space-s) transparent;
 	border-right: solid var(--space-s) transparent;
 	position: absolute;
@@ -208,4 +212,34 @@ textarea {
 .button-popup.hide {
 	opacity: 0;
 	transform: scaleY(0) translate(-50%, 20%);
+}
+
+.btn-group > input {
+	border-width: 1px;
+}
+
+.btn-group > button:not(:first-child),
+.btn-group > input:not(:first-child) {
+	border-left: 0;
+}
+
+.btn-group > button:not(:last-child),
+.btn-group > input:not(:last-child) {
+	border-right-width: 0;
+}
+
+.btn-group > button,
+.btn-group > input {
+	border-radius: 0;
+	margin: 0;
+}
+
+.btn-group > button:first-child,
+.btn-group > input:first-child {
+	border-radius: var(--space-s) 0 0 var(--space-s);
+}
+
+.btn-group > button:last-child,
+.btn-group > input:last-child {
+	border-radius: 0 var(--space-s) var(--space-s) 0;
 }
