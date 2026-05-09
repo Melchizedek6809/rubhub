@@ -36,6 +36,11 @@
 		--text-color-subdued: #a0a8b0;
 		--background-color: #232528;
 		--background-color-bright: #121416;
+
+		--primary-color: #3d4bfc;
+		--secondary-color: #bf8314;
+		--error-color: #9b120c;
+		--success-color: #21843c;
 	}
 
 	* {
