@@ -255,11 +255,7 @@ pub fn format_relative_time(seconds: i64) -> String {
     }
     if seconds < 86400 * 365 {
         let months = seconds / (86400 * 30);
-        return format!(
-            "{} month{} ago",
-            months,
-            if months != 1 { "s" } else { "" }
-        );
+        return format!("{} month{} ago", months, if months != 1 { "s" } else { "" });
     }
     let years = seconds / (86400 * 365);
     format!("{} year{} ago", years, if years != 1 { "s" } else { "" })

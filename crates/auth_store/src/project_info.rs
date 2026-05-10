@@ -3,7 +3,7 @@ use std::sync::mpsc::SendError;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
-use crate::{event::StoreEvent, AuthStore};
+use crate::{AuthStore, event::StoreEvent};
 
 /// Access level for public users
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -111,13 +111,19 @@ mod tests {
 
     #[test]
     fn test_make_key() {
-        assert_eq!(ProjectInfo::make_key("alice", "my-project"), "~alice/my-project");
+        assert_eq!(
+            ProjectInfo::make_key("alice", "my-project"),
+            "~alice/my-project"
+        );
         assert_eq!(ProjectInfo::make_key("bob", "test"), "~bob/test");
     }
 
     #[test]
     fn test_parse_key() {
-        assert_eq!(ProjectInfo::parse_key("~alice/my-project"), Some(("alice", "my-project")));
+        assert_eq!(
+            ProjectInfo::parse_key("~alice/my-project"),
+            Some(("alice", "my-project"))
+        );
         assert_eq!(ProjectInfo::parse_key("~bob/test"), Some(("bob", "test")));
         assert_eq!(ProjectInfo::parse_key("alice/my-project"), None); // missing ~
         assert_eq!(ProjectInfo::parse_key("~alice"), None); // missing slug
@@ -157,8 +163,8 @@ mod tests {
 
     #[test]
     fn test_project_info_save_load_delete() {
-        use tempfile::tempdir;
         use crate::AuthStore;
+        use tempfile::tempdir;
 
         // Create a temp directory for the auth store
         let dir = tempdir().unwrap();
@@ -197,15 +203,19 @@ mod tests {
         ProjectInfo::delete(&store, "~alice/test-project".to_string()).unwrap();
 
         // Verify it's gone
-        assert!(store.get_project_by_owner_slug("alice", "test-project").is_none());
+        assert!(
+            store
+                .get_project_by_owner_slug("alice", "test-project")
+                .is_none()
+        );
         assert!(store.get_projects_for_owner("alice").is_empty());
         assert!(store.get_public_projects().is_empty());
     }
 
     #[test]
     fn test_project_info_private_not_in_public_list() {
-        use tempfile::tempdir;
         use crate::AuthStore;
+        use tempfile::tempdir;
 
         let dir = tempdir().unwrap();
         let store = AuthStore::new(dir.path().to_path_buf());
@@ -232,8 +242,8 @@ mod tests {
 
     #[test]
     fn test_project_info_update() {
-        use tempfile::tempdir;
         use crate::AuthStore;
+        use tempfile::tempdir;
 
         let dir = tempdir().unwrap();
         let store = AuthStore::new(dir.path().to_path_buf());
@@ -261,7 +271,9 @@ mod tests {
         updated.save(&store).unwrap();
 
         // Verify the update
-        let loaded = store.get_project_by_owner_slug("alice", "my-project").unwrap();
+        let loaded = store
+            .get_project_by_owner_slug("alice", "my-project")
+            .unwrap();
         assert_eq!(loaded.name, "Updated Name");
         assert_eq!(loaded.description, "Updated description");
         assert_eq!(loaded.default_branch, "develop");

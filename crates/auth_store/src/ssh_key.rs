@@ -3,7 +3,7 @@ use std::sync::mpsc::SendError;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
-use crate::{event::StoreEvent, AuthStore};
+use crate::{AuthStore, event::StoreEvent};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SshKey {

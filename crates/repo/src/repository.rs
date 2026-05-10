@@ -11,7 +11,9 @@ use tokio::fs;
 
 use crate::entry_kind::EntryKind;
 use crate::error::RepoError;
-use crate::types::{AuthorResolver, CommitParams, GitCommitInfo, GitRefInfo, GitSummary, GitTreeEntry};
+use crate::types::{
+    AuthorResolver, CommitParams, GitCommitInfo, GitRefInfo, GitSummary, GitTreeEntry,
+};
 
 /// Special project slugs that are allowed despite starting with a period
 const SPECIAL_PROJECT_SLUGS: &[&str] = &[".profile"];
@@ -85,9 +87,7 @@ fn configure_bare_repo(path: &Path) -> Result<(), RepoError> {
             .status()?;
 
         if !status.success() {
-            return Err(RepoError::Git(format!(
-                "git config failed for {key}"
-            )));
+            return Err(RepoError::Git(format!("git config failed for {key}")));
         }
     }
 
@@ -113,11 +113,7 @@ fn ensure_safe_branch_name(branch: &str) -> Result<(), RepoError> {
 }
 
 /// Create a new bare git repository
-pub async fn create_bare_repo(
-    git_root: &Path,
-    user: &str,
-    project: &str,
-) -> Result<(), RepoError> {
+pub async fn create_bare_repo(git_root: &Path, user: &str, project: &str) -> Result<(), RepoError> {
     ensure_safe_component(user)?;
     ensure_safe_component(project)?;
 

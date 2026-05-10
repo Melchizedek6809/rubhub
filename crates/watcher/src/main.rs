@@ -19,5 +19,5 @@ async fn main() -> anyhow::Result<()> {
             let text = String::from_utf8_lossy(&bytes);
             print!("{text}");
         }
-    };
+    }
 }
