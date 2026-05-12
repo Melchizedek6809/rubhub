@@ -181,7 +181,12 @@ impl GitSummary {
 
     /// Get branch names as a sorted vec
     pub fn branches(&self) -> Vec<&str> {
-        let mut names: Vec<&str> = self.branches.keys().map(|s| s.as_str()).collect();
+        let mut names: Vec<&str> = self
+            .branches
+            .keys()
+            .map(|s| s.as_str())
+            .filter(|name| !name.starts_with("meta/"))
+            .collect();
         names.sort();
         names
     }

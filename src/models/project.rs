@@ -7,8 +7,12 @@ use time::OffsetDateTime;
 use crate::{
     AccessType, GlobalState, User,
     services::{
+        project_info::{
+            ProjectLink, ProjectMetadata, load_project_metadata, project_link,
+            write_project_metadata,
+        },
         repository,
-        validation::{slugify, validate_slug},
+        validation::{slugify, validate_slug, validate_user_branch_name},
     },
 };
 
@@ -23,6 +27,8 @@ pub struct Project {
     pub description: String,
 
     pub main_branch: String,
+    pub canonical: Option<ProjectLink>,
+    pub upstream: Option<ProjectLink>,
 }
 
 impl Project {
@@ -56,7 +62,18 @@ impl Project {
             name: info.name.clone(),
             description: info.description.clone(),
             main_branch: info.default_branch.clone(),
+            canonical: None,
+            upstream: None,
         })
+    }
+
+    pub async fn from_project_info_with_metadata(
+        state: &GlobalState,
+        info: &ProjectInfo,
+    ) -> Option<Self> {
+        let mut project = Self::from_project_info(info)?;
+        project.apply_git_metadata(state).await;
+        Some(project)
     }
 
     /// Convert to ProjectInfo for auth_store
@@ -95,7 +112,9 @@ impl Project {
             .get_project_by_owner_slug(user_slug, project_slug)
             .ok_or_else(|| anyhow!("Project not found in auth_store"))?;
 
-        Self::from_project_info(&info).ok_or_else(|| anyhow!("Invalid project info"))
+        Self::from_project_info_with_metadata(state, &info)
+            .await
+            .ok_or_else(|| anyhow!("Invalid project info"))
     }
 
     pub async fn save(&self, state: &GlobalState) -> Result<()> {
@@ -113,6 +132,8 @@ impl Project {
 
         // Update HEAD in Git
         repository::set_git_head(state, &self.owner, &self.slug, &self.main_branch).await?;
+
+        self.save_git_metadata(state).await?;
 
         Ok(())
     }
@@ -155,7 +176,41 @@ impl Project {
             owner: user.slug.to_string(),
             public_access,
             main_branch: user.default_main_branch.to_string(),
+            canonical: None,
+            upstream: None,
         })
+    }
+
+    async fn apply_git_metadata(&mut self, state: &GlobalState) {
+        let Ok(metadata) = load_project_metadata(state, &self.owner, &self.slug).await else {
+            return;
+        };
+
+        if !metadata.name.trim().is_empty() {
+            self.name = metadata.name;
+        }
+        self.description = metadata.description;
+        if validate_user_branch_name(&metadata.default_branch).is_ok() {
+            self.main_branch = metadata.default_branch;
+        }
+        self.canonical = metadata.canonical;
+        self.upstream = metadata.upstream;
+    }
+
+    pub async fn save_git_metadata(&self, state: &GlobalState) -> Result<()> {
+        let canonical = self
+            .canonical
+            .clone()
+            .or_else(|| Some(project_link(state, self)));
+        let metadata = ProjectMetadata {
+            name: self.name.clone(),
+            description: self.description.clone(),
+            default_branch: self.main_branch.clone(),
+            canonical,
+            upstream: self.upstream.clone(),
+        };
+
+        write_project_metadata(state, &self.owner, &self.slug, &metadata).await
     }
 
     pub async fn access_level(&self, user_slug: Option<String>) -> AccessType {
@@ -197,6 +252,27 @@ impl Project {
 
     pub fn http_clone_url(&self, base_url: &str) -> String {
         format!("{}/~{}/{}", base_url, self.owner, self.slug)
+    }
+
+    pub fn upstream_label(&self) -> Option<String> {
+        let upstream = self.upstream.as_ref()?;
+        let path = upstream
+            .web_url
+            .split_once("/~")
+            .map(|(_, path)| path)
+            .unwrap_or(upstream.web_url.as_str())
+            .trim_end_matches('/');
+
+        Some(path.to_string())
+    }
+
+    pub fn safe_upstream_web_url(&self) -> Option<&str> {
+        let url = self.upstream.as_ref()?.web_url.as_str();
+        if url.starts_with("https://") || url.starts_with("http://") || url.starts_with("/~") {
+            Some(url)
+        } else {
+            None
+        }
     }
 
     pub fn uri_log(&self, branch: &str, page: i32) -> String {
@@ -278,6 +354,7 @@ mod tests {
     use rubhub_auth_store::{ProjectInfo, PublicAccess};
 
     use super::Project;
+    use crate::services::project_info::ProjectLink;
 
     #[test]
     fn stored_public_write_loads_as_public_read() {
@@ -293,5 +370,30 @@ mod tests {
         let project = Project::from_project_info(&info).unwrap();
 
         assert_eq!(project.public_access, crate::AccessType::Read);
+    }
+
+    #[test]
+    fn unsafe_upstream_urls_are_not_linkable() {
+        let mut project = Project::from_project_info(&ProjectInfo::new(
+            "alice",
+            "wiki",
+            "Wiki".to_string(),
+            String::new(),
+            "main".to_string(),
+            PublicAccess::Read,
+        ))
+        .unwrap();
+
+        project.upstream = Some(ProjectLink {
+            web_url: "javascript:alert(1)".to_string(),
+            git_ssh_url: "ssh://git@example/~alice/wiki".to_string(),
+            git_http_url: "https://example/~alice/wiki".to_string(),
+        });
+
+        assert_eq!(project.safe_upstream_web_url(), None);
+        assert_eq!(
+            project.upstream_label(),
+            Some("javascript:alert(1)".to_string())
+        );
     }
 }

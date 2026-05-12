@@ -27,5 +27,43 @@
 
   <div class="flex-gap"> </div>
 
+  <div class="clone-url-wrapper">
   {% include "partials/project_clone_url.html" %}
+    {% if let Some(user) = logged_in_user %}
+    {% if project.public_access != AccessType::None %}
+    <button
+      class="fork-button"
+      type="button"
+      data-modal-template="fork-modal-template"
+      title="Fork this project"
+    >
+      <span class="icon i-git-fork"></span>
+      Fork
+    </button>
+    <template id="fork-modal-template">
+      <form method="post" action="{{ project.uri() }}/fork" class="stack simple-form">
+        <h2>Fork {{ project.name }}</h2>
+        <label>
+          Destination
+          <div class="form-row compact">
+            <input type="text" value="~{{ user.slug }}" readonly>
+            <input type="text" name="name" value="{{ project.name }}" required autocomplete="off">
+          </div>
+        </label>
+        <label>
+          Visibility
+          <select name="public_access">
+            <option value="none" {% if project.public_access==AccessType::None %}selected{% endif %}>Private</option>
+            <option value="read" {% if project.public_access==AccessType::Read %}selected{% endif %}>Public</option>
+          </select>
+        </label>
+        <div class="actions end">
+          <button class="btn-outline" type="button" data-modal-close>Cancel</button>
+          <button type="submit"><span class="icon i-git-fork"></span> Fork</button>
+        </div>
+      </form>
+    </template>
+    {% endif %}
+    {% endif %}
+  </div>
 </div>

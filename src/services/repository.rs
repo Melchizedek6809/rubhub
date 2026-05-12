@@ -48,6 +48,25 @@ pub async fn create_bare_repo(
         .map_err(|e| std::io::Error::other(e.to_string()))
 }
 
+/// Create a bare fork by copying normal refs, tags, and meta/info.
+pub async fn fork_bare_repo(
+    state: &GlobalState,
+    source_user: &str,
+    source_project: &str,
+    target_user: &str,
+    target_project: &str,
+) -> Result<()> {
+    rubhub_repo::fork_bare_repo(
+        &state.config.git_root,
+        source_user,
+        source_project,
+        target_user,
+        target_project,
+    )
+    .await?;
+    Ok(())
+}
+
 /// Set the HEAD reference for a repository
 pub async fn set_git_head(
     state: &GlobalState,

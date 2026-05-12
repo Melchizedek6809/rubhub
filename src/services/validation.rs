@@ -1,4 +1,5 @@
 use email_address::EmailAddress;
+use std::process::Command;
 
 /// Special project slugs that are allowed despite starting with a period
 pub const SPECIAL_PROJECT_SLUGS: &[&str] = &[".profile"];
@@ -115,6 +116,29 @@ pub fn validate_project_name(name: &str) -> Result<(), &'static str> {
     }
 
     Ok(())
+}
+
+pub fn validate_user_branch_name(branch: &str) -> Result<(), &'static str> {
+    if branch.trim() != branch || branch.is_empty() {
+        return Err("Branch name is required.");
+    }
+
+    if branch.starts_with("meta/") {
+        return Err("Branch names starting with meta/ are reserved.");
+    }
+
+    let status = Command::new("git")
+        .arg("check-ref-format")
+        .arg("--branch")
+        .arg(branch)
+        .status()
+        .map_err(|_| "Could not validate branch name.")?;
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err("Invalid branch name.")
+    }
 }
 
 /// Check if a project name is reserved (used only during project creation)

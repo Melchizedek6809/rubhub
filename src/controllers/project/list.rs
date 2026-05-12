@@ -28,14 +28,16 @@ pub async fn all_projects_list(
     // Get all public projects from auth_store
     let public_infos = state.auth.get_public_projects();
 
-    let mut all_projects: Vec<(Arc<User>, Project)> = public_infos
-        .iter()
-        .filter_map(|info| {
-            let project = Project::from_project_info(info)?;
-            let user = state.auth.get_user(&project.owner)?;
-            Some((user, project))
-        })
-        .collect();
+    let mut all_projects = Vec::new();
+    for info in public_infos.iter() {
+        let Some(project) = Project::from_project_info_with_metadata(&state, info).await else {
+            continue;
+        };
+        let Some(user) = state.auth.get_user(&project.owner) else {
+            continue;
+        };
+        all_projects.push((user, project));
+    }
 
     // Sort alphabetically by project name
     all_projects.sort_by(|a, b| a.1.name.to_lowercase().cmp(&b.1.name.to_lowercase()));

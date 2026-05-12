@@ -92,6 +92,11 @@
 	mask-size: contain;
 }
 
+.i-git-fork {
+	mask: url("../../node_modules/lucide-svg/dist/git-fork.svg") no-repeat center;
+	mask-size: contain;
+}
+
 .i-circle {
 	mask: url("../../node_modules/lucide-svg/dist/circle.svg") no-repeat center;
 	mask-size: contain;

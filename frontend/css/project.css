@@ -56,6 +56,14 @@
 	color: var(--primary-color);
 }
 
+.fork-notice {
+	display: flex;
+	gap: var(--space-s);
+	align-items: center;
+	margin: calc(-1 * var(--space-s)) 0 var(--space-m);
+	color: var(--text-color-subdued);
+}
+
 .repo-bar {
 	display: flex;
 	gap: var(--space-m);
