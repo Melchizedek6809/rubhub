@@ -18,11 +18,7 @@ use rubhub_auth_store::{ProjectInfo, Session, SshKey};
 use crate::{
     GlobalState, Project, RepoEvent, User, UserModel,
     models::ContentPage,
-    services::{
-        meta::PageMeta,
-        session as session_service,
-        validation::{validate_user_branch_name, validate_username},
-    },
+    services::{meta::PageMeta, session as session_service, validation::validate_username},
     views::ThemedRender,
 };
 
@@ -138,10 +134,16 @@ pub async fn handle_settings(
         ));
     }
 
-    if let Err(msg) = validate_user_branch_name(default_main_branch) {
+    if default_main_branch.is_empty() {
         return Err((
             StatusCode::BAD_REQUEST,
-            render_settings_page(&state, current_user, &ssh_keys_raw, Some(msg)).await,
+            render_settings_page(
+                &state,
+                current_user,
+                &ssh_keys_raw,
+                Some("Default main branch is required"),
+            )
+            .await,
         ));
     }
 

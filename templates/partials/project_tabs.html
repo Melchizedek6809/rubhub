@@ -1,14 +1,3 @@
-{% if let Some(upstream) = project.upstream.as_ref() %}
-<p class="fork-notice">
-	<span class="icon i-git-fork"></span>
-	{% if let Some(safe_upstream_url) = project.safe_upstream_web_url() %}
-	Forked from <a href="{{ safe_upstream_url }}">{{ project.upstream_label().unwrap_or(upstream.web_url.clone()) }}</a>
-	{% else %}
-	Forked from {{ project.upstream_label().unwrap_or(upstream.web_url.clone()) }}
-	{% endif %}
-</p>
-{% endif %}
-
 <nav class="project-tabs" aria-label="Project">
 	<a href="{{ project.uri() }}" class="tab {% if active_tab == "overview" %}active{% endif %}">
 		<span class="icon i-book-open-text"></span><span class="tab-label">Overview</span>

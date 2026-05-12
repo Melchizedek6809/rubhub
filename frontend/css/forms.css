@@ -149,10 +149,6 @@ input[readonly] {
 	gap: var(--space-s);
 }
 
-.actions.end {
-	justify-content: flex-end;
-}
-
 .simple-form label {
 	display: flex;
 	flex-direction: column;
@@ -171,10 +167,6 @@ textarea {
 	.form-row {
 		display: flex;
 		gap: var(--space-l);
-	}
-
-	.form-row.compact {
-		gap: var(--space-s);
 	}
 
 	.form-row > * {
@@ -222,52 +214,8 @@ textarea {
 	transform: scaleY(0) translate(-50%, 20%);
 }
 
-.modal-backdrop {
-	position: fixed;
-	inset: 0;
-	z-index: 1000;
-	display: grid;
-	place-items: center;
-	padding: var(--space-l);
-	background: rgba(0, 0, 0, 0.45);
-}
-
-.modal-panel {
-	position: relative;
-	width: min(520px, calc(100vw - 2rem));
-	max-height: calc(100vh - 2rem);
-	overflow: auto;
-	border: 1px solid var(--background-color-muted);
-	border-radius: var(--space-m);
-	padding: var(--space-l);
-	background: var(--background-color-bright);
-	color: var(--text-color);
-	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
-}
-
-.modal-panel h2 {
-	margin-top: 0;
-	padding-right: 2.5rem;
-}
-
-.modal-close {
-	position: absolute;
-	top: var(--space-m);
-	right: var(--space-m);
-	width: 2rem;
-	height: 2rem;
-	padding: 0;
-	background: transparent;
-	color: var(--text-color);
-}
-
-.modal-close:hover,
-.modal-close:focus {
-	background: var(--background-color-muted);
-}
-
 .btn-group > input {
-	border-width: 1px;
+	border-width: 1px;;
 }
 
 .btn-group > button:not(:first-child),

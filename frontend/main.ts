@@ -113,12 +113,9 @@ const initProtocolSwitcher = () => {
 	const urls = document.querySelectorAll<HTMLDivElement>(".clone-url");
 	for (const url of urls) {
 		const input = url.querySelector<HTMLInputElement>(`input[name="cloneUrl"]`);
-		if (!input) {
-			continue;
-		}
 		const sshUrl = input.getAttribute("data-ssh-url");
 		const httpUrl = input.getAttribute("data-http-url");
-		if (!sshUrl || !httpUrl) {
+		if (!input || !sshUrl || !httpUrl) {
 			continue;
 		}
 
@@ -151,68 +148,6 @@ const initToggleButtons = () => {
 	}
 };
 setTimeout(initToggleButtons, 0);
-
-type ModalOptions = {
-	opener?: HTMLElement;
-	label?: string;
-};
-
-const showModal = (content: Node, options: ModalOptions = {}) => {
-	const backdrop = document.createElement("DIV");
-	backdrop.classList.add("modal-backdrop");
-
-	const panel = document.createElement("DIV");
-	panel.classList.add("modal-panel");
-	panel.setAttribute("role", "dialog");
-	panel.setAttribute("aria-modal", "true");
-	if (options.label) {
-		panel.setAttribute("aria-label", options.label);
-	}
-
-	const closeButton = document.createElement("BUTTON");
-	closeButton.setAttribute("type", "button");
-	closeButton.classList.add("modal-close");
-	closeButton.setAttribute("aria-label", "Close");
-	closeButton.innerHTML = `<span class="icon i-x"></span>`;
-
-	const close = () => {
-		document.removeEventListener("keydown", onKeyDown);
-		backdrop.remove();
-		options.opener?.focus();
-	};
-
-	const onKeyDown = (event: KeyboardEvent) => {
-		if (event.key === "Escape") {
-			event.preventDefault();
-			close();
-		}
-	};
-
-	closeButton.onclick = close;
-	backdrop.onclick = (event) => {
-		if (event.target === backdrop) {
-			close();
-		}
-	};
-
-	panel.append(closeButton, content);
-	backdrop.append(panel);
-	document.body.append(backdrop);
-	document.addEventListener("keydown", onKeyDown);
-
-	for (const closeControl of panel.querySelectorAll<HTMLElement>(
-		"[data-modal-close]",
-	)) {
-		closeControl.onclick = close;
-	}
-
-	const firstFocusable = panel.querySelector<HTMLElement>(
-		'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-	);
-	firstFocusable?.focus();
-
-	return { close, element: backdrop };
-};
 
 const initProjectDelete = () => {
 	const deleteButton = document.querySelector<HTMLButtonElement>(
@@ -258,21 +193,3 @@ const initProjectDelete = () => {
 	};
 };
 setTimeout(initProjectDelete, 0);
-
-const initForkDialogs = () => {
-	for (const button of document.querySelectorAll<HTMLButtonElement>(
-		".fork-button[data-modal-template]",
-	)) {
-		const templateId = button.getAttribute("data-modal-template");
-		const template = templateId ? document.getElementById(templateId) : null;
-		if (!(template instanceof HTMLTemplateElement)) {
-			continue;
-		}
-
-		button.onclick = () => {
-			const content = template.content.cloneNode(true);
-			showModal(content, { opener: button, label: "Fork project" });
-		};
-	}
-};
-setTimeout(initForkDialogs, 0);

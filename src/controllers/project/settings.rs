@@ -16,10 +16,7 @@ use crate::{
     controllers::context::require_user,
     extractors::PathUserProject,
     models::ContentPage,
-    services::{
-        meta::PageMeta,
-        validation::{validate_project_name, validate_user_branch_name},
-    },
+    services::{meta::PageMeta, validation::validate_project_name},
     views::ThemedRender,
 };
 
@@ -106,8 +103,15 @@ pub async fn project_settings_post(
         )
         .await;
     }
-    if let Err(msg) = validate_user_branch_name(main_branch) {
-        return render_project_settings_page(&state, current_user, owner, project, Some(msg)).await;
+    if main_branch.is_empty() {
+        return render_project_settings_page(
+            &state,
+            current_user,
+            owner,
+            project,
+            Some("Branch name is required."),
+        )
+        .await;
     }
 
     project.name = name.to_owned();

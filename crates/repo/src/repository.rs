@@ -112,12 +112,6 @@ fn ensure_safe_branch_name(branch: &str) -> Result<(), RepoError> {
     }
 }
 
-fn should_copy_fork_ref(ref_name: &str) -> bool {
-    ref_name.starts_with("refs/tags/")
-        || (ref_name.starts_with("refs/heads/") && !ref_name.starts_with("refs/heads/meta/"))
-        || ref_name == "refs/heads/meta/info"
-}
-
 /// Create a new bare git repository
 pub async fn create_bare_repo(git_root: &Path, user: &str, project: &str) -> Result<(), RepoError> {
     ensure_safe_component(user)?;
@@ -137,96 +131,6 @@ pub async fn create_bare_repo(git_root: &Path, user: &str, project: &str) -> Res
     .map_err(|e| RepoError::TaskJoin(e.to_string()))??;
 
     Ok(())
-}
-
-/// Create a bare fork by copying code refs, tags, and meta/info from an existing repository.
-pub async fn fork_bare_repo(
-    git_root: &Path,
-    source_user: &str,
-    source_project: &str,
-    target_user: &str,
-    target_project: &str,
-) -> Result<(), RepoError> {
-    ensure_safe_component(source_user)?;
-    ensure_safe_component(source_project)?;
-    ensure_safe_component(target_user)?;
-    ensure_safe_component(target_project)?;
-
-    let source_path = git_root.join(source_user).join(source_project);
-    let target_owner_path = git_root.join(target_user);
-    fs::create_dir_all(&target_owner_path).await?;
-    let target_path = target_owner_path.join(target_project);
-
-    tokio::task::spawn_blocking(move || -> Result<(), RepoError> {
-        if !source_path.is_dir() {
-            return Err(RepoError::NotFound);
-        }
-        if target_path.exists() {
-            return Err(RepoError::Git("target repository already exists".into()));
-        }
-
-        gix::init_bare(&target_path).map_err(|e| RepoError::Git(e.to_string()))?;
-        configure_bare_repo(&target_path)?;
-
-        let refs_output = Command::new("git")
-            .arg("-C")
-            .arg(&source_path)
-            .arg("for-each-ref")
-            .arg("--format=%(refname)")
-            .arg("refs/heads")
-            .arg("refs/tags")
-            .output()?;
-
-        if !refs_output.status.success() {
-            return Err(RepoError::Git("git for-each-ref failed".into()));
-        }
-
-        let refs = String::from_utf8_lossy(&refs_output.stdout);
-        let refspecs: Vec<String> = refs
-            .lines()
-            .filter(|ref_name| should_copy_fork_ref(ref_name))
-            .map(|ref_name| format!("+{ref_name}:{ref_name}"))
-            .collect();
-
-        if !refspecs.is_empty() {
-            let status = Command::new("git")
-                .arg("-C")
-                .arg(&target_path)
-                .arg("fetch")
-                .arg("--quiet")
-                .arg(&source_path)
-                .args(&refspecs)
-                .status()?;
-
-            if !status.success() {
-                return Err(RepoError::Git("failed to fetch fork refs".into()));
-            }
-        }
-
-        Ok(())
-    })
-    .await
-    .map_err(|e| RepoError::TaskJoin(e.to_string()))??;
-
-    Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::should_copy_fork_ref;
-
-    #[test]
-    fn fork_ref_allowlist_copies_only_code_tags_and_info() {
-        assert!(should_copy_fork_ref("refs/heads/main"));
-        assert!(should_copy_fork_ref("refs/heads/feature/test"));
-        assert!(should_copy_fork_ref("refs/tags/v1"));
-        assert!(should_copy_fork_ref("refs/heads/meta/info"));
-
-        assert!(!should_copy_fork_ref("refs/heads/meta/talk"));
-        assert!(!should_copy_fork_ref("refs/heads/meta/custom"));
-        assert!(!should_copy_fork_ref("refs/notes/review"));
-        assert!(!should_copy_fork_ref("refs/remotes/origin/main"));
-    }
 }
 
 /// Set the HEAD reference for a repository

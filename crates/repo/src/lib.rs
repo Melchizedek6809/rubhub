@@ -19,5 +19,5 @@ pub use types::{
 // Re-export repository functions
 pub use repository::{
     add_file_to_branch, branch_exists, capture_git_summary, create_bare_repo, create_orphan_branch,
-    fork_bare_repo, get_git_file, get_git_info, get_git_summary, get_git_tree, set_git_head,
+    get_git_file, get_git_info, get_git_summary, get_git_tree, set_git_head,
 };

@@ -19,12 +19,10 @@ impl UserModel for User {
     async fn projects(&self, state: &GlobalState) -> Result<Vec<Project>> {
         let project_infos = state.auth.get_projects_for_owner(&self.slug);
 
-        let mut projects = Vec::new();
-        for info in project_infos.iter() {
-            if let Some(project) = Project::from_project_info_with_metadata(state, info).await {
-                projects.push(project);
-            }
-        }
+        let projects: Vec<Project> = project_infos
+            .iter()
+            .filter_map(|info| Project::from_project_info(info))
+            .collect();
 
         Ok(projects)
     }

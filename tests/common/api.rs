@@ -270,45 +270,6 @@ impl Api {
             .error_for_status()?)
     }
 
-    /// Fork a project into the currently logged-in user's namespace.
-    pub async fn fork_project(
-        &self,
-        owner: &str,
-        project: &str,
-        name: &str,
-        public_access: &str,
-    ) -> Result<Response> {
-        let path = format!("/~{}/{}/fork", owner, project);
-        let form = [("name", name), ("public_access", public_access)];
-
-        Ok(self
-            .client
-            .post(format!("{}{}", self.base_url, path))
-            .form(&form)
-            .send()
-            .await?
-            .error_for_status()?)
-    }
-
-    /// Try to fork a project without converting error HTTP statuses into errors.
-    pub async fn fork_project_raw(
-        &self,
-        owner: &str,
-        project: &str,
-        name: &str,
-        public_access: &str,
-    ) -> Result<Response> {
-        let path = format!("/~{}/{}/fork", owner, project);
-        let form = [("name", name), ("public_access", public_access)];
-
-        Ok(self
-            .client
-            .post(format!("{}{}", self.base_url, path))
-            .form(&form)
-            .send()
-            .await?)
-    }
-
     /// Delete a project (requires being logged in as owner).
     pub async fn delete_project(&self, owner: &str, project: &str) -> Result<Response> {
         let confirmation = format!("{}/{}", owner, project);
