@@ -109,30 +109,6 @@ const initCopyButtons = () => {
 };
 setTimeout(initCopyButtons, 0);
 
-const initProtocolSwitcher = () => {
-	const urls = document.querySelectorAll<HTMLDivElement>(".clone-url");
-	for (const url of urls) {
-		const input = url.querySelector<HTMLInputElement>(`input[name="cloneUrl"]`);
-		const sshUrl = input.getAttribute("data-ssh-url");
-		const httpUrl = input.getAttribute("data-http-url");
-		if (!input || !sshUrl || !httpUrl) {
-			continue;
-		}
-
-		const btns = url.querySelectorAll<HTMLButtonElement>("button.toggle-btn");
-		for (const btn of btns) {
-			btn.addEventListener("click", () => {
-				if (btn.getAttribute("data-protocol") === "ssh") {
-					input.value = sshUrl;
-				} else {
-					input.value = httpUrl;
-				}
-			});
-		}
-	}
-};
-setTimeout(initProtocolSwitcher, 0);
-
 const initToggleButtons = () => {
 	const groups = document.querySelectorAll<HTMLElement>(".btn-group");
 	for (const group of groups) {

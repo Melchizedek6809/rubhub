@@ -1,4 +1,4 @@
-.clone-url-wrapper {
+.clone-url-wrap {
 	display: flex;
 	gap: 0.25rem;
 	align-items: stretch;
@@ -16,17 +16,9 @@
 	width: auto;
 }
 
-@media screen and (max-width: 700px) {
-	.clone-url-wrapper {
+@media screen and (max-width: 1280px) {
+	.clone-url-wrap {
 		flex-direction: column;
 		gap: 0.25rem;
-	}
-
-	.clone-url input {
-		border-radius: var(--space-s) 0 0 var(--space-s);
-	}
-
-	.clone-url button {
-		border-radius: 0 var(--space-s) var(--space-s) 0;
 	}
 }

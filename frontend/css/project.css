@@ -59,7 +59,7 @@
 .repo-bar {
 	display: flex;
 	gap: var(--space-m);
-	align-content: center;
+	align-items: flex-start;
 	padding: var(--space-m) 0;
 }
 
@@ -71,6 +71,15 @@
 
 .repo-bar > * {
 	align-content: center;
+}
+
+.repo-bar .repo-branches,
+.repo-bar .repo-tags {
+	display: inline-flex;
+	align-items: center;
+	padding-block: var(--space-m);
+	border-block: solid 2px transparent;
+	line-height: 1.35em;
 }
 
 @media screen and (max-width: 700px) {
@@ -104,7 +113,7 @@
 		display: none;
 	}
 
-	.repo-bar .clone-url-wrapper {
+	.repo-bar .clone-url-wrap {
 		grid-column: 1 / -1;
 		grid-row: 2;
 	}
