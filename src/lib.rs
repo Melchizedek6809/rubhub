@@ -19,6 +19,7 @@ mod views;
 pub use models::{Project, ProjectSummary, UserModel};
 pub use rubhub_auth_store::User;
 pub use rubhub_state::{AccessType, AppConfig, ContentPage, GlobalState, RepoEvent, RepoEventInfo};
+pub use services::validation;
 use tokio::time::interval;
 
 /// Create and bind a TCP listener with appropriate socket options

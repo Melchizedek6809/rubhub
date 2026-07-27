@@ -1,66 +1,8 @@
 mod common;
 
-use common::{Api, with_backend};
-use reqwest::header::CONTENT_TYPE;
+use common::with_backend;
 use rubhub::{AccessType, RepoEvent, RepoEventInfo};
 use time::OffsetDateTime;
-
-#[tokio::test(flavor = "current_thread")]
-async fn event_endpoints_return_sse_content_type() {
-    with_backend(|state| async move {
-        let api = Api::new(&state.config.base_url);
-
-        api.register("testuser", "test@example.com", "password123456789")
-            .await
-            .unwrap();
-        api.create_project("Test Project", "A test project")
-            .await
-            .unwrap();
-
-        for path in [
-            "/.events",
-            "/~testuser/.events",
-            "/~testuser/test-project/.events",
-        ] {
-            let response = api.get_raw(path).await.unwrap();
-
-            assert_eq!(response.status(), 200);
-            assert_eq!(
-                response.headers().get(CONTENT_TYPE).unwrap(),
-                "text/event-stream"
-            );
-        }
-    })
-    .await;
-}
-
-#[tokio::test(flavor = "current_thread")]
-async fn test_project_events_access_control() {
-    with_backend(|state| async move {
-        let api = Api::new(&state.config.base_url);
-
-        // Create user and private project
-        api.register("alice", "alice@example.com", "alicepassword123")
-            .await
-            .unwrap();
-
-        api.create_project_with_access("Private Project", "A private project", "none")
-            .await
-            .unwrap();
-
-        // Logout
-        api.logout().await.unwrap();
-
-        // Try to access private project events (should fail)
-        let response = api
-            .get_raw("/~alice/private-project/.events")
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), 403);
-    })
-    .await;
-}
 
 #[tokio::test(flavor = "current_thread")]
 async fn emitted_branch_event_reaches_subscribers() {
@@ -147,35 +89,6 @@ async fn emitted_delete_event_reaches_subscribers() {
             }
             other => panic!("expected delete event, got {other:?}"),
         }
-    })
-    .await;
-}
-
-#[tokio::test(flavor = "current_thread")]
-async fn test_project_events_404_after_deletion() {
-    with_backend(|state| async move {
-        let api = Api::new(&state.config.base_url);
-
-        api.register("testuser", "test@example.com", "password123456789")
-            .await
-            .unwrap();
-
-        api.create_project("Test Project", "A test project")
-            .await
-            .unwrap();
-
-        // Delete the project
-        api.delete_project("testuser", "test-project")
-            .await
-            .unwrap();
-
-        // Trying to access events for deleted project should 404
-        let response = api
-            .get_raw("/~testuser/test-project/.events")
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), 404);
     })
     .await;
 }

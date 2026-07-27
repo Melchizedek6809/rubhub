@@ -50,23 +50,6 @@ impl Api {
         }
     }
 
-    /// Register a new user account.
-    pub async fn register(&self, username: &str, email: &str, password: &str) -> Result<Response> {
-        let form = [
-            ("username", username),
-            ("email", email),
-            ("password", password),
-        ];
-
-        Ok(self
-            .client
-            .post(format!("{}/registration", self.base_url))
-            .form(&form)
-            .send()
-            .await?
-            .error_for_status()?)
-    }
-
     /// Login with the given credentials.
     pub async fn login(&self, username: &str, password: &str) -> Result<Response> {
         let form = [("username", username), ("password", password)];

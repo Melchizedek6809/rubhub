@@ -8,7 +8,7 @@ mod not_found;
 mod project;
 mod user;
 
-pub use auth::{handle_login, handle_registration, login_page, logout, registration_page};
+pub use auth::{handle_login, login_page, logout};
 pub use content_page::render_content_page;
 pub use events::{global_events, project_events, user_events};
 pub use landing::index;

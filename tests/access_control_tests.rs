@@ -12,9 +12,15 @@ async fn test_private_repo_access_denied() {
         let temp_dir = state.config.dir_root.as_path();
 
         // Alice creates a private project
-        let alice = TestUser::create(&api, temp_dir, "alice", &state.config.ssh_public_host)
-            .await
-            .unwrap();
+        let alice = TestUser::create(
+            &state,
+            &api,
+            temp_dir,
+            "alice",
+            &state.config.ssh_public_host,
+        )
+        .await
+        .unwrap();
 
         api.create_project_with_access("Private Repo", "Secret stuff", "none")
             .await
@@ -22,7 +28,7 @@ async fn test_private_repo_access_denied() {
         api.logout().await.unwrap();
 
         // Bob registers and tries to clone Alice's private repo
-        let bob = TestUser::create(&api, temp_dir, "bob", &state.config.ssh_public_host)
+        let bob = TestUser::create(&state, &api, temp_dir, "bob", &state.config.ssh_public_host)
             .await
             .unwrap();
 
@@ -69,9 +75,15 @@ async fn test_public_write_access_disabled() {
         let temp_dir = state.config.dir_root.as_path();
 
         // Alice cannot create a public-write project.
-        let alice = TestUser::create(&api, temp_dir, "alice", &state.config.ssh_public_host)
-            .await
-            .unwrap();
+        let alice = TestUser::create(
+            &state,
+            &api,
+            temp_dir,
+            "alice",
+            &state.config.ssh_public_host,
+        )
+        .await
+        .unwrap();
 
         let response = api
             .create_project_with_access("Open Source", "Everyone can contribute", "write")
@@ -106,7 +118,7 @@ async fn test_public_write_access_disabled() {
         api.logout().await.unwrap();
 
         // Bob registers and can clone but not push to the public-read repo.
-        let bob = TestUser::create(&api, temp_dir, "bob", &state.config.ssh_public_host)
+        let bob = TestUser::create(&state, &api, temp_dir, "bob", &state.config.ssh_public_host)
             .await
             .unwrap();
 
@@ -146,9 +158,15 @@ async fn test_public_read_no_push() {
         let temp_dir = state.config.dir_root.as_path();
 
         // Alice creates a public-read project
-        let alice = TestUser::create(&api, temp_dir, "alice", &state.config.ssh_public_host)
-            .await
-            .unwrap();
+        let alice = TestUser::create(
+            &state,
+            &api,
+            temp_dir,
+            "alice",
+            &state.config.ssh_public_host,
+        )
+        .await
+        .unwrap();
 
         api.create_project_with_access("Read Only", "Public read, no write", "read")
             .await
@@ -175,7 +193,7 @@ async fn test_public_read_no_push() {
         api.logout().await.unwrap();
 
         // Bob registers and can clone
-        let bob = TestUser::create(&api, temp_dir, "bob", &state.config.ssh_public_host)
+        let bob = TestUser::create(&state, &api, temp_dir, "bob", &state.config.ssh_public_host)
             .await
             .unwrap();
 
@@ -210,9 +228,15 @@ async fn test_change_project_visibility() {
         let temp_dir = state.config.dir_root.as_path();
 
         // Alice creates a public project
-        let alice = TestUser::create(&api, temp_dir, "alice", &state.config.ssh_public_host)
-            .await
-            .unwrap();
+        let alice = TestUser::create(
+            &state,
+            &api,
+            temp_dir,
+            "alice",
+            &state.config.ssh_public_host,
+        )
+        .await
+        .unwrap();
 
         api.create_project_with_access("Visibility Test", "Testing visibility change", "read")
             .await

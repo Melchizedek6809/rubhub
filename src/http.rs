@@ -66,10 +66,6 @@ pub async fn http_server(
 
     let auth_post_routes = Router::new()
         .route("/login", axum::routing::post(controllers::handle_login))
-        .route(
-            "/registration",
-            axum::routing::post(controllers::handle_registration),
-        )
         .layer(GovernorLayer::new(auth_rate_limit));
 
     // build our application with a single route
@@ -96,7 +92,6 @@ pub async fn http_server(
         .route("/robots.txt", get(controllers::robots_txt))
         .route("/sitemap.xml", get(controllers::sitemap_xml))
         .route("/login", get(controllers::login_page))
-        .route("/registration", get(controllers::registration_page))
         .merge(auth_post_routes)
         .route("/logout", post(controllers::logout))
         .route(

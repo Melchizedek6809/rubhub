@@ -1,4 +1,7 @@
-use anyhow::Result;
+use anyhow::{Result, anyhow};
+use rubhub::validation::{slugify, validate_email, validate_password, validate_username};
+use rubhub::{GlobalState, User};
+use rubhub_auth_store::SshKey;
 use std::path::{Path, PathBuf};
 use std::process::Output;
 
@@ -14,46 +17,69 @@ pub struct TestUser {
     pub username: String,
     pub email: String,
     pub ssh_key: TestSshKey,
+    pub password: String,
     ssh_public_host: String,
 }
 
 impl TestUser {
     /// Create and register a new test user with an Ed25519 SSH key.
     pub async fn create(
+        state: &GlobalState,
         api: &Api,
         temp_dir: &Path,
         username: &str,
         ssh_public_host: &str,
     ) -> Result<Self> {
-        Self::create_with_key_type(api, temp_dir, username, ssh_public_host, KeyType::Ed25519).await
+        let user = Self::create_with_key_type(
+            state,
+            temp_dir,
+            username,
+            ssh_public_host,
+            KeyType::Ed25519,
+        )
+        .await?;
+        api.login(&user.username, &user.password).await?;
+        Ok(user)
     }
 
     /// Create and register a new test user with a specific SSH key type.
     pub async fn create_with_key_type(
-        api: &Api,
+        state: &GlobalState,
         temp_dir: &Path,
         username: &str,
         ssh_public_host: &str,
         key_type: KeyType,
     ) -> Result<Self> {
         let email = format!("{}@test.com", username);
+        let slug = slugify(username);
+        let password = "password123456789".to_string();
+
+        validate_username(username).map_err(|e| anyhow!(e))?;
+        validate_email(&email).map_err(|e| anyhow!(e))?;
+        validate_password(&password).map_err(|e| anyhow!(e))?;
+
+        if state.auth.get_user(&slug).is_some() {
+            return Err(anyhow!("Duplicate user"));
+        }
+        let user = User::new(
+            slug.clone(),
+            username.to_string(),
+            email.clone(),
+            password.clone(),
+        )?;
+        user.save(&state.auth)?;
+
         let ssh_key = TestSshKey::generate(temp_dir, username, key_type)?;
 
-        api.register(username, &email, "password123456789").await?;
-        api.update_settings(
-            username,
-            &email,
-            "",
-            "",
-            "main",
-            &ssh_key.public_key_content,
-        )
-        .await?;
+        let key = SshKey::from_authorized_keys_line(&ssh_key.public_key_content, slug.clone())
+            .ok_or(anyhow!("Couldn't turn test ssh key to ssh key"))?;
+        key.save(&state.auth)?;
 
         Ok(Self {
             username: username.to_string(),
             email,
             ssh_key,
+            password,
             ssh_public_host: ssh_public_host.to_string(),
         })
     }
